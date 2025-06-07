@@ -9,6 +9,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Accounting from "./pages/Accounting";
+import Ecommerce from "./pages/Ecommerce";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/accounting" element={<Accounting />} />
+              <Route path="/ecommerce" element={<Ecommerce />} />
               {/* Rutas de módulos - se expandirán según necesidad */}
               <Route path="/inventory" element={<Dashboard />} />
               <Route path="/locations" element={<Dashboard />} />
@@ -35,7 +37,6 @@ const App = () => (
               <Route path="/loading" element={<Dashboard />} />
               <Route path="/docks" element={<Dashboard />} />
               <Route path="/customers" element={<Dashboard />} />
-              <Route path="/ecommerce" element={<Dashboard />} />
               <Route path="/chat" element={<Dashboard />} />
               <Route path="/users" element={<Dashboard />} />
               <Route path="/reports" element={<Dashboard />} />

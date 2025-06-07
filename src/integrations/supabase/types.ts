@@ -92,6 +92,290 @@ export type Database = {
         }
         Relationships: []
       }
+      ecommerce_connections: {
+        Row: {
+          api_key_encrypted: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          platform_id: string
+          settings: Json | null
+          store_name: string
+          store_url: string | null
+          sync_enabled: boolean
+          updated_at: string
+          user_id: string
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          platform_id: string
+          settings?: Json | null
+          store_name: string
+          store_url?: string | null
+          sync_enabled?: boolean
+          updated_at?: string
+          user_id: string
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          platform_id?: string
+          settings?: Json | null
+          store_name?: string
+          store_url?: string | null
+          sync_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecommerce_connections_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "ecommerce_platforms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ecommerce_orders: {
+        Row: {
+          billing_address: Json | null
+          connection_id: string
+          created_at: string
+          currency: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          external_order_id: string
+          financial_status: string | null
+          fulfillment_status: string | null
+          id: string
+          last_synced_at: string | null
+          line_items: Json
+          order_date: string
+          order_number: string
+          shipping_address: Json | null
+          sync_status: string
+          total_amount: number
+          updated_at: string
+          warehouse_status: string
+        }
+        Insert: {
+          billing_address?: Json | null
+          connection_id: string
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          external_order_id: string
+          financial_status?: string | null
+          fulfillment_status?: string | null
+          id?: string
+          last_synced_at?: string | null
+          line_items?: Json
+          order_date: string
+          order_number: string
+          shipping_address?: Json | null
+          sync_status?: string
+          total_amount: number
+          updated_at?: string
+          warehouse_status?: string
+        }
+        Update: {
+          billing_address?: Json | null
+          connection_id?: string
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          external_order_id?: string
+          financial_status?: string | null
+          fulfillment_status?: string | null
+          id?: string
+          last_synced_at?: string | null
+          line_items?: Json
+          order_date?: string
+          order_number?: string
+          shipping_address?: Json | null
+          sync_status?: string
+          total_amount?: number
+          updated_at?: string
+          warehouse_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecommerce_orders_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "ecommerce_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ecommerce_platforms: {
+        Row: {
+          api_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          api_url?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          api_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      ecommerce_products: {
+        Row: {
+          compare_at_price: number | null
+          connection_id: string
+          created_at: string
+          description: string | null
+          external_product_id: string
+          id: string
+          images: Json | null
+          inventory_quantity: number | null
+          last_synced_at: string | null
+          price: number | null
+          product_type: string | null
+          sku: string | null
+          sync_status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          variants: Json | null
+          vendor: string | null
+          weight: number | null
+        }
+        Insert: {
+          compare_at_price?: number | null
+          connection_id: string
+          created_at?: string
+          description?: string | null
+          external_product_id: string
+          id?: string
+          images?: Json | null
+          inventory_quantity?: number | null
+          last_synced_at?: string | null
+          price?: number | null
+          product_type?: string | null
+          sku?: string | null
+          sync_status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          variants?: Json | null
+          vendor?: string | null
+          weight?: number | null
+        }
+        Update: {
+          compare_at_price?: number | null
+          connection_id?: string
+          created_at?: string
+          description?: string | null
+          external_product_id?: string
+          id?: string
+          images?: Json | null
+          inventory_quantity?: number | null
+          last_synced_at?: string | null
+          price?: number | null
+          product_type?: string | null
+          sku?: string | null
+          sync_status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          variants?: Json | null
+          vendor?: string | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecommerce_products_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "ecommerce_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ecommerce_sync_logs: {
+        Row: {
+          completed_at: string | null
+          connection_id: string
+          duration_seconds: number | null
+          error_message: string | null
+          id: string
+          records_failed: number | null
+          records_processed: number | null
+          records_success: number | null
+          started_at: string
+          status: string
+          sync_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          connection_id: string
+          duration_seconds?: number | null
+          error_message?: string | null
+          id?: string
+          records_failed?: number | null
+          records_processed?: number | null
+          records_success?: number | null
+          started_at?: string
+          status: string
+          sync_type: string
+        }
+        Update: {
+          completed_at?: string | null
+          connection_id?: string
+          duration_seconds?: number | null
+          error_message?: string | null
+          id?: string
+          records_failed?: number | null
+          records_processed?: number | null
+          records_success?: number | null
+          started_at?: string
+          status?: string
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecommerce_sync_logs_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "ecommerce_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_lines: {
         Row: {
           created_at: string
