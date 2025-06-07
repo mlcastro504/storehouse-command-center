@@ -18,7 +18,7 @@ export class InventoryService {
     return data;
   }
 
-  static async createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) {
+  static async createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuario no autenticado');
 
@@ -68,7 +68,7 @@ export class InventoryService {
     return data;
   }
 
-  static async createCategory(category: Omit<Category, 'id' | 'created_at' | 'updated_at'>) {
+  static async createCategory(category: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'user_id'>) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuario no autenticado');
 
@@ -97,7 +97,7 @@ export class InventoryService {
     return data;
   }
 
-  static async createWarehouse(warehouse: Omit<Warehouse, 'id' | 'created_at' | 'updated_at'>) {
+  static async createWarehouse(warehouse: Omit<Warehouse, 'id' | 'created_at' | 'updated_at' | 'user_id'>) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuario no autenticado');
 
@@ -134,7 +134,7 @@ export class InventoryService {
     return data;
   }
 
-  static async createLocation(location: Omit<Location, 'id' | 'created_at' | 'updated_at'>) {
+  static async createLocation(location: Omit<Location, 'id' | 'created_at' | 'updated_at' | 'user_id'>) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuario no autenticado');
 
@@ -215,7 +215,7 @@ export class InventoryService {
     return data;
   }
 
-  static async createStockMovement(movement: Omit<StockMovement, 'id' | 'timestamp'>) {
+  static async createStockMovement(movement: Omit<StockMovement, 'id' | 'timestamp' | 'performed_by' | 'user_id'>) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuario no autenticado');
 
@@ -245,7 +245,7 @@ export class InventoryService {
     return data;
   }
 
-  static async createSupplier(supplier: Omit<Supplier, 'id' | 'created_at' | 'updated_at'>) {
+  static async createSupplier(supplier: Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'user_id'>) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuario no autenticado');
 
