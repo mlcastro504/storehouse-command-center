@@ -1,4 +1,5 @@
 
+
 export interface UserSettings {
   id: string;
   user_id: string;
@@ -9,8 +10,8 @@ export interface UserSettings {
   date_format: string;
   dark_mode: boolean;
   compact_view: boolean;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UserSecuritySettings {
@@ -21,8 +22,8 @@ export interface UserSecuritySettings {
   session_timeout: boolean;
   email_notifications: boolean;
   login_alerts: boolean;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UserNotificationSettings {
@@ -43,8 +44,8 @@ export interface UserNotificationSettings {
   sms_enabled: boolean;
   sms_critical_only: boolean;
   sms_emergency_alerts: boolean;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SystemSettings {
@@ -57,8 +58,8 @@ export interface SystemSettings {
   backup_frequency: string;
   cache_enabled: boolean;
   api_rate_limit: number;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UserProfile {
@@ -71,6 +72,7 @@ export interface UserProfile {
   position?: string;
   department?: string;
   avatar_url?: string;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
 }
+
