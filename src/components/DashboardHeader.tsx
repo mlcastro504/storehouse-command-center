@@ -15,6 +15,17 @@ export function DashboardHeader() {
     return 'Buenas noches'
   }
 
+  const formatLastLogin = () => {
+    if (!user.lastLoginAt) return 'Nunca'
+    
+    // Ensure we have a proper Date object
+    const date = user.lastLoginAt instanceof Date 
+      ? user.lastLoginAt 
+      : new Date(user.lastLoginAt)
+    
+    return date.toLocaleDateString('es-ES')
+  }
+
   return (
     <Card className="warehouse-card p-6 mb-6">
       <div className="flex items-center justify-between">
@@ -31,7 +42,7 @@ export function DashboardHeader() {
             {user.role.displayName}
           </Badge>
           <p className="text-sm text-muted-foreground">
-            Último acceso: {user.lastLoginAt?.toLocaleDateString('es-ES')}
+            Último acceso: {formatLastLogin()}
           </p>
         </div>
       </div>
