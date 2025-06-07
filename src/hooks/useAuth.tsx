@@ -1,7 +1,5 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User as SupabaseUser, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
 import { User, Role } from '@/types/warehouse';
 
 interface AuthContextType {
@@ -15,10 +13,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock roles para mantener compatibilidad
+// Mock data para desarrollo - reemplazar con Supabase
 const mockRoles: Role[] = [
   {
-    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    id: '1',
     name: 'admin',
     displayName: 'Administrator',
     level: 1,
@@ -26,7 +24,7 @@ const mockRoles: Role[] = [
     moduleAccess: [{ moduleId: '*', canAccess: true, permissions: ['*'] }]
   },
   {
-    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d480',
+    id: '2',
     name: 'manager',
     displayName: 'Warehouse Manager',
     level: 3,
@@ -42,7 +40,7 @@ const mockRoles: Role[] = [
     ]
   },
   {
-    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d481',
+    id: '3',
     name: 'driver',
     displayName: 'Driver',
     level: 7,
@@ -57,107 +55,74 @@ const mockRoles: Role[] = [
   }
 ];
 
-// Función para convertir usuario de Supabase a formato de aplicación
-function convertSupabaseUserToAppUser(supabaseUser: SupabaseUser): User {
-  // Determinar rol basado en el email (temporal)
-  let role = mockRoles[2]; // driver por defecto
-  
-  if (supabaseUser.email === 'webmastertodoaca@gmail.com') {
-    role = mockRoles[0]; // admin
-  } else if (supabaseUser.email?.includes('manager')) {
-    role = mockRoles[1]; // manager
-  }
-
-  return {
-    id: supabaseUser.id,
-    email: supabaseUser.email || '',
-    firstName: supabaseUser.user_metadata?.first_name || 'Usuario',
-    lastName: supabaseUser.user_metadata?.last_name || '',
-    role: role,
+const mockUsers: User[] = [
+  {
+    id: '1',
+    email: 'admin@warehouseos.com',
+    firstName: 'Admin',
+    lastName: 'User',
+    role: mockRoles[0],
     isActive: true,
-    createdAt: new Date(supabaseUser.created_at),
+    createdAt: new Date(),
     lastLoginAt: new Date()
-  };
-}
+  },
+  {
+    id: '2',
+    email: 'manager@warehouseos.com',
+    firstName: 'John',
+    lastName: 'Manager',
+    role: mockRoles[1],
+    teamId: 'team-1',
+    isActive: true,
+    createdAt: new Date(),
+    lastLoginAt: new Date()
+  },
+  {
+    id: '3',
+    email: 'driver@warehouseos.com',
+    firstName: 'Mike',
+    lastName: 'Driver',
+    role: mockRoles[2],
+    teamId: 'team-2',
+    isActive: true,
+    createdAt: new Date(),
+    lastLoginAt: new Date()
+  }
+];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Configurar listener para cambios de autenticación
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event, session);
-        setSession(session);
-        
-        if (session?.user) {
-          const appUser = convertSupabaseUserToAppUser(session.user);
-          setUser(appUser);
-        } else {
-          setUser(null);
-        }
-        
-        setIsLoading(false);
-      }
-    );
-
-    // Verificar sesión existente
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Current session:', session);
-      setSession(session);
-      
-      if (session?.user) {
-        const appUser = convertSupabaseUserToAppUser(session.user);
-        setUser(appUser);
-      }
-      
-      setIsLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    // Simular verificación de sesión existente
+    const savedUser = localStorage.getItem('warehouseOS_user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('Login error:', error);
-        setIsLoading(false);
-        return false;
-      }
-
-      if (data.user) {
-        const appUser = convertSupabaseUserToAppUser(data.user);
-        setUser(appUser);
-        setSession(data.session);
-        setIsLoading(false);
-        return true;
-      }
-    } catch (error) {
-      console.error('Login exception:', error);
+    // Simular autenticación - reemplazar con Supabase
+    const foundUser = mockUsers.find(u => u.email === email);
+    if (foundUser && password === 'password123') {
+      const updatedUser = { ...foundUser, lastLoginAt: new Date() };
+      setUser(updatedUser);
+      localStorage.setItem('warehouseOS_user', JSON.stringify(updatedUser));
+      setIsLoading(false);
+      return true;
     }
     
     setIsLoading(false);
     return false;
   };
 
-  const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Logout error:', error);
-    }
+  const logout = () => {
     setUser(null);
-    setSession(null);
+    localStorage.removeItem('warehouseOS_user');
   };
 
   const hasPermission = (action: string, resource?: string): boolean => {

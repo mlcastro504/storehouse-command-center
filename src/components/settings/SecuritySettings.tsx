@@ -1,195 +1,190 @@
 
-import { useSecuritySettings } from '@/hooks/useSecuritySettings';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Shield, Key, Bell, Clock } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Shield, Key, Smartphone } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 export function SecuritySettings() {
-  const { settings, loading, updateSettings } = useSecuritySettings();
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="animate-pulse space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-              <div className="h-10 bg-gray-200 rounded"></div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const [securitySettings, setSecuritySettings] = useState({
+    twoFactorEnabled: false,
+    sessionTimeout: true,
+    emailNotifications: true,
+    loginAlerts: true
+  });
 
-  if (!settings) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-muted-foreground">No se pudieron cargar las configuraciones de seguridad.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const { toast } = useToast();
+
+  const handlePasswordChange = () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Las contraseñas no coinciden.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Contraseña actualizada",
+      description: "Tu contraseña ha sido cambiada correctamente.",
+    });
+
+    setPasswordForm({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+  };
+
+  const handleSecuritySave = () => {
+    toast({
+      title: "Configuración de seguridad guardada",
+      description: "Los cambios se han aplicado correctamente.",
+    });
+  };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5" />
-            Autenticación de Dos Factores
+            <Key className="w-5 h-5" />
+            Cambiar Contraseña
           </CardTitle>
           <CardDescription>
-            Protege tu cuenta con una capa adicional de seguridad
+            Actualiza tu contraseña para mantener tu cuenta segura
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="currentPassword">Contraseña Actual</Label>
+            <Input
+              id="currentPassword"
+              type="password"
+              value={passwordForm.currentPassword}
+              onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="newPassword">Nueva Contraseña</Label>
+            <Input
+              id="newPassword"
+              type="password"
+              value={passwordForm.newPassword}
+              onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirmar Nueva Contraseña</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              value={passwordForm.confirmPassword}
+              onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+            />
+          </div>
+
+          <Button onClick={handlePasswordChange}>
+            Cambiar Contraseña
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="w-5 h-5" />
+            Configuración de Seguridad
+          </CardTitle>
+          <CardDescription>
+            Configura las opciones de seguridad avanzadas
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label className="flex items-center gap-2">
-                <Key className="w-4 h-4" />
-                Activar 2FA
+                <Smartphone className="w-4 h-4" />
+                Autenticación de Dos Factores
               </Label>
               <p className="text-sm text-muted-foreground">
-                Requerir código de verificación además de la contraseña
+                Añade una capa extra de seguridad a tu cuenta
               </p>
             </div>
-            <div className="flex items-center space-x-2">
-              {settings.two_factor_enabled && (
-                <Badge variant="outline">Activo</Badge>
-              )}
-              <Switch
-                checked={settings.two_factor_enabled || false}
-                onCheckedChange={(checked) => updateSettings({ two_factor_enabled: checked })}
-              />
-            </div>
+            <Switch
+              checked={securitySettings.twoFactorEnabled}
+              onCheckedChange={(checked) => setSecuritySettings({ ...securitySettings, twoFactorEnabled: checked })}
+            />
           </div>
 
-          {settings.two_factor_enabled && (
-            <>
-              <Separator />
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  La autenticación de dos factores está activa. Usa tu aplicación de autenticación para generar códigos.
-                </p>
-                <div className="flex space-x-2">
-                  <Button variant="outline" size="sm">Mostrar Códigos de Respaldo</Button>
-                  <Button variant="outline" size="sm">Regenerar Códigos</Button>
-                </div>
-              </div>
-            </>
+          {securitySettings.twoFactorEnabled && (
+            <Alert>
+              <AlertDescription>
+                La autenticación de dos factores está habilitada. Usa tu aplicación de autenticación para generar códigos.
+              </AlertDescription>
+            </Alert>
           )}
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Gestión de Sesiones
-          </CardTitle>
-          <CardDescription>
-            Configura el comportamiento de las sesiones de usuario
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+          <Separator />
+
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Tiempo de Espera de Sesión</Label>
+              <Label>Expiración de Sesión</Label>
               <p className="text-sm text-muted-foreground">
                 Cerrar sesión automáticamente después de inactividad
               </p>
             </div>
             <Switch
-              checked={settings.session_timeout || false}
-              onCheckedChange={(checked) => updateSettings({ session_timeout: checked })}
+              checked={securitySettings.sessionTimeout}
+              onCheckedChange={(checked) => setSecuritySettings({ ...securitySettings, sessionTimeout: checked })}
             />
           </div>
 
-          <Separator />
-
-          <div className="space-y-4">
-            <Label>Sesiones Activas</Label>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">Navegador Actual</p>
-                  <p className="text-sm text-muted-foreground">Chrome en Windows • Ahora</p>
-                </div>
-                <Badge variant="outline">Actual</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">Dispositivo Móvil</p>
-                  <p className="text-sm text-muted-foreground">Safari en iPhone • Hace 2 horas</p>
-                </div>
-                <Button variant="outline" size="sm">Cerrar</Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="w-5 h-5" />
-            Alertas de Seguridad
-          </CardTitle>
-          <CardDescription>
-            Configura las notificaciones de eventos de seguridad
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Notificaciones por Email</Label>
+              <Label>Notificaciones de Email</Label>
               <p className="text-sm text-muted-foreground">
-                Recibir alertas de seguridad por correo electrónico
+                Recibir notificaciones por email sobre actividad de seguridad
               </p>
             </div>
             <Switch
-              checked={settings.email_notifications !== false}
-              onCheckedChange={(checked) => updateSettings({ email_notifications: checked })}
+              checked={securitySettings.emailNotifications}
+              onCheckedChange={(checked) => setSecuritySettings({ ...securitySettings, emailNotifications: checked })}
             />
           </div>
-
-          <Separator />
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Alertas de Inicio de Sesión</Label>
               <p className="text-sm text-muted-foreground">
-                Notificar cuando se inicie sesión desde un nuevo dispositivo
+                Notificar sobre inicios de sesión desde nuevos dispositivos
               </p>
             </div>
             <Switch
-              checked={settings.login_alerts !== false}
-              onCheckedChange={(checked) => updateSettings({ login_alerts: checked })}
+              checked={securitySettings.loginAlerts}
+              onCheckedChange={(checked) => setSecuritySettings({ ...securitySettings, loginAlerts: checked })}
             />
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Cambiar Contraseña</CardTitle>
-          <CardDescription>
-            Actualiza tu contraseña regularmente para mantener tu cuenta segura
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Última actualización: Hace 45 días
-          </p>
-          <Button variant="outline">Cambiar Contraseña</Button>
+          <div className="flex justify-end">
+            <Button onClick={handleSecuritySave}>
+              Guardar Configuración
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

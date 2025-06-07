@@ -1,239 +1,154 @@
 
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Mail, Phone, Briefcase, Building2, Camera } from 'lucide-react';
-import { useState } from 'react';
+import { Separator } from "@/components/ui/separator";
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from "@/hooks/use-toast";
 
 export function AccountSettings() {
-  const { profile, loading, updateProfile } = useUserProfile();
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const [profile, setProfile] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
     phone: '',
     position: '',
     department: ''
   });
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="animate-pulse space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-              <div className="h-10 bg-gray-200 rounded"></div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-muted-foreground">No se pudo cargar el perfil del usuario.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSave = (field: string) => {
-    const value = formData[field as keyof typeof formData];
-    if (value.trim()) {
-      updateProfile({ [field]: value.trim() });
-      setFormData(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const getInitials = () => {
-    const firstName = profile.first_name || '';
-    const lastName = profile.last_name || '';
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const handleSaveProfile = () => {
+    toast({
+      title: "Perfil actualizado",
+      description: "Los cambios en tu perfil se han guardado correctamente.",
+    });
   };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Información Personal
-          </CardTitle>
+          <CardTitle>Información del Perfil</CardTitle>
           <CardDescription>
-            Gestiona tu información personal y datos de contacto
+            Actualiza tu información personal y de contacto
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center space-x-4">
-            <div className="relative">
-              <Avatar className="w-20 h-20">
-                <AvatarImage src={profile.avatar_url || ''} />
-                <AvatarFallback className="text-lg">{getInitials()}</AvatarFallback>
-              </Avatar>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="absolute -bottom-1 -right-1 rounded-full w-8 h-8 p-0"
-              >
-                <Camera className="w-4 h-4" />
-              </Button>
-            </div>
+            <Avatar className="w-20 h-20">
+              <AvatarImage src="" />
+              <AvatarFallback className="text-lg">
+                {profile.firstName[0]}{profile.lastName[0]}
+              </AvatarFallback>
+            </Avatar>
             <div>
-              <h3 className="text-lg font-medium">
-                {profile.first_name} {profile.last_name}
-              </h3>
-              <p className="text-sm text-muted-foreground">{profile.email}</p>
-              {profile.position && (
-                <p className="text-sm text-muted-foreground">{profile.position}</p>
-              )}
+              <Button variant="outline">Cambiar Foto</Button>
+              <p className="text-sm text-muted-foreground mt-1">
+                Formatos: JPG, PNG. Máximo 2MB.
+              </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName">Nombre</Label>
-              <div className="flex space-x-2">
-                <Input
-                  id="firstName"
-                  value={formData.first_name || profile.first_name || ''}
-                  onChange={(e) => handleInputChange('first_name', e.target.value)}
-                  placeholder="Ingresa tu nombre"
-                />
-                <Button 
-                  onClick={() => handleSave('first_name')} 
-                  variant="outline"
-                  disabled={!formData.first_name}
-                >
-                  Guardar
-                </Button>
-              </div>
+              <Input
+                id="firstName"
+                value={profile.firstName}
+                onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="lastName">Apellido</Label>
-              <div className="flex space-x-2">
-                <Input
-                  id="lastName"
-                  value={formData.last_name || profile.last_name || ''}
-                  onChange={(e) => handleInputChange('last_name', e.target.value)}
-                  placeholder="Ingresa tu apellido"
-                />
-                <Button 
-                  onClick={() => handleSave('last_name')} 
-                  variant="outline"
-                  disabled={!formData.last_name}
-                >
-                  Guardar
-                </Button>
-              </div>
+              <Input
+                id="lastName"
+                value={profile.lastName}
+                onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+              />
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email" className="flex items-center gap-2">
-              <Mail className="w-4 h-4" />
-              Correo Electrónico
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={profile.email || ''}
-              disabled
-              className="bg-muted"
-            />
-            <p className="text-xs text-muted-foreground">
-              El correo electrónico no se puede cambiar desde aquí
-            </p>
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={profile.email}
+                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="phone" className="flex items-center gap-2">
-              <Phone className="w-4 h-4" />
-              Teléfono
-            </Label>
-            <div className="flex space-x-2">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Teléfono</Label>
               <Input
                 id="phone"
-                value={formData.phone || profile.phone || ''}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                placeholder="Ingresa tu teléfono"
+                value={profile.phone}
+                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
               />
-              <Button 
-                onClick={() => handleSave('phone')} 
-                variant="outline"
-                disabled={!formData.phone}
-              >
-                Guardar
-              </Button>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="position">Cargo</Label>
+              <Input
+                id="position"
+                value={profile.position}
+                onChange={(e) => setProfile({ ...profile, position: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="department">Departamento</Label>
+              <Input
+                id="department"
+                value={profile.department}
+                onChange={(e) => setProfile({ ...profile, department: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={handleSaveProfile}>
+              Guardar Cambios
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Briefcase className="w-5 h-5" />
-            Información Profesional
-          </CardTitle>
+          <CardTitle>Información de la Cuenta</CardTitle>
           <CardDescription>
-            Configura tu información laboral y organizacional
+            Detalles de tu cuenta en el sistema
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="position" className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4" />
-              Cargo/Posición
-            </Label>
-            <div className="flex space-x-2">
-              <Input
-                id="position"
-                value={formData.position || profile.position || ''}
-                onChange={(e) => handleInputChange('position', e.target.value)}
-                placeholder="Ej: Gerente de Ventas"
-              />
-              <Button 
-                onClick={() => handleSave('position')} 
-                variant="outline"
-                disabled={!formData.position}
-              >
-                Guardar
-              </Button>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium">Rol</Label>
+              <p className="text-sm text-muted-foreground">{user?.role.displayName}</p>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="department" className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              Departamento
-            </Label>
-            <div className="flex space-x-2">
-              <Input
-                id="department"
-                value={formData.department || profile.department || ''}
-                onChange={(e) => handleInputChange('department', e.target.value)}
-                placeholder="Ej: Ventas y Marketing"
-              />
-              <Button 
-                onClick={() => handleSave('department')} 
-                variant="outline"
-                disabled={!formData.department}
-              >
-                Guardar
-              </Button>
+            <div>
+              <Label className="text-sm font-medium">Estado</Label>
+              <p className="text-sm text-muted-foreground">
+                {user?.isActive ? 'Activo' : 'Inactivo'}
+              </p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Último Acceso</Label>
+              <p className="text-sm text-muted-foreground">
+                {user?.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'N/A'}
+              </p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Cuenta Creada</Label>
+              <p className="text-sm text-muted-foreground">
+                {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+              </p>
             </div>
           </div>
         </CardContent>

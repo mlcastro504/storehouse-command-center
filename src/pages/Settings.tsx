@@ -2,7 +2,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useSettingsInitializer } from '@/hooks/useSettingsInitializer';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from '@/components/AppSidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,9 +16,6 @@ import { SystemSettings } from '@/components/settings/SystemSettings';
 const Settings = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
-  
-  // Initialize settings for the user
-  useSettingsInitializer();
 
   useEffect(() => {
     if (!isLoading && !user) {
