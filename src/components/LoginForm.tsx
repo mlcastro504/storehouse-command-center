@@ -12,11 +12,18 @@ export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [isSignUp, setIsSignUp] = useState(false)
   const { login, isLoading } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    
+    if (isSignUp) {
+      // Implementar registro aquí si es necesario
+      setError('El registro no está implementado aún. Use las credenciales de prueba.')
+      return
+    }
     
     const success = await login(email, password)
     if (!success) {
@@ -73,11 +80,25 @@ export function LoginForm() {
               disabled={isLoading}
             >
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Iniciar Sesión
+              {isSignUp ? 'Registrarse' : 'Iniciar Sesión'}
             </Button>
+
+            <div className="text-center">
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-sm"
+              >
+                {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
+              </Button>
+            </div>
 
             <div className="text-sm text-muted-foreground mt-4">
               <p className="font-medium">Usuarios de prueba:</p>
+              <p>• <strong>webmastertodoaca@gmail.com</strong> (Administrador)</p>
+              <p>  Contraseña: <strong>Futuro2025</strong></p>
+              <hr className="my-2" />
               <p>• manager@warehouseos.com (Manager)</p>
               <p>• driver@warehouseos.com (Driver)</p>
               <p className="mt-1">Contraseña: <strong>password123</strong></p>
