@@ -13,10 +13,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock data para desarrollo - reemplazar con Supabase
+// Mock data para desarrollo - con UUIDs válidos
 const mockRoles: Role[] = [
   {
-    id: '1',
+    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
     name: 'admin',
     displayName: 'Administrator',
     level: 1,
@@ -24,7 +24,7 @@ const mockRoles: Role[] = [
     moduleAccess: [{ moduleId: '*', canAccess: true, permissions: ['*'] }]
   },
   {
-    id: '2',
+    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d480',
     name: 'manager',
     displayName: 'Warehouse Manager',
     level: 3,
@@ -40,7 +40,7 @@ const mockRoles: Role[] = [
     ]
   },
   {
-    id: '3',
+    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d481',
     name: 'driver',
     displayName: 'Driver',
     level: 7,
@@ -57,17 +57,17 @@ const mockRoles: Role[] = [
 
 const mockUsers: User[] = [
   {
-    id: '1',
-    email: 'admin@warehouseos.com',
-    firstName: 'Admin',
-    lastName: 'User',
+    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    email: 'webmastertodoaca@gmail.com',
+    firstName: 'Administrador',
+    lastName: 'Sistema',
     role: mockRoles[0],
     isActive: true,
     createdAt: new Date(),
     lastLoginAt: new Date()
   },
   {
-    id: '2',
+    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d480',
     email: 'manager@warehouseos.com',
     firstName: 'John',
     lastName: 'Manager',
@@ -78,7 +78,7 @@ const mockUsers: User[] = [
     lastLoginAt: new Date()
   },
   {
-    id: '3',
+    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d481',
     email: 'driver@warehouseos.com',
     firstName: 'Mike',
     lastName: 'Driver',
@@ -106,8 +106,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     
-    // Simular autenticación - reemplazar con Supabase
+    // Simular autenticación con las nuevas credenciales
     const foundUser = mockUsers.find(u => u.email === email);
+    
+    // Verificar credenciales específicas para el administrador
+    if (email === 'webmastertodoaca@gmail.com' && password === 'Futuro2025') {
+      const updatedUser = { ...foundUser!, lastLoginAt: new Date() };
+      setUser(updatedUser);
+      localStorage.setItem('warehouseOS_user', JSON.stringify(updatedUser));
+      setIsLoading(false);
+      return true;
+    }
+    
+    // Verificar otras credenciales existentes
     if (foundUser && password === 'password123') {
       const updatedUser = { ...foundUser, lastLoginAt: new Date() };
       setUser(updatedUser);
