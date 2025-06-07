@@ -1,9 +1,22 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { UserSettings } from '@/types/settings';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface UserSettings {
+  id: string;
+  user_id: string;
+  language?: string;
+  timezone?: string;
+  date_format?: string;
+  currency?: string;
+  dark_mode?: boolean;
+  compact_view?: boolean;
+  company_name?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export function useUserSettings() {
   const { user } = useAuth();
@@ -12,109 +25,27 @@ export function useUserSettings() {
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = async () => {
-    // Para el sistema mock, crear configuraciones por defecto
     if (!user?.id) {
-      console.log('No user ID available, using default settings');
-      const defaultSettings: UserSettings = {
-        id: '1',
-        user_id: user?.id || '1',
-        company_name: 'Mi Empresa',
-        language: 'es',
-        timezone: 'America/Mexico_City',
-        currency: 'MXN',
-        date_format: 'dd/MM/yyyy',
-        dark_mode: false,
-        compact_view: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setSettings(defaultSettings);
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      console.log('Fetching user settings for user:', user.id);
-      
       const { data, error } = await supabase
         .from('user_settings')
         .select('*')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .single();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching user settings:', error);
-        // Usar configuraciones por defecto si hay error
-        const defaultSettings: UserSettings = {
-          id: '1',
-          user_id: user.id,
-          company_name: 'Mi Empresa',
-          language: 'es',
-          timezone: 'America/Mexico_City',
-          currency: 'MXN',
-          date_format: 'dd/MM/yyyy',
-          dark_mode: false,
-          compact_view: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        setSettings(defaultSettings);
-        setLoading(false);
         return;
       }
 
-      if (data) {
-        setSettings(data);
-      } else {
-        // Crear configuraciones por defecto
-        const defaultSettings = {
-          user_id: user.id,
-          company_name: 'Mi Empresa',
-          language: 'es',
-          timezone: 'America/Mexico_City',
-          currency: 'MXN',
-          date_format: 'dd/MM/yyyy',
-          dark_mode: false,
-          compact_view: false
-        };
-
-        const { data: newSettings, error: insertError } = await supabase
-          .from('user_settings')
-          .insert([defaultSettings])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Error creating default user settings:', insertError);
-          // Si falla la inserción, usar configuraciones locales
-          setSettings({
-            id: '1',
-            ...defaultSettings,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          } as UserSettings);
-        } else {
-          setSettings(newSettings);
-        }
-      }
+      setSettings(data || null);
     } catch (error) {
       console.error('Error in fetchSettings:', error);
-      // Fallback a configuraciones por defecto
-      const defaultSettings: UserSettings = {
-        id: '1',
-        user_id: user.id,
-        company_name: 'Mi Empresa',
-        language: 'es',
-        timezone: 'America/Mexico_City',
-        currency: 'MXN',
-        date_format: 'dd/MM/yyyy',
-        dark_mode: false,
-        compact_view: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setSettings(defaultSettings);
     } finally {
       setLoading(false);
     }
@@ -127,42 +58,39 @@ export function useUserSettings() {
     }
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_settings')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .select()
-        .single();
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error updating user settings:', error);
-        // Actualizar localmente si falla la base de datos
-        setSettings(prev => prev ? { ...prev, ...updates, updated_at: new Date().toISOString() } : null);
-        toast({
-          title: "Configuración guardada localmente",
-          description: "Las configuraciones se guardaron localmente.",
-        });
-        return;
+        throw error;
       }
-
-      setSettings(data);
+      
+      await fetchSettings();
+      
       toast({
-        title: "Configuración guardada",
-        description: "Las configuraciones han sido actualizadas.",
+        title: "Configuración actualizada",
+        description: "Tus configuraciones han sido guardadas correctamente.",
       });
     } catch (error) {
       console.error('Error in updateSettings:', error);
-      // Actualizar localmente como fallback
-      setSettings(prev => prev ? { ...prev, ...updates, updated_at: new Date().toISOString() } : null);
       toast({
-        title: "Configuración guardada localmente",
-        description: "Las configuraciones se guardaron localmente.",
+        title: "Error",
+        description: "No se pudo actualizar la configuración.",
+        variant: "destructive"
       });
     }
   };
 
   useEffect(() => {
-    fetchSettings();
+    if (user?.id) {
+      fetchSettings();
+    }
   }, [user?.id]);
 
   return {

@@ -5,11 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from '@/hooks/useAuth';
+import { User, Mail, Phone, Briefcase, Building2, Camera } from 'lucide-react';
+import { useState } from 'react';
 
 export function AccountSettings() {
-  const { user } = useAuth();
   const { profile, loading, updateProfile } = useUserProfile();
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    position: '',
+    department: ''
+  });
 
   if (loading) {
     return (
@@ -31,92 +38,145 @@ export function AccountSettings() {
       <div className="space-y-6">
         <Card>
           <CardContent className="p-6">
-            <p className="text-muted-foreground">Cargando información del perfil...</p>
+            <p className="text-muted-foreground">No se pudo cargar el perfil del usuario.</p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = (field: string) => {
+    const value = formData[field as keyof typeof formData];
+    if (value.trim()) {
+      updateProfile({ [field]: value.trim() });
+      setFormData(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const getInitials = () => {
+    const firstName = profile.first_name || '';
+    const lastName = profile.last_name || '';
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Información del Perfil</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5" />
+            Información Personal
+          </CardTitle>
           <CardDescription>
-            Actualiza tu información personal y de contacto
+            Gestiona tu información personal y datos de contacto
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center space-x-4">
-            <Avatar className="w-20 h-20">
-              <AvatarImage src={profile.avatar_url || ""} />
-              <AvatarFallback className="text-lg">
-                {profile.first_name?.[0] || ''}{profile.last_name?.[0] || ''}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="w-20 h-20">
+                <AvatarImage src={profile.avatar_url || ''} />
+                <AvatarFallback className="text-lg">{getInitials()}</AvatarFallback>
+              </Avatar>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="absolute -bottom-1 -right-1 rounded-full w-8 h-8 p-0"
+              >
+                <Camera className="w-4 h-4" />
+              </Button>
+            </div>
             <div>
-              <Button variant="outline">Cambiar Foto</Button>
-              <p className="text-sm text-muted-foreground mt-1">
-                Formatos: JPG, PNG. Máximo 2MB.
-              </p>
+              <h3 className="text-lg font-medium">
+                {profile.first_name} {profile.last_name}
+              </h3>
+              <p className="text-sm text-muted-foreground">{profile.email}</p>
+              {profile.position && (
+                <p className="text-sm text-muted-foreground">{profile.position}</p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName">Nombre</Label>
-              <Input
-                id="firstName"
-                value={profile.first_name || ''}
-                onChange={(e) => updateProfile({ first_name: e.target.value })}
-              />
+              <div className="flex space-x-2">
+                <Input
+                  id="firstName"
+                  value={formData.first_name || profile.first_name || ''}
+                  onChange={(e) => handleInputChange('first_name', e.target.value)}
+                  placeholder="Ingresa tu nombre"
+                />
+                <Button 
+                  onClick={() => handleSave('first_name')} 
+                  variant="outline"
+                  disabled={!formData.first_name}
+                >
+                  Guardar
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="lastName">Apellido</Label>
-              <Input
-                id="lastName"
-                value={profile.last_name || ''}
-                onChange={(e) => updateProfile({ last_name: e.target.value })}
-              />
+              <div className="flex space-x-2">
+                <Input
+                  id="lastName"
+                  value={formData.last_name || profile.last_name || ''}
+                  onChange={(e) => handleInputChange('last_name', e.target.value)}
+                  placeholder="Ingresa tu apellido"
+                />
+                <Button 
+                  onClick={() => handleSave('last_name')} 
+                  variant="outline"
+                  disabled={!formData.last_name}
+                >
+                  Guardar
+                </Button>
+              </div>
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={profile.email || ''}
-                onChange={(e) => updateProfile({ email: e.target.value })}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="email" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              Correo Electrónico
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              value={profile.email || ''}
+              disabled
+              className="bg-muted"
+            />
+            <p className="text-xs text-muted-foreground">
+              El correo electrónico no se puede cambiar desde aquí
+            </p>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Teléfono</Label>
+          <div className="space-y-2">
+            <Label htmlFor="phone" className="flex items-center gap-2">
+              <Phone className="w-4 h-4" />
+              Teléfono
+            </Label>
+            <div className="flex space-x-2">
               <Input
                 id="phone"
-                value={profile.phone || ''}
-                onChange={(e) => updateProfile({ phone: e.target.value })}
+                value={formData.phone || profile.phone || ''}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                placeholder="Ingresa tu teléfono"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="position">Cargo</Label>
-              <Input
-                id="position"
-                value={profile.position || ''}
-                onChange={(e) => updateProfile({ position: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="department">Departamento</Label>
-              <Input
-                id="department"
-                value={profile.department || ''}
-                onChange={(e) => updateProfile({ department: e.target.value })}
-              />
+              <Button 
+                onClick={() => handleSave('phone')} 
+                variant="outline"
+                disabled={!formData.phone}
+              >
+                Guardar
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -124,34 +184,56 @@ export function AccountSettings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Información de la Cuenta</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="w-5 h-5" />
+            Información Profesional
+          </CardTitle>
           <CardDescription>
-            Detalles de tu cuenta en el sistema
+            Configura tu información laboral y organizacional
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-sm font-medium">Rol</Label>
-              <p className="text-sm text-muted-foreground">{user?.role?.displayName || 'Usuario'}</p>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="position" className="flex items-center gap-2">
+              <Briefcase className="w-4 h-4" />
+              Cargo/Posición
+            </Label>
+            <div className="flex space-x-2">
+              <Input
+                id="position"
+                value={formData.position || profile.position || ''}
+                onChange={(e) => handleInputChange('position', e.target.value)}
+                placeholder="Ej: Gerente de Ventas"
+              />
+              <Button 
+                onClick={() => handleSave('position')} 
+                variant="outline"
+                disabled={!formData.position}
+              >
+                Guardar
+              </Button>
             </div>
-            <div>
-              <Label className="text-sm font-medium">Estado</Label>
-              <p className="text-sm text-muted-foreground">
-                {user?.isActive ? 'Activo' : 'Inactivo'}
-              </p>
-            </div>
-            <div>
-              <Label className="text-sm font-medium">Último Acceso</Label>
-              <p className="text-sm text-muted-foreground">
-                {user?.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'N/A'}
-              </p>
-            </div>
-            <div>
-              <Label className="text-sm font-medium">Cuenta Creada</Label>
-              <p className="text-sm text-muted-foreground">
-                {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-              </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="department" className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Departamento
+            </Label>
+            <div className="flex space-x-2">
+              <Input
+                id="department"
+                value={formData.department || profile.department || ''}
+                onChange={(e) => handleInputChange('department', e.target.value)}
+                placeholder="Ej: Ventas y Marketing"
+              />
+              <Button 
+                onClick={() => handleSave('department')} 
+                variant="outline"
+                disabled={!formData.department}
+              >
+                Guardar
+              </Button>
             </div>
           </div>
         </CardContent>

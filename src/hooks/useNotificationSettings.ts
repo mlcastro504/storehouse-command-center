@@ -1,27 +1,45 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { UserNotificationSettings } from '@/types/settings';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface NotificationSettings {
+  id: string;
+  user_id: string;
+  email_enabled?: boolean;
+  sms_enabled?: boolean;
+  in_app_enabled?: boolean;
+  email_order_updates?: boolean;
+  email_stock_alerts?: boolean;
+  email_security_alerts?: boolean;
+  email_system_updates?: boolean;
+  email_frequency?: string;
+  sms_critical_only?: boolean;
+  sms_emergency_alerts?: boolean;
+  in_app_order_updates?: boolean;
+  in_app_stock_alerts?: boolean;
+  in_app_task_assignments?: boolean;
+  in_app_system_messages?: boolean;
+  in_app_sound?: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 export function useNotificationSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [settings, setSettings] = useState<UserNotificationSettings | null>(null);
+  const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = async () => {
     if (!user?.id) {
-      console.log('No user ID available');
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      console.log('Fetching notification settings for user:', user.id);
-      
       const { data, error } = await supabase
         .from('user_notification_settings')
         .select('*')
@@ -33,22 +51,7 @@ export function useNotificationSettings() {
         return;
       }
 
-      if (data) {
-        setSettings(data);
-      } else {
-        // Crear configuraciones por defecto
-        const { data: newSettings, error: insertError } = await supabase
-          .from('user_notification_settings')
-          .insert([{ user_id: user.id }])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Error creating default notification settings:', insertError);
-        } else {
-          setSettings(newSettings);
-        }
-      }
+      setSettings(data || null);
     } catch (error) {
       console.error('Error in fetchSettings:', error);
     } finally {
@@ -56,37 +59,39 @@ export function useNotificationSettings() {
     }
   };
 
-  const updateSettings = async (updates: Partial<UserNotificationSettings>) => {
+  const updateSettings = async (updates: Partial<NotificationSettings>) => {
     if (!user?.id || !settings) {
       console.log('No user or settings available for update');
       return;
     }
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_notification_settings')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .select()
-        .single();
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error updating notification settings:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron guardar las configuraciones de notificaciones.",
-          variant: "destructive"
-        });
-        return;
+        throw error;
       }
-
-      setSettings(data);
+      
+      await fetchSettings();
+      
       toast({
-        title: "Configuración guardada",
-        description: "Tus preferencias de notificaciones han sido actualizadas.",
+        title: "Configuración actualizada",
+        description: "Las configuraciones de notificación han sido actualizadas.",
       });
     } catch (error) {
       console.error('Error in updateSettings:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la configuración.",
+        variant: "destructive"
+      });
     }
   };
 

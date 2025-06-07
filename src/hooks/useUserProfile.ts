@@ -1,9 +1,22 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { UserProfile } from '@/types/settings';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  avatar_url?: string;
+  phone?: string;
+  position?: string;
+  department?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export function useUserProfile() {
   const { user } = useAuth();
@@ -13,15 +26,12 @@ export function useUserProfile() {
 
   const fetchProfile = async () => {
     if (!user?.id) {
-      console.log('No user ID available');
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      console.log('Fetching profile for user:', user.id);
-      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -33,27 +43,7 @@ export function useUserProfile() {
         return;
       }
 
-      if (data) {
-        setProfile(data);
-      } else {
-        // Crear perfil por defecto si no existe
-        const { data: newProfile, error: insertError } = await supabase
-          .from('user_profiles')
-          .insert([{ 
-            user_id: user.id,
-            first_name: user.firstName || '',
-            last_name: user.lastName || '',
-            email: user.email || ''
-          }])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Error creating default profile:', insertError);
-        } else {
-          setProfile(newProfile);
-        }
-      }
+      setProfile(data || null);
     } catch (error) {
       console.error('Error in fetchProfile:', error);
     } finally {
@@ -68,30 +58,32 @@ export function useUserProfile() {
     }
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_profiles')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .select()
-        .single();
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
 
       if (error) {
-        console.error('Error updating profile:', error);
-        toast({
-          title: "Error",
-          description: "No se pudo actualizar el perfil.",
-          variant: "destructive"
-        });
-        return;
+        console.error('Error updating user profile:', error);
+        throw error;
       }
-
-      setProfile(data);
+      
+      await fetchProfile();
+      
       toast({
         title: "Perfil actualizado",
-        description: "Los cambios en tu perfil se han guardado correctamente.",
+        description: "Tu información de perfil ha sido actualizada correctamente.",
       });
     } catch (error) {
       console.error('Error in updateProfile:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el perfil.",
+        variant: "destructive"
+      });
     }
   };
 

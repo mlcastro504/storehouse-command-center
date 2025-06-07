@@ -1,27 +1,35 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { UserSecuritySettings } from '@/types/settings';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface SecuritySettings {
+  id: string;
+  user_id: string;
+  two_factor_enabled: boolean;
+  session_timeout: boolean;
+  email_notifications: boolean;
+  login_alerts: boolean;
+  two_factor_secret?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export function useSecuritySettings() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [settings, setSettings] = useState<UserSecuritySettings | null>(null);
+  const [settings, setSettings] = useState<SecuritySettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = async () => {
     if (!user?.id) {
-      console.log('No user ID available');
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      console.log('Fetching security settings for user:', user.id);
-      
       const { data, error } = await supabase
         .from('user_security_settings')
         .select('*')
@@ -33,22 +41,7 @@ export function useSecuritySettings() {
         return;
       }
 
-      if (data) {
-        setSettings(data);
-      } else {
-        // Crear configuraciones por defecto
-        const { data: newSettings, error: insertError } = await supabase
-          .from('user_security_settings')
-          .insert([{ user_id: user.id }])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Error creating default security settings:', insertError);
-        } else {
-          setSettings(newSettings);
-        }
-      }
+      setSettings(data || null);
     } catch (error) {
       console.error('Error in fetchSettings:', error);
     } finally {
@@ -56,37 +49,39 @@ export function useSecuritySettings() {
     }
   };
 
-  const updateSettings = async (updates: Partial<UserSecuritySettings>) => {
+  const updateSettings = async (updates: Partial<SecuritySettings>) => {
     if (!user?.id || !settings) {
       console.log('No user or settings available for update');
       return;
     }
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_security_settings')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .select()
-        .single();
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error updating security settings:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron guardar las configuraciones de seguridad.",
-          variant: "destructive"
-        });
-        return;
+        throw error;
       }
-
-      setSettings(data);
+      
+      await fetchSettings();
+      
       toast({
-        title: "Configuración de seguridad guardada",
-        description: "Los cambios se han aplicado correctamente.",
+        title: "Configuración actualizada",
+        description: "La configuración de seguridad ha sido actualizada.",
       });
     } catch (error) {
       console.error('Error in updateSettings:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la configuración.",
+        variant: "destructive"
+      });
     }
   };
 

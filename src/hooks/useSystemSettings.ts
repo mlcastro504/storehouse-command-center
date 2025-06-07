@@ -1,9 +1,22 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { SystemSettings } from '@/types/settings';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface SystemSettings {
+  id: string;
+  user_id: string;
+  maintenance_mode?: boolean;
+  debug_mode?: boolean;
+  cache_enabled?: boolean;
+  session_timeout_minutes?: number;
+  api_rate_limit?: number;
+  backup_frequency?: string;
+  log_level?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export function useSystemSettings() {
   const { user } = useAuth();
@@ -13,50 +26,24 @@ export function useSystemSettings() {
 
   const fetchSettings = async () => {
     if (!user?.id) {
-      console.log('No user ID available for system settings');
-      setLoading(false);
-      return;
-    }
-
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(user.id)) {
-      console.log('Invalid user ID format for system settings');
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      console.log('Fetching system settings for user:', user.id);
-      
       const { data, error } = await supabase
         .from('system_settings')
         .select('*')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .single();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching system settings:', error);
         return;
       }
 
-      if (data) {
-        setSettings(data);
-      } else {
-        // Crear configuraciones por defecto
-        const { data: newSettings, error: insertError } = await supabase
-          .from('system_settings')
-          .insert([{ user_id: user.id }])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Error creating default system settings:', insertError);
-        } else {
-          setSettings(newSettings);
-        }
-      }
+      setSettings(data || null);
     } catch (error) {
       console.error('Error in fetchSettings:', error);
     } finally {
@@ -71,30 +58,32 @@ export function useSystemSettings() {
     }
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('system_settings')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .select()
-        .single();
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error updating system settings:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron guardar las configuraciones del sistema.",
-          variant: "destructive"
-        });
-        return;
+        throw error;
       }
-
-      setSettings(data);
+      
+      await fetchSettings();
+      
       toast({
-        title: "Configuración guardada",
+        title: "Configuración actualizada",
         description: "Las configuraciones del sistema han sido actualizadas.",
       });
     } catch (error) {
       console.error('Error in updateSettings:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la configuración.",
+        variant: "destructive"
+      });
     }
   };
 
