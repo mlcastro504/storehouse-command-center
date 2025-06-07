@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Bell, Mail, MessageSquare } from 'lucide-react';
+import { Bell, Mail, MessageSquare, Smartphone } from 'lucide-react';
 
 export function NotificationSettings() {
   const { settings, loading, updateSettings } = useNotificationSettings();
@@ -30,7 +30,7 @@ export function NotificationSettings() {
       <div className="space-y-6">
         <Card>
           <CardContent className="p-6">
-            <p className="text-muted-foreground">Cargando configuración de notificaciones...</p>
+            <p className="text-muted-foreground">No se pudieron cargar las configuraciones de notificación.</p>
           </CardContent>
         </Card>
       </div>
@@ -46,12 +46,17 @@ export function NotificationSettings() {
             Notificaciones por Email
           </CardTitle>
           <CardDescription>
-            Configura qué notificaciones quieres recibir por correo electrónico
+            Configura qué notificaciones recibir por correo electrónico
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
-            <Label>Habilitar notificaciones por email</Label>
+            <div className="space-y-0.5">
+              <Label>Habilitar Email</Label>
+              <p className="text-sm text-muted-foreground">
+                Activar todas las notificaciones por email
+              </p>
+            </div>
             <Switch
               checked={settings.email_enabled !== false}
               onCheckedChange={(checked) => updateSettings({ email_enabled: checked })}
@@ -60,8 +65,10 @@ export function NotificationSettings() {
 
           {settings.email_enabled !== false && (
             <>
+              <Separator />
+              
               <div className="space-y-2">
-                <Label>Frecuencia de notificaciones</Label>
+                <Label>Frecuencia de Email</Label>
                 <Select 
                   value={settings.email_frequency || 'instant'} 
                   onValueChange={(value) => updateSettings({ email_frequency: value })}
@@ -81,10 +88,13 @@ export function NotificationSettings() {
               <Separator />
 
               <div className="space-y-4">
-                <h4 className="font-medium">Tipos de notificaciones</h4>
-                
                 <div className="flex items-center justify-between">
-                  <Label>Actualizaciones de pedidos</Label>
+                  <div className="space-y-0.5">
+                    <Label>Actualizaciones de Pedidos</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Notificar cambios en el estado de pedidos
+                    </p>
+                  </div>
                   <Switch
                     checked={settings.email_order_updates !== false}
                     onCheckedChange={(checked) => updateSettings({ email_order_updates: checked })}
@@ -92,7 +102,12 @@ export function NotificationSettings() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label>Alertas de stock bajo</Label>
+                  <div className="space-y-0.5">
+                    <Label>Alertas de Stock</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Notificar cuando el inventario esté bajo
+                    </p>
+                  </div>
                   <Switch
                     checked={settings.email_stock_alerts !== false}
                     onCheckedChange={(checked) => updateSettings({ email_stock_alerts: checked })}
@@ -100,7 +115,12 @@ export function NotificationSettings() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label>Actualizaciones del sistema</Label>
+                  <div className="space-y-0.5">
+                    <Label>Actualizaciones del Sistema</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Notificar actualizaciones y mantenimiento
+                    </p>
+                  </div>
                   <Switch
                     checked={settings.email_system_updates || false}
                     onCheckedChange={(checked) => updateSettings({ email_system_updates: checked })}
@@ -108,7 +128,12 @@ export function NotificationSettings() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label>Alertas de seguridad</Label>
+                  <div className="space-y-0.5">
+                    <Label>Alertas de Seguridad</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Notificar eventos de seguridad importantes
+                    </p>
+                  </div>
                   <Switch
                     checked={settings.email_security_alerts !== false}
                     onCheckedChange={(checked) => updateSettings({ email_security_alerts: checked })}
@@ -124,15 +149,20 @@ export function NotificationSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="w-5 h-5" />
-            Notificaciones en la Aplicación
+            Notificaciones en la App
           </CardTitle>
           <CardDescription>
-            Configura las notificaciones que aparecen dentro de la aplicación
+            Configura las notificaciones dentro de la aplicación
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
-            <Label>Habilitar notificaciones en la app</Label>
+            <div className="space-y-0.5">
+              <Label>Habilitar Notificaciones</Label>
+              <p className="text-sm text-muted-foreground">
+                Mostrar notificaciones dentro de la aplicación
+              </p>
+            </div>
             <Switch
               checked={settings.in_app_enabled !== false}
               onCheckedChange={(checked) => updateSettings({ in_app_enabled: checked })}
@@ -140,9 +170,16 @@ export function NotificationSettings() {
           </div>
 
           {settings.in_app_enabled !== false && (
-            <div className="space-y-4">
+            <>
+              <Separator />
+
               <div className="flex items-center justify-between">
-                <Label>Sonido de notificaciones</Label>
+                <div className="space-y-0.5">
+                  <Label>Sonidos de Notificación</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Reproducir sonido para las notificaciones
+                  </p>
+                </div>
                 <Switch
                   checked={settings.in_app_sound !== false}
                   onCheckedChange={(checked) => updateSettings({ in_app_sound: checked })}
@@ -152,10 +189,13 @@ export function NotificationSettings() {
               <Separator />
 
               <div className="space-y-4">
-                <h4 className="font-medium">Tipos de notificaciones</h4>
-                
                 <div className="flex items-center justify-between">
-                  <Label>Actualizaciones de pedidos</Label>
+                  <div className="space-y-0.5">
+                    <Label>Actualizaciones de Pedidos</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Mostrar notificaciones de pedidos
+                    </p>
+                  </div>
                   <Switch
                     checked={settings.in_app_order_updates !== false}
                     onCheckedChange={(checked) => updateSettings({ in_app_order_updates: checked })}
@@ -163,7 +203,12 @@ export function NotificationSettings() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label>Alertas de inventario</Label>
+                  <div className="space-y-0.5">
+                    <Label>Alertas de Stock</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Mostrar alertas de inventario bajo
+                    </p>
+                  </div>
                   <Switch
                     checked={settings.in_app_stock_alerts !== false}
                     onCheckedChange={(checked) => updateSettings({ in_app_stock_alerts: checked })}
@@ -171,7 +216,12 @@ export function NotificationSettings() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label>Asignación de tareas</Label>
+                  <div className="space-y-0.5">
+                    <Label>Asignación de Tareas</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Notificar cuando se asignen tareas
+                    </p>
+                  </div>
                   <Switch
                     checked={settings.in_app_task_assignments !== false}
                     onCheckedChange={(checked) => updateSettings({ in_app_task_assignments: checked })}
@@ -179,14 +229,19 @@ export function NotificationSettings() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label>Mensajes del sistema</Label>
+                  <div className="space-y-0.5">
+                    <Label>Mensajes del Sistema</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Mostrar mensajes importantes del sistema
+                    </p>
+                  </div>
                   <Switch
                     checked={settings.in_app_system_messages !== false}
                     onCheckedChange={(checked) => updateSettings({ in_app_system_messages: checked })}
                   />
                 </div>
               </div>
-            </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -194,16 +249,21 @@ export function NotificationSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5" />
+            <Smartphone className="w-5 h-5" />
             Notificaciones SMS
           </CardTitle>
           <CardDescription>
             Configura las notificaciones por mensaje de texto
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
-            <Label>Habilitar notificaciones SMS</Label>
+            <div className="space-y-0.5">
+              <Label>Habilitar SMS</Label>
+              <p className="text-sm text-muted-foreground">
+                Activar notificaciones por mensaje de texto
+              </p>
+            </div>
             <Switch
               checked={settings.sms_enabled || false}
               onCheckedChange={(checked) => updateSettings({ sms_enabled: checked })}
@@ -211,9 +271,16 @@ export function NotificationSettings() {
           </div>
 
           {settings.sms_enabled && (
-            <div className="space-y-4">
+            <>
+              <Separator />
+
               <div className="flex items-center justify-between">
-                <Label>Solo alertas críticas</Label>
+                <div className="space-y-0.5">
+                  <Label>Solo Críticas</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enviar SMS solo para notificaciones críticas
+                  </p>
+                </div>
                 <Switch
                   checked={settings.sms_critical_only !== false}
                   onCheckedChange={(checked) => updateSettings({ sms_critical_only: checked })}
@@ -221,13 +288,18 @@ export function NotificationSettings() {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label>Alertas de emergencia</Label>
+                <div className="space-y-0.5">
+                  <Label>Alertas de Emergencia</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Notificar emergencias del sistema por SMS
+                  </p>
+                </div>
                 <Switch
                   checked={settings.sms_emergency_alerts !== false}
                   onCheckedChange={(checked) => updateSettings({ sms_emergency_alerts: checked })}
                 />
               </div>
-            </div>
+            </>
           )}
         </CardContent>
       </Card>
