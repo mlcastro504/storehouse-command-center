@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -81,14 +80,22 @@ export const CreateProductDialog = ({ children }: CreateProductDialogProps) => {
 
   const onSubmit = async (data: ProductFormData) => {
     try {
+      // El user_id se maneja automáticamente en el servicio
       await createProduct.mutateAsync({
-        ...data,
+        sku: data.sku,
+        name: data.name,
+        description: data.description,
+        category_id: data.category_id,
+        brand: data.brand,
+        model: data.model,
+        unit_of_measure: data.unit_of_measure,
         weight: data.weight ? parseFloat(data.weight) : undefined,
         cost_price: data.cost_price ? parseFloat(data.cost_price) : undefined,
         sale_price: data.sale_price ? parseFloat(data.sale_price) : undefined,
         min_stock_level: parseInt(data.min_stock_level),
         max_stock_level: parseInt(data.max_stock_level),
         reorder_point: parseInt(data.reorder_point),
+        barcode: data.barcode,
         is_active: true,
       });
       setOpen(false);
