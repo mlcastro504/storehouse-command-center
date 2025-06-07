@@ -78,9 +78,6 @@ export function LoginForm() {
 
             <div className="text-sm text-muted-foreground mt-4">
               <p className="font-medium">Usuarios de prueba:</p>
-              <p>• <strong>webmastertodoaca@gmail.com</strong> (Administrador)</p>
-              <p>  Contraseña: <strong>Futuro2025</strong></p>
-              <hr className="my-2" />
               <p>• manager@warehouseos.com (Manager)</p>
               <p>• driver@warehouseos.com (Driver)</p>
               <p className="mt-1">Contraseña: <strong>password123</strong></p>
