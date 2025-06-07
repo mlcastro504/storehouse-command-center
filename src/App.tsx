@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Accounting from "./pages/Accounting";
 import Ecommerce from "./pages/Ecommerce";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/accounting" element={<Accounting />} />
               <Route path="/ecommerce" element={<Ecommerce />} />
+              <Route path="/settings" element={<Settings />} />
               {/* Rutas de módulos - se expandirán según necesidad */}
               <Route path="/inventory" element={<Dashboard />} />
               <Route path="/locations" element={<Dashboard />} />
@@ -41,7 +43,6 @@ const App = () => (
               <Route path="/users" element={<Dashboard />} />
               <Route path="/reports" element={<Dashboard />} />
               <Route path="/help" element={<Dashboard />} />
-              <Route path="/settings" element={<Dashboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
