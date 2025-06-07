@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +25,16 @@ interface ExternalIntegration {
   icon: React.ReactNode;
   category: 'shipping' | 'erp' | 'sms' | 'payment' | 'analytics' | 'marketing';
   isPopular?: boolean;
+}
+
+interface EcommercePlatform {
+  id: string;
+  name: string;
+  display_name: string;
+  api_url: string;
+  description: string;
+  icon: React.ReactNode;
+  isConnected: boolean;
 }
 
 const externalIntegrations: ExternalIntegration[] = [
@@ -179,7 +190,9 @@ export function IntegrationSettings() {
   const { toast } = useToast();
   const { settings: integrationSettings, updateSetting, createSetting, loading } = useIntegrationSettings();
   const [selectedIntegration, setSelectedIntegration] = useState<ExternalIntegration | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<EcommercePlatform | null>(null);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [ecommerceDialogOpen, setEcommerceDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [webhooksEnabled, setWebhooksEnabled] = useState(true);
   const [activeTab, setActiveTab] = useState<'ecommerce' | 'external'>('ecommerce');
@@ -464,7 +477,6 @@ export function IntegrationSettings() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {popularEcommercePlatforms.map((platform, index) => {
                   const isConnected = connections.some(c => c.platform?.name === platform.name);
-                  const platformData = ecommercePlatforms.find(p => p.name === platform.name);
                   
                   return (
                     <Card key={platform.name} className="relative">
@@ -587,7 +599,6 @@ export function IntegrationSettings() {
                             <Switch
                               checked={isIntegrationEnabled(integration.name)}
                               onCheckedChange={() => handleToggleIntegration(integration)}
-                              size="sm"
                             />
                             <Button 
                               variant="outline" 

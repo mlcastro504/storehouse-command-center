@@ -376,6 +376,48 @@ export type Database = {
           },
         ]
       }
+      integration_settings: {
+        Row: {
+          api_key_encrypted: string | null
+          created_at: string
+          id: string
+          integration_name: string
+          integration_type: string
+          is_enabled: boolean
+          last_sync_at: string | null
+          settings: Json | null
+          updated_at: string
+          user_id: string
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          created_at?: string
+          id?: string
+          integration_name: string
+          integration_type: string
+          is_enabled?: boolean
+          last_sync_at?: string | null
+          settings?: Json | null
+          updated_at?: string
+          user_id: string
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          created_at?: string
+          id?: string
+          integration_name?: string
+          integration_type?: string
+          is_enabled?: boolean
+          last_sync_at?: string | null
+          settings?: Json | null
+          updated_at?: string
+          user_id?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       invoice_lines: {
         Row: {
           created_at: string
