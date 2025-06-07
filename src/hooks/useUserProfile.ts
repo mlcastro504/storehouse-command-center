@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,10 +12,16 @@ export function useUserProfile() {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async () => {
-    if (!user) return;
+    if (!user?.id) {
+      console.log('No user ID available');
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('Fetching profile for user:', user.id);
+      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -57,7 +62,10 @@ export function useUserProfile() {
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!user || !profile) return;
+    if (!user?.id || !profile) {
+      console.log('No user or profile available for update');
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -88,8 +96,10 @@ export function useUserProfile() {
   };
 
   useEffect(() => {
-    fetchProfile();
-  }, [user]);
+    if (user?.id) {
+      fetchProfile();
+    }
+  }, [user?.id]);
 
   return {
     profile,
@@ -98,4 +108,3 @@ export function useUserProfile() {
     refetch: fetchProfile
   };
 }
-

@@ -26,11 +26,17 @@ export function AccountSettings() {
     );
   }
 
-  if (!profile) return null;
-
-  const handleSaveProfile = () => {
-    // Los cambios se guardan automáticamente
-  };
+  if (!profile) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">No se pudo cargar el perfil.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -127,7 +133,7 @@ export function AccountSettings() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label className="text-sm font-medium">Rol</Label>
-              <p className="text-sm text-muted-foreground">{user?.role.displayName}</p>
+              <p className="text-sm text-muted-foreground">{user?.role?.displayName || 'Usuario'}</p>
             </div>
             <div>
               <Label className="text-sm font-medium">Estado</Label>

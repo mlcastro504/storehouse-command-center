@@ -1,7 +1,6 @@
 
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,11 +25,17 @@ export function GeneralSettings() {
     );
   }
 
-  if (!settings) return null;
-
-  const handleSave = () => {
-    // Los cambios se guardan automáticamente al modificar los campos
-  };
+  if (!settings) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">No se pudieron cargar las configuraciones.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -47,7 +52,7 @@ export function GeneralSettings() {
               <Label htmlFor="company">Nombre de la Empresa</Label>
               <Input
                 id="company"
-                value={settings.company_name}
+                value={settings.company_name || ''}
                 onChange={(e) => updateSettings({ company_name: e.target.value })}
               />
             </div>
@@ -55,7 +60,7 @@ export function GeneralSettings() {
             <div className="space-y-2">
               <Label htmlFor="language">Idioma</Label>
               <Select 
-                value={settings.language} 
+                value={settings.language || 'es'} 
                 onValueChange={(value) => updateSettings({ language: value })}
               >
                 <SelectTrigger>
@@ -72,7 +77,7 @@ export function GeneralSettings() {
             <div className="space-y-2">
               <Label htmlFor="timezone">Zona Horaria</Label>
               <Select 
-                value={settings.timezone} 
+                value={settings.timezone || 'America/Mexico_City'} 
                 onValueChange={(value) => updateSettings({ timezone: value })}
               >
                 <SelectTrigger>
@@ -91,7 +96,7 @@ export function GeneralSettings() {
             <div className="space-y-2">
               <Label htmlFor="currency">Moneda</Label>
               <Select 
-                value={settings.currency} 
+                value={settings.currency || 'MXN'} 
                 onValueChange={(value) => updateSettings({ currency: value })}
               >
                 <SelectTrigger>
@@ -109,7 +114,7 @@ export function GeneralSettings() {
             <div className="space-y-2">
               <Label htmlFor="dateFormat">Formato de Fecha</Label>
               <Select 
-                value={settings.date_format} 
+                value={settings.date_format || 'dd/MM/yyyy'} 
                 onValueChange={(value) => updateSettings({ date_format: value })}
               >
                 <SelectTrigger>
@@ -137,7 +142,7 @@ export function GeneralSettings() {
                 </p>
               </div>
               <Switch
-                checked={settings.dark_mode}
+                checked={settings.dark_mode || false}
                 onCheckedChange={(checked) => updateSettings({ dark_mode: checked })}
               />
             </div>
@@ -150,7 +155,7 @@ export function GeneralSettings() {
                 </p>
               </div>
               <Switch
-                checked={settings.compact_view}
+                checked={settings.compact_view || false}
                 onCheckedChange={(checked) => updateSettings({ compact_view: checked })}
               />
             </div>

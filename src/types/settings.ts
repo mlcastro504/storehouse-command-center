@@ -1,5 +1,4 @@
 
-
 export interface UserSettings {
   id: string;
   user_id: string;
@@ -75,4 +74,3 @@ export interface UserProfile {
   created_at: string;
   updated_at: string;
 }
-

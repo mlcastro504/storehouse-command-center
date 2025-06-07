@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,10 +12,16 @@ export function useNotificationSettings() {
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = async () => {
-    if (!user) return;
+    if (!user?.id) {
+      console.log('No user ID available');
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('Fetching notification settings for user:', user.id);
+      
       const { data, error } = await supabase
         .from('user_notification_settings')
         .select('*')
@@ -52,7 +57,10 @@ export function useNotificationSettings() {
   };
 
   const updateSettings = async (updates: Partial<UserNotificationSettings>) => {
-    if (!user || !settings) return;
+    if (!user?.id || !settings) {
+      console.log('No user or settings available for update');
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -83,8 +91,10 @@ export function useNotificationSettings() {
   };
 
   useEffect(() => {
-    fetchSettings();
-  }, [user]);
+    if (user?.id) {
+      fetchSettings();
+    }
+  }, [user?.id]);
 
   return {
     settings,
@@ -93,4 +103,3 @@ export function useNotificationSettings() {
     refetch: fetchSettings
   };
 }
-
