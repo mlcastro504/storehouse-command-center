@@ -53,6 +53,50 @@ export type Database = {
           },
         ]
       }
+      categories: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          parent_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          parent_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          parent_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           address: string | null
@@ -91,6 +135,130 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      cycle_count_lines: {
+        Row: {
+          counted_at: string | null
+          counted_by: string | null
+          counted_quantity: number | null
+          cycle_count_id: string
+          expected_quantity: number
+          id: string
+          location_id: string
+          notes: string | null
+          product_id: string
+          user_id: string
+          variance: number | null
+        }
+        Insert: {
+          counted_at?: string | null
+          counted_by?: string | null
+          counted_quantity?: number | null
+          cycle_count_id: string
+          expected_quantity: number
+          id?: string
+          location_id: string
+          notes?: string | null
+          product_id: string
+          user_id: string
+          variance?: number | null
+        }
+        Update: {
+          counted_at?: string | null
+          counted_by?: string | null
+          counted_quantity?: number | null
+          cycle_count_id?: string
+          expected_quantity?: number
+          id?: string
+          location_id?: string
+          notes?: string | null
+          product_id?: string
+          user_id?: string
+          variance?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cycle_count_lines_cycle_count_id_fkey"
+            columns: ["cycle_count_id"]
+            isOneToOne: false
+            referencedRelation: "cycle_counts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cycle_count_lines_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cycle_count_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cycle_counts: {
+        Row: {
+          assigned_to: string
+          completed_date: string | null
+          created_at: string
+          created_by: string
+          id: string
+          location_id: string
+          notes: string | null
+          product_id: string | null
+          scheduled_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to: string
+          completed_date?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          location_id: string
+          notes?: string | null
+          product_id?: string | null
+          scheduled_date: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string
+          completed_date?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          location_id?: string
+          notes?: string | null
+          product_id?: string | null
+          scheduled_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cycle_counts_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cycle_counts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ecommerce_connections: {
         Row: {
@@ -566,6 +734,405 @@ export type Database = {
           },
         ]
       }
+      locations: {
+        Row: {
+          barcode: string | null
+          capacity: number | null
+          code: string
+          coordinates: Json | null
+          created_at: string
+          current_occupancy: number
+          id: string
+          is_active: boolean
+          name: string
+          parent_id: string | null
+          type: string
+          updated_at: string
+          user_id: string
+          warehouse_id: string
+        }
+        Insert: {
+          barcode?: string | null
+          capacity?: number | null
+          code: string
+          coordinates?: Json | null
+          created_at?: string
+          current_occupancy?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          parent_id?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+          warehouse_id: string
+        }
+        Update: {
+          barcode?: string | null
+          capacity?: number | null
+          code?: string
+          coordinates?: Json | null
+          created_at?: string
+          current_occupancy?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          parent_id?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locations_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_suppliers: {
+        Row: {
+          cost_price: number
+          created_at: string
+          id: string
+          is_preferred: boolean
+          lead_time_days: number
+          min_order_quantity: number
+          product_id: string
+          supplier_id: string
+          supplier_sku: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cost_price: number
+          created_at?: string
+          id?: string
+          is_preferred?: boolean
+          lead_time_days: number
+          min_order_quantity: number
+          product_id: string
+          supplier_id: string
+          supplier_sku: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cost_price?: number
+          created_at?: string
+          id?: string
+          is_preferred?: boolean
+          lead_time_days?: number
+          min_order_quantity?: number
+          product_id?: string
+          supplier_id?: string
+          supplier_sku?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_suppliers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          barcode: string | null
+          brand: string | null
+          category_id: string
+          cost_price: number | null
+          created_at: string
+          description: string | null
+          dimensions: Json | null
+          id: string
+          is_active: boolean
+          max_stock_level: number
+          min_stock_level: number
+          model: string | null
+          name: string
+          qr_code: string | null
+          reorder_point: number
+          sale_price: number | null
+          sku: string
+          unit_of_measure: string
+          updated_at: string
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          barcode?: string | null
+          brand?: string | null
+          category_id: string
+          cost_price?: number | null
+          created_at?: string
+          description?: string | null
+          dimensions?: Json | null
+          id?: string
+          is_active?: boolean
+          max_stock_level?: number
+          min_stock_level?: number
+          model?: string | null
+          name: string
+          qr_code?: string | null
+          reorder_point?: number
+          sale_price?: number | null
+          sku: string
+          unit_of_measure: string
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          barcode?: string | null
+          brand?: string | null
+          category_id?: string
+          cost_price?: number | null
+          created_at?: string
+          description?: string | null
+          dimensions?: Json | null
+          id?: string
+          is_active?: boolean
+          max_stock_level?: number
+          min_stock_level?: number
+          model?: string | null
+          name?: string
+          qr_code?: string | null
+          reorder_point?: number
+          sale_price?: number | null
+          sku?: string
+          unit_of_measure?: string
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_levels: {
+        Row: {
+          id: string
+          last_updated: string
+          location_id: string
+          product_id: string
+          quantity_available: number
+          quantity_on_order: number
+          quantity_reserved: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          last_updated?: string
+          location_id: string
+          product_id: string
+          quantity_available?: number
+          quantity_on_order?: number
+          quantity_reserved?: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          last_updated?: string
+          location_id?: string
+          product_id?: string
+          quantity_available?: number
+          quantity_on_order?: number
+          quantity_reserved?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_levels_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_levels_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          batch_number: string | null
+          cost_per_unit: number | null
+          expiry_date: string | null
+          from_location_id: string | null
+          id: string
+          movement_type: string
+          notes: string | null
+          performed_by: string
+          product_id: string
+          quantity: number
+          reason: string
+          reference_id: string | null
+          reference_type: string | null
+          status: string
+          timestamp: string
+          to_location_id: string
+          total_cost: number | null
+          user_id: string
+        }
+        Insert: {
+          batch_number?: string | null
+          cost_per_unit?: number | null
+          expiry_date?: string | null
+          from_location_id?: string | null
+          id?: string
+          movement_type: string
+          notes?: string | null
+          performed_by: string
+          product_id: string
+          quantity: number
+          reason: string
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          timestamp?: string
+          to_location_id: string
+          total_cost?: number | null
+          user_id: string
+        }
+        Update: {
+          batch_number?: string | null
+          cost_per_unit?: number | null
+          expiry_date?: string | null
+          from_location_id?: string | null
+          id?: string
+          movement_type?: string
+          notes?: string | null
+          performed_by?: string
+          product_id?: string
+          quantity?: number
+          reason?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          timestamp?: string
+          to_location_id?: string
+          total_cost?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_from_location_id_fkey"
+            columns: ["from_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_to_location_id_fkey"
+            columns: ["to_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          city: string | null
+          code: string
+          contact_person: string | null
+          country: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          lead_time_days: number | null
+          name: string
+          payment_terms: string | null
+          phone: string | null
+          postal_code: string | null
+          state: string | null
+          tax_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          code: string
+          contact_person?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          lead_time_days?: number | null
+          name: string
+          payment_terms?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          code?: string
+          contact_person?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          lead_time_days?: number | null
+          name?: string
+          payment_terms?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           api_rate_limit: number | null
@@ -828,6 +1395,63 @@ export type Database = {
           id?: string
           language?: string | null
           timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      warehouses: {
+        Row: {
+          address: string
+          city: string
+          code: string
+          country: string
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          manager_id: string | null
+          name: string
+          phone: string | null
+          postal_code: string
+          state: string
+          total_capacity: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          city: string
+          code: string
+          country: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          manager_id?: string | null
+          name: string
+          phone?: string | null
+          postal_code: string
+          state: string
+          total_capacity?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          code?: string
+          country?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          manager_id?: string | null
+          name?: string
+          phone?: string | null
+          postal_code?: string
+          state?: string
+          total_capacity?: number | null
           updated_at?: string
           user_id?: string
         }
