@@ -30,18 +30,31 @@ export function useSecuritySettings() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('user_security_settings')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error && error.code === 'PGRST116') {
+        // Create default settings if they don't exist
+        const { data: newData, error: insertError } = await supabase
+          .from('user_security_settings')
+          .insert({ user_id: user.id })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error('Error creating security settings:', insertError);
+          return;
+        }
+        data = newData;
+      } else if (error) {
         console.error('Error fetching security settings:', error);
         return;
       }
 
-      setSettings(data || null);
+      setSettings(data);
     } catch (error) {
       console.error('Error in fetchSettings:', error);
     } finally {
@@ -50,8 +63,8 @@ export function useSecuritySettings() {
   };
 
   const updateSettings = async (updates: Partial<SecuritySettings>) => {
-    if (!user?.id || !settings) {
-      console.log('No user or settings available for update');
+    if (!user?.id) {
+      console.log('No user available for update');
       return;
     }
 

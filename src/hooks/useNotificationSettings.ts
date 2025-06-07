@@ -40,18 +40,31 @@ export function useNotificationSettings() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('user_notification_settings')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error && error.code === 'PGRST116') {
+        // Create default settings if they don't exist
+        const { data: newData, error: insertError } = await supabase
+          .from('user_notification_settings')
+          .insert({ user_id: user.id })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error('Error creating notification settings:', insertError);
+          return;
+        }
+        data = newData;
+      } else if (error) {
         console.error('Error fetching notification settings:', error);
         return;
       }
 
-      setSettings(data || null);
+      setSettings(data);
     } catch (error) {
       console.error('Error in fetchSettings:', error);
     } finally {
@@ -60,8 +73,8 @@ export function useNotificationSettings() {
   };
 
   const updateSettings = async (updates: Partial<NotificationSettings>) => {
-    if (!user?.id || !settings) {
-      console.log('No user or settings available for update');
+    if (!user?.id) {
+      console.log('No user available for update');
       return;
     }
 

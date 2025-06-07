@@ -32,18 +32,34 @@ export function useUserProfile() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error && error.code === 'PGRST116') {
+        // Create default profile if it doesn't exist
+        const { data: newData, error: insertError } = await supabase
+          .from('user_profiles')
+          .insert({ 
+            user_id: user.id,
+            email: user.email
+          })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error('Error creating user profile:', insertError);
+          return;
+        }
+        data = newData;
+      } else if (error) {
         console.error('Error fetching user profile:', error);
         return;
       }
 
-      setProfile(data || null);
+      setProfile(data);
     } catch (error) {
       console.error('Error in fetchProfile:', error);
     } finally {
@@ -52,8 +68,8 @@ export function useUserProfile() {
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!user?.id || !profile) {
-      console.log('No user or profile available for update');
+    if (!user?.id) {
+      console.log('No user available for update');
       return;
     }
 
