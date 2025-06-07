@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Bell, Mail, MessageSquare, Smartphone } from 'lucide-react';
+import { Bell, Mail, Smartphone, Monitor } from 'lucide-react';
 
 export function NotificationSettings() {
   const { settings, loading, updateSettings } = useNotificationSettings();
@@ -30,7 +30,7 @@ export function NotificationSettings() {
       <div className="space-y-6">
         <Card>
           <CardContent className="p-6">
-            <p className="text-muted-foreground">No se pudieron cargar las configuraciones de notificación.</p>
+            <p className="text-muted-foreground">No se pudieron cargar las configuraciones de notificaciones.</p>
           </CardContent>
         </Card>
       </div>
@@ -39,6 +39,7 @@ export function NotificationSettings() {
 
   return (
     <div className="space-y-6">
+      {/* Notificaciones por Email */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -46,15 +47,15 @@ export function NotificationSettings() {
             Notificaciones por Email
           </CardTitle>
           <CardDescription>
-            Configura qué notificaciones recibir por correo electrónico
+            Configura qué notificaciones quieres recibir por correo electrónico
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Habilitar Email</Label>
+              <Label>Activar notificaciones por email</Label>
               <p className="text-sm text-muted-foreground">
-                Activar todas las notificaciones por email
+                Recibir notificaciones generales por correo electrónico
               </p>
             </div>
             <Switch
@@ -67,32 +68,12 @@ export function NotificationSettings() {
             <>
               <Separator />
               
-              <div className="space-y-2">
-                <Label>Frecuencia de Email</Label>
-                <Select 
-                  value={settings.email_frequency || 'instant'} 
-                  onValueChange={(value) => updateSettings({ email_frequency: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="instant">Instantáneo</SelectItem>
-                    <SelectItem value="hourly">Cada hora</SelectItem>
-                    <SelectItem value="daily">Diario</SelectItem>
-                    <SelectItem value="weekly">Semanal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Separator />
-
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Actualizaciones de Pedidos</Label>
+                    <Label>Actualizaciones de pedidos</Label>
                     <p className="text-sm text-muted-foreground">
-                      Notificar cambios en el estado de pedidos
+                      Notificaciones sobre cambios en pedidos
                     </p>
                   </div>
                   <Switch
@@ -103,9 +84,9 @@ export function NotificationSettings() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Alertas de Stock</Label>
+                    <Label>Alertas de inventario</Label>
                     <p className="text-sm text-muted-foreground">
-                      Notificar cuando el inventario esté bajo
+                      Alertas cuando el stock está bajo
                     </p>
                   </div>
                   <Switch
@@ -116,22 +97,9 @@ export function NotificationSettings() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Actualizaciones del Sistema</Label>
+                    <Label>Alertas de seguridad</Label>
                     <p className="text-sm text-muted-foreground">
-                      Notificar actualizaciones y mantenimiento
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.email_system_updates || false}
-                    onCheckedChange={(checked) => updateSettings({ email_system_updates: checked })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Alertas de Seguridad</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Notificar eventos de seguridad importantes
+                      Notificaciones importantes de seguridad
                     </p>
                   </div>
                   <Switch
@@ -139,106 +107,36 @@ export function NotificationSettings() {
                     onCheckedChange={(checked) => updateSettings({ email_security_alerts: checked })}
                   />
                 </div>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="w-5 h-5" />
-            Notificaciones en la App
-          </CardTitle>
-          <CardDescription>
-            Configura las notificaciones dentro de la aplicación
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Habilitar Notificaciones</Label>
-              <p className="text-sm text-muted-foreground">
-                Mostrar notificaciones dentro de la aplicación
-              </p>
-            </div>
-            <Switch
-              checked={settings.in_app_enabled !== false}
-              onCheckedChange={(checked) => updateSettings({ in_app_enabled: checked })}
-            />
-          </div>
-
-          {settings.in_app_enabled !== false && (
-            <>
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Sonidos de Notificación</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Reproducir sonido para las notificaciones
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.in_app_sound !== false}
-                  onCheckedChange={(checked) => updateSettings({ in_app_sound: checked })}
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Actualizaciones de Pedidos</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Mostrar notificaciones de pedidos
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.in_app_order_updates !== false}
-                    onCheckedChange={(checked) => updateSettings({ in_app_order_updates: checked })}
-                  />
-                </div>
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Alertas de Stock</Label>
+                    <Label>Actualizaciones del sistema</Label>
                     <p className="text-sm text-muted-foreground">
-                      Mostrar alertas de inventario bajo
+                      Información sobre actualizaciones y mantenimiento
                     </p>
                   </div>
                   <Switch
-                    checked={settings.in_app_stock_alerts !== false}
-                    onCheckedChange={(checked) => updateSettings({ in_app_stock_alerts: checked })}
+                    checked={settings.email_system_updates !== false}
+                    onCheckedChange={(checked) => updateSettings({ email_system_updates: checked })}
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Asignación de Tareas</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Notificar cuando se asignen tareas
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.in_app_task_assignments !== false}
-                    onCheckedChange={(checked) => updateSettings({ in_app_task_assignments: checked })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Mensajes del Sistema</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Mostrar mensajes importantes del sistema
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.in_app_system_messages !== false}
-                    onCheckedChange={(checked) => updateSettings({ in_app_system_messages: checked })}
-                  />
+                <div className="space-y-2">
+                  <Label>Frecuencia de emails</Label>
+                  <Select 
+                    value={settings.email_frequency || 'instant'} 
+                    onValueChange={(value) => updateSettings({ email_frequency: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="instant">Inmediato</SelectItem>
+                      <SelectItem value="hourly">Cada hora</SelectItem>
+                      <SelectItem value="daily">Diario</SelectItem>
+                      <SelectItem value="weekly">Semanal</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </>
@@ -246,6 +144,7 @@ export function NotificationSettings() {
         </CardContent>
       </Card>
 
+      {/* Notificaciones SMS */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -259,45 +158,147 @@ export function NotificationSettings() {
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Habilitar SMS</Label>
+              <Label>Activar notificaciones SMS</Label>
               <p className="text-sm text-muted-foreground">
-                Activar notificaciones por mensaje de texto
+                Recibir notificaciones por mensaje de texto
               </p>
             </div>
             <Switch
-              checked={settings.sms_enabled || false}
+              checked={settings.sms_enabled !== false}
               onCheckedChange={(checked) => updateSettings({ sms_enabled: checked })}
             />
           </div>
 
-          {settings.sms_enabled && (
+          {settings.sms_enabled !== false && (
             <>
               <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Solo Críticas</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Enviar SMS solo para notificaciones críticas
-                  </p>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Solo alertas críticas</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Únicamente notificaciones urgentes
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.sms_critical_only !== false}
+                    onCheckedChange={(checked) => updateSettings({ sms_critical_only: checked })}
+                  />
                 </div>
-                <Switch
-                  checked={settings.sms_critical_only !== false}
-                  onCheckedChange={(checked) => updateSettings({ sms_critical_only: checked })}
-                />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Alertas de emergencia</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Notificaciones de emergencias del sistema
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.sms_emergency_alerts !== false}
+                    onCheckedChange={(checked) => updateSettings({ sms_emergency_alerts: checked })}
+                  />
+                </div>
               </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Alertas de Emergencia</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Notificar emergencias del sistema por SMS
-                  </p>
+      {/* Notificaciones en la App */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Monitor className="w-5 h-5" />
+            Notificaciones en la Aplicación
+          </CardTitle>
+          <CardDescription>
+            Configura las notificaciones dentro de la aplicación
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Activar notificaciones en la app</Label>
+              <p className="text-sm text-muted-foreground">
+                Mostrar notificaciones dentro de la aplicación
+              </p>
+            </div>
+            <Switch
+              checked={settings.in_app_enabled !== false}
+              onCheckedChange={(checked) => updateSettings({ in_app_enabled: checked })}
+            />
+          </div>
+
+          {settings.in_app_enabled !== false && (
+            <>
+              <Separator />
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Sonido de notificaciones</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Reproducir sonido al recibir notificaciones
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.in_app_sound !== false}
+                    onCheckedChange={(checked) => updateSettings({ in_app_sound: checked })}
+                  />
                 </div>
-                <Switch
-                  checked={settings.sms_emergency_alerts !== false}
-                  onCheckedChange={(checked) => updateSettings({ sms_emergency_alerts: checked })}
-                />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Actualizaciones de pedidos</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Notificaciones sobre cambios en pedidos
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.in_app_order_updates !== false}
+                    onCheckedChange={(checked) => updateSettings({ in_app_order_updates: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Alertas de inventario</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Alertas cuando el stock está bajo
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.in_app_stock_alerts !== false}
+                    onCheckedChange={(checked) => updateSettings({ in_app_stock_alerts: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Asignación de tareas</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Notificaciones cuando se asignan nuevas tareas
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.in_app_task_assignments !== false}
+                    onCheckedChange={(checked) => updateSettings({ in_app_task_assignments: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Mensajes del sistema</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Mensajes importantes del administrador
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.in_app_system_messages !== false}
+                    onCheckedChange={(checked) => updateSettings({ in_app_system_messages: checked })}
+                  />
+                </div>
               </div>
             </>
           )}

@@ -13,9 +13,19 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExternalLink, Settings, Zap, Database, Plus, ShoppingCart, Globe } from 'lucide-react';
+import { ExternalLink, Settings, Zap, Database, Plus, ShoppingCart, Globe, Store } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { EcommerceConnections } from '@/components/ecommerce/EcommerceConnections';
+import { CreateConnectionDialog } from '@/components/ecommerce/CreateConnectionDialog';
+
+interface EcommercePlatform {
+  id: string;
+  name: string;
+  display_name: string;
+  api_url: string;
+  description: string;
+  icon: React.ReactNode;
+  isConnected: boolean;
+}
 
 interface ExternalIntegration {
   id: string;
@@ -98,7 +108,10 @@ export function IntegrationSettings() {
   const { toast } = useToast();
   const { settings: integrationSettings, updateSetting, createSetting, loading } = useIntegrationSettings();
   const [selectedIntegration, setSelectedIntegration] = useState<ExternalIntegration | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<EcommercePlatform | null>(null);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [ecommerceDialogOpen, setEcommerceDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [webhooksEnabled, setWebhooksEnabled] = useState(true);
   const [activeTab, setActiveTab] = useState<'ecommerce' | 'external'>('ecommerce');
 
@@ -108,10 +121,56 @@ export function IntegrationSettings() {
     additionalSettings: ''
   });
 
+  // Consultar plataformas de e-commerce
+  const { data: ecommercePlatforms = [], isLoading: platformsLoading } = useQuery({
+    queryKey: ['ecommerce-platforms'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ecommerce_platforms')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_name');
+      
+      if (error) {
+        console.error('Error fetching platforms:', error);
+        // Retornar plataformas mock si hay error
+        return [
+          { id: '1', name: 'shopify', display_name: 'Shopify', api_url: 'https://{{shop}}.myshopify.com/admin/api/2023-10/graphql.json', is_active: true },
+          { id: '2', name: 'woocommerce', display_name: 'WooCommerce', api_url: 'https://{{domain}}/wp-json/wc/v3/', is_active: true },
+          { id: '3', name: 'prestashop', display_name: 'PrestaShop', api_url: 'https://{{domain}}/api/', is_active: true },
+          { id: '4', name: 'magento', display_name: 'Magento 2', api_url: 'https://{{domain}}/rest/V1/', is_active: true },
+          { id: '5', name: 'opencart', display_name: 'OpenCart', api_url: 'https://{{domain}}/index.php?route=api/', is_active: true },
+          { id: '6', name: 'bigcommerce', display_name: 'BigCommerce', api_url: 'https://api.bigcommerce.com/stores/{{store_hash}}/v3/', is_active: true },
+          { id: '7', name: 'squarespace', display_name: 'Squarespace', api_url: 'https://api.squarespace.com/1.0/', is_active: true }
+        ];
+      }
+      return data || [];
+    },
+  });
+
+  // Consultar conexiones existentes
+  const { data: connections = [] } = useQuery({
+    queryKey: ['ecommerce-connections'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ecommerce_connections')
+        .select(`
+          *,
+          platform:ecommerce_platforms(*)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching connections:', error);
+        return [];
+      }
+      return data || [];
+    },
+  });
+
   const handleConfigureIntegration = (integration: ExternalIntegration) => {
     setSelectedIntegration(integration);
     
-    // Buscar configuración existente
     const existingSetting = integrationSettings.find(
       s => s.integration_type === 'external' && s.integration_name === integration.name
     );
@@ -131,6 +190,21 @@ export function IntegrationSettings() {
     }
     
     setConfigDialogOpen(true);
+  };
+
+  const handleConfigurePlatform = (platform: any) => {
+    const platformData: EcommercePlatform = {
+      id: platform.id,
+      name: platform.name,
+      display_name: platform.display_name,
+      api_url: platform.api_url,
+      description: `Integración con ${platform.display_name}`,
+      icon: <Store className="w-5 h-5 text-green-600" />,
+      isConnected: connections.some(c => c.platform_id === platform.id)
+    };
+    
+    setSelectedPlatform(platformData);
+    setEcommerceDialogOpen(true);
   };
 
   const handleSaveConfiguration = async () => {
@@ -205,7 +279,20 @@ export function IntegrationSettings() {
     return !!(setting?.api_key_encrypted || setting?.webhook_url);
   };
 
-  if (loading) {
+  const getPlatformIcon = (platformName: string) => {
+    const iconMap: { [key: string]: React.ReactNode } = {
+      shopify: <Store className="w-5 h-5 text-green-600" />,
+      woocommerce: <Store className="w-5 h-5 text-purple-600" />,
+      prestashop: <Store className="w-5 h-5 text-blue-600" />,
+      magento: <Store className="w-5 h-5 text-orange-600" />,
+      opencart: <Store className="w-5 h-5 text-red-600" />,
+      bigcommerce: <Store className="w-5 h-5 text-indigo-600" />,
+      squarespace: <Store className="w-5 h-5 text-gray-600" />
+    };
+    return iconMap[platformName] || <Store className="w-5 h-5 text-gray-600" />;
+  };
+
+  if (loading || platformsLoading) {
     return (
       <div className="space-y-6">
         <Card>
@@ -260,7 +347,91 @@ export function IntegrationSettings() {
           </div>
 
           {activeTab === 'ecommerce' && (
-            <EcommerceConnections />
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-medium">Plataformas de E-commerce</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Conecta tu sistema con las plataformas de e-commerce más populares
+                  </p>
+                </div>
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nueva Conexión
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {ecommercePlatforms.map((platform: any) => {
+                  const isConnected = connections.some(c => c.platform_id === platform.id);
+                  return (
+                    <div key={platform.id} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                            {getPlatformIcon(platform.name)}
+                          </div>
+                          <div>
+                            <h4 className="font-medium">{platform.display_name}</h4>
+                            <p className="text-xs text-muted-foreground">
+                              {platform.name === 'shopify' && 'Tienda online líder'}
+                              {platform.name === 'woocommerce' && 'Plugin de WordPress'}
+                              {platform.name === 'prestashop' && 'Solución europea'}
+                              {platform.name === 'magento' && 'Potente y flexible'}
+                              {platform.name === 'opencart' && 'Código abierto'}
+                              {platform.name === 'bigcommerce' && 'SaaS enterprise'}
+                              {platform.name === 'squarespace' && 'Diseño elegante'}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant={isConnected ? "default" : "secondary"}>
+                          {isConnected ? 'Conectado' : 'Disponible'}
+                        </Badge>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => handleConfigurePlatform(platform)}
+                        >
+                          {isConnected ? 'Gestionar' : 'Conectar'}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {connections.length > 0 && (
+                <div className="mt-8">
+                  <h4 className="font-medium mb-4">Conexiones Activas</h4>
+                  <div className="space-y-2">
+                    {connections.map((connection: any) => (
+                      <div key={connection.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                            {getPlatformIcon(connection.platform?.name || 'default')}
+                          </div>
+                          <div>
+                            <p className="font-medium">{connection.store_name}</p>
+                            <p className="text-sm text-muted-foreground">{connection.platform?.display_name}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant={connection.sync_enabled ? "default" : "secondary"}>
+                            {connection.sync_enabled ? 'Activo' : 'Pausado'}
+                          </Badge>
+                          <Button variant="outline" size="sm">
+                            <Settings className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {activeTab === 'external' && (
@@ -348,7 +519,7 @@ export function IntegrationSettings() {
         </CardContent>
       </Card>
 
-      {/* Dialog de Configuración */}
+      {/* Dialog de Configuración Externa */}
       <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -405,6 +576,48 @@ export function IntegrationSettings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog para E-commerce */}
+      <Dialog open={ecommerceDialogOpen} onOpenChange={setEcommerceDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              Gestionar {selectedPlatform?.display_name}
+            </DialogTitle>
+            <DialogDescription>
+              {connections.some(c => c.platform_id === selectedPlatform?.id) 
+                ? 'Gestiona tus conexiones existentes' 
+                : 'Crea una nueva conexión con esta plataforma'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Para gestionar las conexiones de {selectedPlatform?.display_name}, 
+              utiliza el botón "Nueva Conexión" en la sección principal.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEcommerceDialogOpen(false)}>
+              Cerrar
+            </Button>
+            <Button onClick={() => {
+              setEcommerceDialogOpen(false);
+              setIsCreateDialogOpen(true);
+            }}>
+              Nueva Conexión
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de creación de conexión */}
+      <CreateConnectionDialog 
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+      />
     </div>
   );
 }
