@@ -1,6 +1,9 @@
 
 // Tipos para el módulo de carga y descarga
 
+import { Product } from './warehouse';
+import { Address, Customer } from './orders';
+
 export interface LoadingDock {
   id: string;
   dock_number: string;

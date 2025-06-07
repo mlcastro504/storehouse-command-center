@@ -1,6 +1,9 @@
 
 // Tipos para el módulo de control de calidad
 
+import { Product, Location } from './warehouse';
+import { Supplier, Customer } from './orders';
+
 export interface QualityCheck {
   id: string;
   check_number: string;

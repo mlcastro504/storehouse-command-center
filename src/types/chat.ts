@@ -1,6 +1,8 @@
 
 // Tipos para el módulo de chat interno
 
+import { User } from './warehouse';
+
 export interface ChatChannel {
   id: string;
   name: string;
