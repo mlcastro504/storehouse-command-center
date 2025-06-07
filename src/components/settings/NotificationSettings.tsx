@@ -25,7 +25,17 @@ export function NotificationSettings() {
     );
   }
 
-  if (!settings) return null;
+  if (!settings) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">Cargando configuración de notificaciones...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -43,17 +53,17 @@ export function NotificationSettings() {
           <div className="flex items-center justify-between">
             <Label>Habilitar notificaciones por email</Label>
             <Switch
-              checked={settings.email_enabled}
+              checked={settings.email_enabled !== false}
               onCheckedChange={(checked) => updateSettings({ email_enabled: checked })}
             />
           </div>
 
-          {settings.email_enabled && (
+          {settings.email_enabled !== false && (
             <>
               <div className="space-y-2">
                 <Label>Frecuencia de notificaciones</Label>
                 <Select 
-                  value={settings.email_frequency} 
+                  value={settings.email_frequency || 'instant'} 
                   onValueChange={(value) => updateSettings({ email_frequency: value })}
                 >
                   <SelectTrigger>
@@ -76,7 +86,7 @@ export function NotificationSettings() {
                 <div className="flex items-center justify-between">
                   <Label>Actualizaciones de pedidos</Label>
                   <Switch
-                    checked={settings.email_order_updates}
+                    checked={settings.email_order_updates !== false}
                     onCheckedChange={(checked) => updateSettings({ email_order_updates: checked })}
                   />
                 </div>
@@ -84,7 +94,7 @@ export function NotificationSettings() {
                 <div className="flex items-center justify-between">
                   <Label>Alertas de stock bajo</Label>
                   <Switch
-                    checked={settings.email_stock_alerts}
+                    checked={settings.email_stock_alerts !== false}
                     onCheckedChange={(checked) => updateSettings({ email_stock_alerts: checked })}
                   />
                 </div>
@@ -92,7 +102,7 @@ export function NotificationSettings() {
                 <div className="flex items-center justify-between">
                   <Label>Actualizaciones del sistema</Label>
                   <Switch
-                    checked={settings.email_system_updates}
+                    checked={settings.email_system_updates || false}
                     onCheckedChange={(checked) => updateSettings({ email_system_updates: checked })}
                   />
                 </div>
@@ -100,7 +110,7 @@ export function NotificationSettings() {
                 <div className="flex items-center justify-between">
                   <Label>Alertas de seguridad</Label>
                   <Switch
-                    checked={settings.email_security_alerts}
+                    checked={settings.email_security_alerts !== false}
                     onCheckedChange={(checked) => updateSettings({ email_security_alerts: checked })}
                   />
                 </div>
@@ -124,17 +134,17 @@ export function NotificationSettings() {
           <div className="flex items-center justify-between">
             <Label>Habilitar notificaciones en la app</Label>
             <Switch
-              checked={settings.in_app_enabled}
+              checked={settings.in_app_enabled !== false}
               onCheckedChange={(checked) => updateSettings({ in_app_enabled: checked })}
             />
           </div>
 
-          {settings.in_app_enabled && (
+          {settings.in_app_enabled !== false && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Sonido de notificaciones</Label>
                 <Switch
-                  checked={settings.in_app_sound}
+                  checked={settings.in_app_sound !== false}
                   onCheckedChange={(checked) => updateSettings({ in_app_sound: checked })}
                 />
               </div>
@@ -147,7 +157,7 @@ export function NotificationSettings() {
                 <div className="flex items-center justify-between">
                   <Label>Actualizaciones de pedidos</Label>
                   <Switch
-                    checked={settings.in_app_order_updates}
+                    checked={settings.in_app_order_updates !== false}
                     onCheckedChange={(checked) => updateSettings({ in_app_order_updates: checked })}
                   />
                 </div>
@@ -155,7 +165,7 @@ export function NotificationSettings() {
                 <div className="flex items-center justify-between">
                   <Label>Alertas de inventario</Label>
                   <Switch
-                    checked={settings.in_app_stock_alerts}
+                    checked={settings.in_app_stock_alerts !== false}
                     onCheckedChange={(checked) => updateSettings({ in_app_stock_alerts: checked })}
                   />
                 </div>
@@ -163,7 +173,7 @@ export function NotificationSettings() {
                 <div className="flex items-center justify-between">
                   <Label>Asignación de tareas</Label>
                   <Switch
-                    checked={settings.in_app_task_assignments}
+                    checked={settings.in_app_task_assignments !== false}
                     onCheckedChange={(checked) => updateSettings({ in_app_task_assignments: checked })}
                   />
                 </div>
@@ -171,7 +181,7 @@ export function NotificationSettings() {
                 <div className="flex items-center justify-between">
                   <Label>Mensajes del sistema</Label>
                   <Switch
-                    checked={settings.in_app_system_messages}
+                    checked={settings.in_app_system_messages !== false}
                     onCheckedChange={(checked) => updateSettings({ in_app_system_messages: checked })}
                   />
                 </div>
@@ -195,7 +205,7 @@ export function NotificationSettings() {
           <div className="flex items-center justify-between">
             <Label>Habilitar notificaciones SMS</Label>
             <Switch
-              checked={settings.sms_enabled}
+              checked={settings.sms_enabled || false}
               onCheckedChange={(checked) => updateSettings({ sms_enabled: checked })}
             />
           </div>
@@ -205,7 +215,7 @@ export function NotificationSettings() {
               <div className="flex items-center justify-between">
                 <Label>Solo alertas críticas</Label>
                 <Switch
-                  checked={settings.sms_critical_only}
+                  checked={settings.sms_critical_only !== false}
                   onCheckedChange={(checked) => updateSettings({ sms_critical_only: checked })}
                 />
               </div>
@@ -213,7 +223,7 @@ export function NotificationSettings() {
               <div className="flex items-center justify-between">
                 <Label>Alertas de emergencia</Label>
                 <Switch
-                  checked={settings.sms_emergency_alerts}
+                  checked={settings.sms_emergency_alerts !== false}
                   onCheckedChange={(checked) => updateSettings({ sms_emergency_alerts: checked })}
                 />
               </div>

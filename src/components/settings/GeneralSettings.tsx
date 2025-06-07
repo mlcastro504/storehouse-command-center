@@ -30,7 +30,7 @@ export function GeneralSettings() {
       <div className="space-y-6">
         <Card>
           <CardContent className="p-6">
-            <p className="text-muted-foreground">No se pudieron cargar las configuraciones.</p>
+            <p className="text-muted-foreground">Cargando configuración general...</p>
           </CardContent>
         </Card>
       </div>

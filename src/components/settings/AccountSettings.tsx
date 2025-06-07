@@ -31,7 +31,7 @@ export function AccountSettings() {
       <div className="space-y-6">
         <Card>
           <CardContent className="p-6">
-            <p className="text-muted-foreground">No se pudo cargar el perfil.</p>
+            <p className="text-muted-foreground">Cargando información del perfil...</p>
           </CardContent>
         </Card>
       </div>

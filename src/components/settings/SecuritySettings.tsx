@@ -37,7 +37,17 @@ export function SecuritySettings() {
     );
   }
 
-  if (!settings) return null;
+  if (!settings) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">Cargando configuración de seguridad...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const handlePasswordChange = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -158,7 +168,7 @@ export function SecuritySettings() {
               </p>
             </div>
             <Switch
-              checked={settings.two_factor_enabled}
+              checked={settings.two_factor_enabled || false}
               onCheckedChange={(checked) => updateSettings({ two_factor_enabled: checked })}
             />
           </div>
@@ -181,7 +191,7 @@ export function SecuritySettings() {
               </p>
             </div>
             <Switch
-              checked={settings.session_timeout}
+              checked={settings.session_timeout !== false}
               onCheckedChange={(checked) => updateSettings({ session_timeout: checked })}
             />
           </div>
@@ -194,7 +204,7 @@ export function SecuritySettings() {
               </p>
             </div>
             <Switch
-              checked={settings.email_notifications}
+              checked={settings.email_notifications !== false}
               onCheckedChange={(checked) => updateSettings({ email_notifications: checked })}
             />
           </div>
@@ -207,7 +217,7 @@ export function SecuritySettings() {
               </p>
             </div>
             <Switch
-              checked={settings.login_alerts}
+              checked={settings.login_alerts !== false}
               onCheckedChange={(checked) => updateSettings({ login_alerts: checked })}
             />
           </div>
