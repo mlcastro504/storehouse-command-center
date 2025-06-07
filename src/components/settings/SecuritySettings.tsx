@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useSecuritySettings } from '@/hooks/useSecuritySettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,24 +10,36 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, Key, Smartphone } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from '@/integrations/supabase/client';
 
 export function SecuritySettings() {
+  const { settings, loading, updateSettings } = useSecuritySettings();
+  const { toast } = useToast();
+  
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
 
-  const [securitySettings, setSecuritySettings] = useState({
-    twoFactorEnabled: false,
-    sessionTimeout: true,
-    emailNotifications: true,
-    loginAlerts: true
-  });
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-10 bg-gray-200 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  const { toast } = useToast();
+  if (!settings) return null;
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({
         title: "Error",
@@ -36,23 +49,42 @@ export function SecuritySettings() {
       return;
     }
 
-    toast({
-      title: "Contraseña actualizada",
-      description: "Tu contraseña ha sido cambiada correctamente.",
-    });
+    if (passwordForm.newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "La contraseña debe tener al menos 6 caracteres.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    setPasswordForm({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    });
-  };
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordForm.newPassword
+      });
 
-  const handleSecuritySave = () => {
-    toast({
-      title: "Configuración de seguridad guardada",
-      description: "Los cambios se han aplicado correctamente.",
-    });
+      if (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo cambiar la contraseña.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Contraseña actualizada",
+        description: "Tu contraseña ha sido cambiada correctamente.",
+      });
+
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error) {
+      console.error('Error changing password:', error);
+    }
   };
 
   return (
@@ -126,12 +158,12 @@ export function SecuritySettings() {
               </p>
             </div>
             <Switch
-              checked={securitySettings.twoFactorEnabled}
-              onCheckedChange={(checked) => setSecuritySettings({ ...securitySettings, twoFactorEnabled: checked })}
+              checked={settings.two_factor_enabled}
+              onCheckedChange={(checked) => updateSettings({ two_factor_enabled: checked })}
             />
           </div>
 
-          {securitySettings.twoFactorEnabled && (
+          {settings.two_factor_enabled && (
             <Alert>
               <AlertDescription>
                 La autenticación de dos factores está habilitada. Usa tu aplicación de autenticación para generar códigos.
@@ -149,8 +181,8 @@ export function SecuritySettings() {
               </p>
             </div>
             <Switch
-              checked={securitySettings.sessionTimeout}
-              onCheckedChange={(checked) => setSecuritySettings({ ...securitySettings, sessionTimeout: checked })}
+              checked={settings.session_timeout}
+              onCheckedChange={(checked) => updateSettings({ session_timeout: checked })}
             />
           </div>
 
@@ -162,8 +194,8 @@ export function SecuritySettings() {
               </p>
             </div>
             <Switch
-              checked={securitySettings.emailNotifications}
-              onCheckedChange={(checked) => setSecuritySettings({ ...securitySettings, emailNotifications: checked })}
+              checked={settings.email_notifications}
+              onCheckedChange={(checked) => updateSettings({ email_notifications: checked })}
             />
           </div>
 
@@ -175,15 +207,9 @@ export function SecuritySettings() {
               </p>
             </div>
             <Switch
-              checked={securitySettings.loginAlerts}
-              onCheckedChange={(checked) => setSecuritySettings({ ...securitySettings, loginAlerts: checked })}
+              checked={settings.login_alerts}
+              onCheckedChange={(checked) => updateSettings({ login_alerts: checked })}
             />
-          </div>
-
-          <div className="flex justify-end">
-            <Button onClick={handleSecuritySave}>
-              Guardar Configuración
-            </Button>
           </div>
         </CardContent>
       </Card>

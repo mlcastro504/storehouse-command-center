@@ -1,47 +1,31 @@
 
-import { useState } from 'react';
+import { useNotificationSettings } from '@/hooks/useNotificationSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Bell, Mail, MessageSquare, AlertTriangle } from 'lucide-react';
-import { useToast } from "@/hooks/use-toast";
+import { Bell, Mail, MessageSquare } from 'lucide-react';
 
 export function NotificationSettings() {
-  const [notifications, setNotifications] = useState({
-    email: {
-      enabled: true,
-      frequency: 'instant',
-      orderUpdates: true,
-      stockAlerts: true,
-      systemUpdates: false,
-      securityAlerts: true
-    },
-    inApp: {
-      enabled: true,
-      sound: true,
-      orderUpdates: true,
-      stockAlerts: true,
-      taskAssignments: true,
-      systemMessages: true
-    },
-    sms: {
-      enabled: false,
-      criticalOnly: true,
-      emergencyAlerts: true
-    }
-  });
+  const { settings, loading, updateSettings } = useNotificationSettings();
 
-  const { toast } = useToast();
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-10 bg-gray-200 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  const handleSave = () => {
-    toast({
-      title: "Configuración guardada",
-      description: "Tus preferencias de notificaciones han sido actualizadas.",
-    });
-  };
+  if (!settings) return null;
 
   return (
     <div className="space-y-6">
@@ -59,24 +43,18 @@ export function NotificationSettings() {
           <div className="flex items-center justify-between">
             <Label>Habilitar notificaciones por email</Label>
             <Switch
-              checked={notifications.email.enabled}
-              onCheckedChange={(checked) => setNotifications({
-                ...notifications,
-                email: { ...notifications.email, enabled: checked }
-              })}
+              checked={settings.email_enabled}
+              onCheckedChange={(checked) => updateSettings({ email_enabled: checked })}
             />
           </div>
 
-          {notifications.email.enabled && (
+          {settings.email_enabled && (
             <>
               <div className="space-y-2">
                 <Label>Frecuencia de notificaciones</Label>
                 <Select 
-                  value={notifications.email.frequency} 
-                  onValueChange={(value) => setNotifications({
-                    ...notifications,
-                    email: { ...notifications.email, frequency: value }
-                  })}
+                  value={settings.email_frequency} 
+                  onValueChange={(value) => updateSettings({ email_frequency: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -98,44 +76,32 @@ export function NotificationSettings() {
                 <div className="flex items-center justify-between">
                   <Label>Actualizaciones de pedidos</Label>
                   <Switch
-                    checked={notifications.email.orderUpdates}
-                    onCheckedChange={(checked) => setNotifications({
-                      ...notifications,
-                      email: { ...notifications.email, orderUpdates: checked }
-                    })}
+                    checked={settings.email_order_updates}
+                    onCheckedChange={(checked) => updateSettings({ email_order_updates: checked })}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <Label>Alertas de stock bajo</Label>
                   <Switch
-                    checked={notifications.email.stockAlerts}
-                    onCheckedChange={(checked) => setNotifications({
-                      ...notifications,
-                      email: { ...notifications.email, stockAlerts: checked }
-                    })}
+                    checked={settings.email_stock_alerts}
+                    onCheckedChange={(checked) => updateSettings({ email_stock_alerts: checked })}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <Label>Actualizaciones del sistema</Label>
                   <Switch
-                    checked={notifications.email.systemUpdates}
-                    onCheckedChange={(checked) => setNotifications({
-                      ...notifications,
-                      email: { ...notifications.email, systemUpdates: checked }
-                    })}
+                    checked={settings.email_system_updates}
+                    onCheckedChange={(checked) => updateSettings({ email_system_updates: checked })}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <Label>Alertas de seguridad</Label>
                   <Switch
-                    checked={notifications.email.securityAlerts}
-                    onCheckedChange={(checked) => setNotifications({
-                      ...notifications,
-                      email: { ...notifications.email, securityAlerts: checked }
-                    })}
+                    checked={settings.email_security_alerts}
+                    onCheckedChange={(checked) => updateSettings({ email_security_alerts: checked })}
                   />
                 </div>
               </div>
@@ -158,24 +124,18 @@ export function NotificationSettings() {
           <div className="flex items-center justify-between">
             <Label>Habilitar notificaciones en la app</Label>
             <Switch
-              checked={notifications.inApp.enabled}
-              onCheckedChange={(checked) => setNotifications({
-                ...notifications,
-                inApp: { ...notifications.inApp, enabled: checked }
-              })}
+              checked={settings.in_app_enabled}
+              onCheckedChange={(checked) => updateSettings({ in_app_enabled: checked })}
             />
           </div>
 
-          {notifications.inApp.enabled && (
+          {settings.in_app_enabled && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Sonido de notificaciones</Label>
                 <Switch
-                  checked={notifications.inApp.sound}
-                  onCheckedChange={(checked) => setNotifications({
-                    ...notifications,
-                    inApp: { ...notifications.inApp, sound: checked }
-                  })}
+                  checked={settings.in_app_sound}
+                  onCheckedChange={(checked) => updateSettings({ in_app_sound: checked })}
                 />
               </div>
 
@@ -187,44 +147,32 @@ export function NotificationSettings() {
                 <div className="flex items-center justify-between">
                   <Label>Actualizaciones de pedidos</Label>
                   <Switch
-                    checked={notifications.inApp.orderUpdates}
-                    onCheckedChange={(checked) => setNotifications({
-                      ...notifications,
-                      inApp: { ...notifications.inApp, orderUpdates: checked }
-                    })}
+                    checked={settings.in_app_order_updates}
+                    onCheckedChange={(checked) => updateSettings({ in_app_order_updates: checked })}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <Label>Alertas de inventario</Label>
                   <Switch
-                    checked={notifications.inApp.stockAlerts}
-                    onCheckedChange={(checked) => setNotifications({
-                      ...notifications,
-                      inApp: { ...notifications.inApp, stockAlerts: checked }
-                    })}
+                    checked={settings.in_app_stock_alerts}
+                    onCheckedChange={(checked) => updateSettings({ in_app_stock_alerts: checked })}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <Label>Asignación de tareas</Label>
                   <Switch
-                    checked={notifications.inApp.taskAssignments}
-                    onCheckedChange={(checked) => setNotifications({
-                      ...notifications,
-                      inApp: { ...notifications.inApp, taskAssignments: checked }
-                    })}
+                    checked={settings.in_app_task_assignments}
+                    onCheckedChange={(checked) => updateSettings({ in_app_task_assignments: checked })}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <Label>Mensajes del sistema</Label>
                   <Switch
-                    checked={notifications.inApp.systemMessages}
-                    onCheckedChange={(checked) => setNotifications({
-                      ...notifications,
-                      inApp: { ...notifications.inApp, systemMessages: checked }
-                    })}
+                    checked={settings.in_app_system_messages}
+                    onCheckedChange={(checked) => updateSettings({ in_app_system_messages: checked })}
                   />
                 </div>
               </div>
@@ -247,47 +195,32 @@ export function NotificationSettings() {
           <div className="flex items-center justify-between">
             <Label>Habilitar notificaciones SMS</Label>
             <Switch
-              checked={notifications.sms.enabled}
-              onCheckedChange={(checked) => setNotifications({
-                ...notifications,
-                sms: { ...notifications.sms, enabled: checked }
-              })}
+              checked={settings.sms_enabled}
+              onCheckedChange={(checked) => updateSettings({ sms_enabled: checked })}
             />
           </div>
 
-          {notifications.sms.enabled && (
+          {settings.sms_enabled && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Solo alertas críticas</Label>
                 <Switch
-                  checked={notifications.sms.criticalOnly}
-                  onCheckedChange={(checked) => setNotifications({
-                    ...notifications,
-                    sms: { ...notifications.sms, criticalOnly: checked }
-                  })}
+                  checked={settings.sms_critical_only}
+                  onCheckedChange={(checked) => updateSettings({ sms_critical_only: checked })}
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <Label>Alertas de emergencia</Label>
                 <Switch
-                  checked={notifications.sms.emergencyAlerts}
-                  onCheckedChange={(checked) => setNotifications({
-                    ...notifications,
-                    sms: { ...notifications.sms, emergencyAlerts: checked }
-                  })}
+                  checked={settings.sms_emergency_alerts}
+                  onCheckedChange={(checked) => updateSettings({ sms_emergency_alerts: checked })}
                 />
               </div>
             </div>
           )}
         </CardContent>
       </Card>
-
-      <div className="flex justify-end">
-        <Button onClick={handleSave}>
-          Guardar Configuración
-        </Button>
-      </div>
     </div>
   );
 }

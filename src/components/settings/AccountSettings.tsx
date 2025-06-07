@@ -1,32 +1,35 @@
 
-import { useState } from 'react';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from "@/hooks/use-toast";
 
 export function AccountSettings() {
   const { user } = useAuth();
-  const { toast } = useToast();
-  
-  const [profile, setProfile] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: '',
-    position: '',
-    department: ''
-  });
+  const { profile, loading, updateProfile } = useUserProfile();
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-10 bg-gray-200 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!profile) return null;
 
   const handleSaveProfile = () => {
-    toast({
-      title: "Perfil actualizado",
-      description: "Los cambios en tu perfil se han guardado correctamente.",
-    });
+    // Los cambios se guardan automáticamente
   };
 
   return (
@@ -41,9 +44,9 @@ export function AccountSettings() {
         <CardContent className="space-y-6">
           <div className="flex items-center space-x-4">
             <Avatar className="w-20 h-20">
-              <AvatarImage src="" />
+              <AvatarImage src={profile.avatar_url || ""} />
               <AvatarFallback className="text-lg">
-                {profile.firstName[0]}{profile.lastName[0]}
+                {profile.first_name?.[0] || ''}{profile.last_name?.[0] || ''}
               </AvatarFallback>
             </Avatar>
             <div>
@@ -59,8 +62,8 @@ export function AccountSettings() {
               <Label htmlFor="firstName">Nombre</Label>
               <Input
                 id="firstName"
-                value={profile.firstName}
-                onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                value={profile.first_name || ''}
+                onChange={(e) => updateProfile({ first_name: e.target.value })}
               />
             </div>
 
@@ -68,8 +71,8 @@ export function AccountSettings() {
               <Label htmlFor="lastName">Apellido</Label>
               <Input
                 id="lastName"
-                value={profile.lastName}
-                onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                value={profile.last_name || ''}
+                onChange={(e) => updateProfile({ last_name: e.target.value })}
               />
             </div>
 
@@ -78,8 +81,8 @@ export function AccountSettings() {
               <Input
                 id="email"
                 type="email"
-                value={profile.email}
-                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                value={profile.email || ''}
+                onChange={(e) => updateProfile({ email: e.target.value })}
               />
             </div>
 
@@ -87,8 +90,8 @@ export function AccountSettings() {
               <Label htmlFor="phone">Teléfono</Label>
               <Input
                 id="phone"
-                value={profile.phone}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                value={profile.phone || ''}
+                onChange={(e) => updateProfile({ phone: e.target.value })}
               />
             </div>
 
@@ -96,8 +99,8 @@ export function AccountSettings() {
               <Label htmlFor="position">Cargo</Label>
               <Input
                 id="position"
-                value={profile.position}
-                onChange={(e) => setProfile({ ...profile, position: e.target.value })}
+                value={profile.position || ''}
+                onChange={(e) => updateProfile({ position: e.target.value })}
               />
             </div>
 
@@ -105,16 +108,10 @@ export function AccountSettings() {
               <Label htmlFor="department">Departamento</Label>
               <Input
                 id="department"
-                value={profile.department}
-                onChange={(e) => setProfile({ ...profile, department: e.target.value })}
+                value={profile.department || ''}
+                onChange={(e) => updateProfile({ department: e.target.value })}
               />
             </div>
-          </div>
-
-          <div className="flex justify-end">
-            <Button onClick={handleSaveProfile}>
-              Guardar Cambios
-            </Button>
           </div>
         </CardContent>
       </Card>

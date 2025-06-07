@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,27 +7,29 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
 
 export function GeneralSettings() {
-  const [settings, setSettings] = useState({
-    companyName: 'Mi Empresa',
-    language: 'es',
-    timezone: 'America/Mexico_City',
-    currency: 'MXN',
-    dateFormat: 'dd/MM/yyyy',
-    darkMode: false,
-    compactView: false
-  });
+  const { settings, loading, updateSettings } = useUserSettings();
 
-  const { toast } = useToast();
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-10 bg-gray-200 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!settings) return null;
 
   const handleSave = () => {
-    // Aquí guardarías en Supabase o localStorage
-    toast({
-      title: "Configuración guardada",
-      description: "Los cambios se han aplicado correctamente.",
-    });
+    // Los cambios se guardan automáticamente al modificar los campos
   };
 
   return (
@@ -45,14 +47,17 @@ export function GeneralSettings() {
               <Label htmlFor="company">Nombre de la Empresa</Label>
               <Input
                 id="company"
-                value={settings.companyName}
-                onChange={(e) => setSettings({ ...settings, companyName: e.target.value })}
+                value={settings.company_name}
+                onChange={(e) => updateSettings({ company_name: e.target.value })}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="language">Idioma</Label>
-              <Select value={settings.language} onValueChange={(value) => setSettings({ ...settings, language: value })}>
+              <Select 
+                value={settings.language} 
+                onValueChange={(value) => updateSettings({ language: value })}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -66,7 +71,10 @@ export function GeneralSettings() {
 
             <div className="space-y-2">
               <Label htmlFor="timezone">Zona Horaria</Label>
-              <Select value={settings.timezone} onValueChange={(value) => setSettings({ ...settings, timezone: value })}>
+              <Select 
+                value={settings.timezone} 
+                onValueChange={(value) => updateSettings({ timezone: value })}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -82,7 +90,10 @@ export function GeneralSettings() {
 
             <div className="space-y-2">
               <Label htmlFor="currency">Moneda</Label>
-              <Select value={settings.currency} onValueChange={(value) => setSettings({ ...settings, currency: value })}>
+              <Select 
+                value={settings.currency} 
+                onValueChange={(value) => updateSettings({ currency: value })}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -97,7 +108,10 @@ export function GeneralSettings() {
 
             <div className="space-y-2">
               <Label htmlFor="dateFormat">Formato de Fecha</Label>
-              <Select value={settings.dateFormat} onValueChange={(value) => setSettings({ ...settings, dateFormat: value })}>
+              <Select 
+                value={settings.date_format} 
+                onValueChange={(value) => updateSettings({ date_format: value })}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -123,8 +137,8 @@ export function GeneralSettings() {
                 </p>
               </div>
               <Switch
-                checked={settings.darkMode}
-                onCheckedChange={(checked) => setSettings({ ...settings, darkMode: checked })}
+                checked={settings.dark_mode}
+                onCheckedChange={(checked) => updateSettings({ dark_mode: checked })}
               />
             </div>
 
@@ -136,16 +150,10 @@ export function GeneralSettings() {
                 </p>
               </div>
               <Switch
-                checked={settings.compactView}
-                onCheckedChange={(checked) => setSettings({ ...settings, compactView: checked })}
+                checked={settings.compact_view}
+                onCheckedChange={(checked) => updateSettings({ compact_view: checked })}
               />
             </div>
-          </div>
-
-          <div className="flex justify-end">
-            <Button onClick={handleSave}>
-              Guardar Cambios
-            </Button>
           </div>
         </CardContent>
       </Card>
