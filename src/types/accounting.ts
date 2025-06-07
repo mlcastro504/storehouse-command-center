@@ -9,8 +9,8 @@ export interface Account {
   parent_id?: string;
   is_active: boolean;
   description?: string;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Transaction {
@@ -22,8 +22,8 @@ export interface Transaction {
   total_amount: number;
   user_id: string;
   status: 'draft' | 'posted' | 'cancelled';
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
   journal_entries?: JournalEntry[];
 }
 
@@ -34,7 +34,7 @@ export interface JournalEntry {
   debit_amount: number;
   credit_amount: number;
   description?: string;
-  created_at: Date;
+  created_at: string;
   account?: Account;
 }
 
@@ -47,8 +47,8 @@ export interface Contact {
   tax_id?: string;
   contact_type: 'customer' | 'supplier' | 'both';
   is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Invoice {
@@ -65,8 +65,8 @@ export interface Invoice {
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
   notes?: string;
   user_id: string;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
   contact?: Contact;
   invoice_lines?: InvoiceLine[];
 }
@@ -79,5 +79,5 @@ export interface InvoiceLine {
   unit_price: number;
   tax_rate: number;
   line_total: number;
-  created_at: Date;
+  created_at: string;
 }
