@@ -1,393 +1,304 @@
 
-import { connectToDatabase } from "@/lib/mongodb";
-import type { Product, Category, Location, Warehouse, StockLevel, StockMovement, CycleCount, Supplier, ProductSupplier } from "@/types/inventory";
+import { MongoClient, Db, Collection } from 'mongodb';
 
-// Función auxiliar para obtener el user_id (simulado por ahora)
-const getCurrentUserId = () => {
-  return "user_123";
-};
+const MONGODB_URI = import.meta.env.VITE_MONGODB_URI || 'mongodb+srv://warehouseos:warehouseos123@cluster0.k7hby3a.mongodb.net/warehouseos?retryWrites=true&w=majority&appName=Cluster0';
 
-// Función auxiliar para convertir ObjectId a string
+let client: MongoClient | null = null;
+let db: Db | null = null;
+
+// Helper function to convert MongoDB documents to strings
 const convertToString = (doc: any) => {
-  if (doc && doc._id) {
-    doc.id = doc._id.toString();
-    delete doc._id;
-  }
-  return doc;
+  if (!doc) return doc;
+  return {
+    ...doc,
+    _id: doc._id?.toString()
+  };
 };
 
-export class InventoryService {
-  // Test de conexión
-  static async testConnection() {
+const connectToDatabase = async () => {
+  if (!client) {
+    client = new MongoClient(MONGODB_URI);
+    await client.connect();
+    db = client.db('warehouseos');
+  }
+  return { client, db };
+};
+
+export const InventoryService = {
+  // Test connection
+  async testConnection() {
     try {
-      console.log('Testing database connection...');
-      const db = await connectToDatabase();
-      
-      // Test básico de lectura
-      const collections = await db.listCollections().toArray();
-      console.log('Available collections:', collections.map(c => c.name));
-      
-      // Test de escritura con una colección temporal
-      const testResult = await db.collection('connection_test').insertOne({ 
-        test: true, 
-        timestamp: new Date() 
-      });
-      console.log('Write test successful:', testResult);
-      
-      // Limpiar el test
-      await db.collection('connection_test').deleteOne({ id: testResult.insertedId });
-      console.log('Connection test completed successfully');
-      
-      return { success: true, message: 'Database connection is working properly' };
+      const { client: mongoClient } = await connectToDatabase();
+      await mongoClient.db('admin').admin().ping();
+      return { success: true, message: 'Connected to MongoDB successfully' };
     } catch (error) {
-      console.error('Connection test failed:', error);
-      return { success: false, error: error.message };
+      console.error('MongoDB connection error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
-  }
+  },
 
-  // Products
-  static async getProducts() {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-    
-    const products = await db.collection('products')
-      .find({ user_id: userId, is_active: true })
-      .sort({ name: 1 })
-      .toArray();
-
-    // Hacer lookup para las categorías
-    const productsWithCategories = await Promise.all(
-      products.map(async (product) => {
-        const category = await db.collection('categories')
-          .findOne({ id: product.category_id });
-        
-        return {
-          ...convertToString(product),
-          category: category ? convertToString(category) : null
-        };
-      })
-    );
-
-    return productsWithCategories;
-  }
-
-  static async createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-
-    const newProduct = {
-      ...product,
-      user_id: userId,
-      created_at: new Date(),
-      updated_at: new Date()
-    };
-
-    const result = await db.collection('products').insertOne(newProduct);
-    
-    // Return the inserted document with the generated id
-    return {
-      ...newProduct,
-      id: result.insertedId.toString()
-    };
-  }
-
-  static async updateProduct(id: string, updates: Partial<Product>) {
-    const db = await connectToDatabase();
-    
-    const updatedProduct = {
-      ...updates,
-      updated_at: new Date()
-    };
-    
-    delete updatedProduct._id;
-    delete updatedProduct.id;
-
-    const result = await db.collection('products').updateOne(
-      { id: id },
-      { $set: updatedProduct }
-    );
-
-    const product = await db.collection('products').findOne({ id: id });
-    return convertToString(product);
-  }
-
-  static async deleteProduct(id: string) {
-    const db = await connectToDatabase();
-    
-    await db.collection('products').updateOne(
-      { id: id },
-      { $set: { is_active: false, updated_at: new Date() } }
-    );
-  }
-
-  // Categories
-  static async getCategories() {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-    
-    const categories = await db.collection('categories')
-      .find({ user_id: userId, is_active: true })
-      .sort({ name: 1 })
-      .toArray();
-
-    return categories.map(category => convertToString(category));
-  }
-
-  static async createCategory(category: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-
-    const newCategory = {
-      ...category,
-      user_id: userId,
-      created_at: new Date(),
-      updated_at: new Date()
-    };
-
-    const result = await db.collection('categories').insertOne(newCategory);
-    
-    // Return the inserted document with the generated id
-    return {
-      ...newCategory,
-      id: result.insertedId.toString()
-    };
-  }
-
-  // Warehouses
-  static async getWarehouses() {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-    
-    const warehouses = await db.collection('warehouses')
-      .find({ user_id: userId, is_active: true })
-      .sort({ name: 1 })
-      .toArray();
-
-    return warehouses.map(warehouse => convertToString(warehouse));
-  }
-
-  static async createWarehouse(warehouse: Omit<Warehouse, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-
-    const newWarehouse = {
-      ...warehouse,
-      user_id: userId,
-      created_at: new Date(),
-      updated_at: new Date()
-    };
-
-    const result = await db.collection('warehouses').insertOne(newWarehouse);
-    
-    // Return the inserted document with the generated id
-    return {
-      ...newWarehouse,
-      id: result.insertedId.toString()
-    };
-  }
-
-  // Locations
-  static async getLocations(warehouseId?: string) {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-    
-    const filter: any = { user_id: userId, is_active: true };
-    if (warehouseId) {
-      filter.warehouse_id = warehouseId;
+  // Products CRUD
+  async getProducts() {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const products = await database.collection('products').find({}).toArray();
+      return products.map(convertToString);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      throw error;
     }
+  },
 
-    const locations = await db.collection('locations')
-      .find(filter)
-      .sort({ name: 1 })
-      .toArray();
+  async createProduct(product: any) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('products').insertOne(product);
+      return convertToString({ ...product, _id: result.insertedId });
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw error;
+    }
+  },
 
-    // Hacer lookup para los warehouses
-    const locationsWithWarehouses = await Promise.all(
-      locations.map(async (location) => {
-        const warehouse = await db.collection('warehouses')
-          .findOne({ id: location.warehouse_id });
-        
-        return {
-          ...convertToString(location),
-          warehouse: warehouse ? convertToString(warehouse) : null
-        };
-      })
-    );
-
-    return locationsWithWarehouses;
-  }
-
-  static async createLocation(location: Omit<Location, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-
-    const newLocation = {
-      ...location,
-      user_id: userId,
-      created_at: new Date(),
-      updated_at: new Date()
-    };
-
-    const result = await db.collection('locations').insertOne(newLocation);
-    
-    // Return the inserted document with the generated id
-    return {
-      ...newLocation,
-      id: result.insertedId.toString()
-    };
-  }
-
-  // Stock Levels
-  static async getStockLevels(productId?: string, locationId?: string) {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-    
-    const filter: any = { user_id: userId };
-    if (productId) filter.product_id = productId;
-    if (locationId) filter.location_id = locationId;
-
-    const stockLevels = await db.collection('stock_levels')
-      .find(filter)
-      .toArray();
-
-    // Hacer lookup para productos y ubicaciones
-    const stockLevelsWithRefs = await Promise.all(
-      stockLevels.map(async (stockLevel) => {
-        const product = await db.collection('products')
-          .findOne({ id: stockLevel.product_id });
-        const location = await db.collection('locations')
-          .findOne({ id: stockLevel.location_id });
-        
-        return {
-          ...convertToString(stockLevel),
-          product: product ? convertToString(product) : null,
-          location: location ? convertToString(location) : null
-        };
-      })
-    );
-
-    return stockLevelsWithRefs;
-  }
-
-  static async updateStockLevel(productId: string, locationId: string, updates: Partial<StockLevel>) {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-
-    const stockLevel = {
-      product_id: productId,
-      location_id: locationId,
-      user_id: userId,
-      last_updated: new Date(),
-      ...updates
-    };
-
-    delete stockLevel._id;
-    delete stockLevel.id;
-
-    // Try to update existing, if not found, create new
-    const existing = await db.collection('stock_levels')
-      .findOne({ product_id: productId, location_id: locationId, user_id: userId });
-
-    if (existing) {
-      await db.collection('stock_levels').updateOne(
-        { product_id: productId, location_id: locationId, user_id: userId },
-        { $set: stockLevel }
+  async updateProduct(id: string, product: any) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('products').updateOne(
+        { _id: id },
+        { $set: product }
       );
-    } else {
-      await db.collection('stock_levels').insertOne(stockLevel);
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error('Error updating product:', error);
+      throw error;
     }
+  },
 
-    const updatedStockLevel = await db.collection('stock_levels')
-      .findOne({ product_id: productId, location_id: locationId, user_id: userId });
-    
-    return convertToString(updatedStockLevel);
+  async deleteProduct(id: string) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('products').deleteOne({ _id: id });
+      return result.deletedCount > 0;
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      throw error;
+    }
+  },
+
+  // Categories CRUD
+  async getCategories() {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const categories = await database.collection('categories').find({}).toArray();
+      return categories.map(convertToString);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw error;
+    }
+  },
+
+  async createCategory(category: any) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('categories').insertOne(category);
+      return convertToString({ ...category, _id: result.insertedId });
+    } catch (error) {
+      console.error('Error creating category:', error);
+      throw error;
+    }
+  },
+
+  async updateCategory(id: string, category: any) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('categories').updateOne(
+        { _id: id },
+        { $set: category }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error('Error updating category:', error);
+      throw error;
+    }
+  },
+
+  async deleteCategory(id: string) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('categories').deleteOne({ _id: id });
+      return result.deletedCount > 0;
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      throw error;
+    }
+  },
+
+  // Warehouses CRUD
+  async getWarehouses() {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const warehouses = await database.collection('warehouses').find({}).toArray();
+      return warehouses.map(convertToString);
+    } catch (error) {
+      console.error('Error fetching warehouses:', error);
+      throw error;
+    }
+  },
+
+  async createWarehouse(warehouse: any) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('warehouses').insertOne(warehouse);
+      return convertToString({ ...warehouse, _id: result.insertedId });
+    } catch (error) {
+      console.error('Error creating warehouse:', error);
+      throw error;
+    }
+  },
+
+  async updateWarehouse(id: string, warehouse: any) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('warehouses').updateOne(
+        { _id: id },
+        { $set: warehouse }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error('Error updating warehouse:', error);
+      throw error;
+    }
+  },
+
+  async deleteWarehouse(id: string) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('warehouses').deleteOne({ _id: id });
+      return result.deletedCount > 0;
+    } catch (error) {
+      console.error('Error deleting warehouse:', error);
+      throw error;
+    }
+  },
+
+  // Locations CRUD
+  async getLocations() {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const locations = await database.collection('locations').find({}).toArray();
+      return locations.map(convertToString);
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+      throw error;
+    }
+  },
+
+  async createLocation(location: any) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('locations').insertOne(location);
+      return convertToString({ ...location, _id: result.insertedId });
+    } catch (error) {
+      console.error('Error creating location:', error);
+      throw error;
+    }
+  },
+
+  async updateLocation(id: string, location: any) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('locations').updateOne(
+        { _id: id },
+        { $set: location }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error('Error updating location:', error);
+      throw error;
+    }
+  },
+
+  async deleteLocation(id: string) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('locations').deleteOne({ _id: id });
+      return result.deletedCount > 0;
+    } catch (error) {
+      console.error('Error deleting location:', error);
+      throw error;
+    }
+  },
+
+  // Stock levels
+  async getStockLevels() {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const stockLevels = await database.collection('stock_levels').find({}).toArray();
+      return stockLevels.map(convertToString);
+    } catch (error) {
+      console.error('Error fetching stock levels:', error);
+      throw error;
+    }
+  },
+
+  // Stock movements
+  async getStockMovements() {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const movements = await database.collection('stock_movements').find({}).toArray();
+      return movements.map(convertToString);
+    } catch (error) {
+      console.error('Error fetching stock movements:', error);
+      throw error;
+    }
+  },
+
+  async createStockMovement(movement: any) {
+    try {
+      const { db: database } = await connectToDatabase();
+      if (!database) throw new Error('Database connection failed');
+      
+      const result = await database.collection('stock_movements').insertOne(movement);
+      return convertToString({ ...movement, _id: result.insertedId });
+    } catch (error) {
+      console.error('Error creating stock movement:', error);
+      throw error;
+    }
   }
-
-  // Stock Movements
-  static async getStockMovements(productId?: string) {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-    
-    const filter: any = { user_id: userId };
-    if (productId) filter.product_id = productId;
-
-    const movements = await db.collection('stock_movements')
-      .find(filter)
-      .sort({ timestamp: -1 })
-      .toArray();
-
-    // Hacer lookup para productos y ubicaciones
-    const movementsWithRefs = await Promise.all(
-      movements.map(async (movement) => {
-        const product = await db.collection('products')
-          .findOne({ id: movement.product_id });
-        const fromLocation = movement.from_location_id ? 
-          await db.collection('locations').findOne({ id: movement.from_location_id }) : null;
-        const toLocation = await db.collection('locations')
-          .findOne({ id: movement.to_location_id });
-        
-        return {
-          ...convertToString(movement),
-          product: product ? convertToString(product) : null,
-          from_location: fromLocation ? convertToString(fromLocation) : null,
-          to_location: toLocation ? convertToString(toLocation) : null
-        };
-      })
-    );
-
-    return movementsWithRefs;
-  }
-
-  static async createStockMovement(movement: Omit<StockMovement, 'id' | 'timestamp' | 'performed_by' | 'user_id' | '_id'>) {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-
-    const newMovement = {
-      ...movement,
-      performed_by: userId,
-      user_id: userId,
-      timestamp: new Date()
-    };
-
-    const result = await db.collection('stock_movements').insertOne(newMovement);
-    
-    // Return the inserted document with the generated id
-    return {
-      ...newMovement,
-      id: result.insertedId.toString()
-    };
-  }
-
-  // Suppliers
-  static async getSuppliers() {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-    
-    const suppliers = await db.collection('suppliers')
-      .find({ user_id: userId, is_active: true })
-      .sort({ name: 1 })
-      .toArray();
-
-    return suppliers.map(supplier => convertToString(supplier));
-  }
-
-  static async createSupplier(supplier: Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
-    const db = await connectToDatabase();
-    const userId = getCurrentUserId();
-
-    const newSupplier = {
-      ...supplier,
-      user_id: userId,
-      created_at: new Date(),
-      updated_at: new Date()
-    };
-
-    const result = await db.collection('suppliers').insertOne(newSupplier);
-    
-    // Return the inserted document with the generated id
-    return {
-      ...newSupplier,
-      id: result.insertedId.toString()
-    };
-  }
-}
+};

@@ -68,7 +68,7 @@ export const ConnectionTest = () => {
           {connectionStatus === 'success' && (
             <>
               <CheckCircle className="h-5 w-5 text-green-500" />
-              <span className="text-green-600">Conectado correctamente</span>
+              <span className="text-green-600 dark:text-green-400">Conectado correctamente</span>
               <Badge variant="outline" className="ml-auto">
                 API Activa
               </Badge>
@@ -77,16 +77,16 @@ export const ConnectionTest = () => {
           {connectionStatus === 'error' && (
             <>
               <XCircle className="h-5 w-5 text-red-500" />
-              <span className="text-red-600">Error de conexión</span>
+              <span className="text-red-600 dark:text-red-400">Error de conexión</span>
             </>
           )}
           {connectionStatus === 'idle' && (
-            <span className="text-gray-600">Estado desconocido</span>
+            <span className="text-muted-foreground">Estado desconocido</span>
           )}
         </div>
 
         {dbStats && (
-          <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-blue-500" />
               <div>
@@ -130,7 +130,7 @@ export const ConnectionTest = () => {
         </Button>
 
         {connectionStatus === 'success' && (
-          <div className="text-xs text-muted-foreground p-2 bg-green-50 rounded">
+          <div className="text-xs text-muted-foreground p-2 bg-green-500/10 border border-green-500/20 rounded">
             ✅ Base de datos: warehouseos<br/>
             🔑 Autenticación: API Keys activas<br/>
             🌐 Cluster: cluster0.k7hby3a.mongodb.net
