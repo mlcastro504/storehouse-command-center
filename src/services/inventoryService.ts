@@ -88,7 +88,7 @@ export class InventoryService {
     // Return the inserted document with the generated id
     return {
       ...newProduct,
-      id: result.insertedId || result.id
+      id: result.insertedId.toString()
     };
   }
 
@@ -150,7 +150,7 @@ export class InventoryService {
     // Return the inserted document with the generated id
     return {
       ...newCategory,
-      id: result.insertedId || result.id
+      id: result.insertedId.toString()
     };
   }
 
@@ -183,7 +183,7 @@ export class InventoryService {
     // Return the inserted document with the generated id
     return {
       ...newWarehouse,
-      id: result.insertedId || result.id
+      id: result.insertedId.toString()
     };
   }
 
@@ -234,7 +234,7 @@ export class InventoryService {
     // Return the inserted document with the generated id
     return {
       ...newLocation,
-      id: result.insertedId || result.id
+      id: result.insertedId.toString()
     };
   }
 
@@ -355,7 +355,7 @@ export class InventoryService {
     // Return the inserted document with the generated id
     return {
       ...newMovement,
-      id: result.insertedId || result.id
+      id: result.insertedId.toString()
     };
   }
 
@@ -388,8 +388,7 @@ export class InventoryService {
     // Return the inserted document with the generated id
     return {
       ...newSupplier,
-      id: result.insertedId || result.id
+      id: result.insertedId.toString()
     };
   }
 }
-
