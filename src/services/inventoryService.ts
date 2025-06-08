@@ -1,38 +1,15 @@
 
-import { MongoClient, Db, Collection } from 'mongodb';
+import { browserStorage } from '@/lib/browserStorage';
 
-const MONGODB_URI = import.meta.env.VITE_MONGODB_URI || 'mongodb+srv://warehouseos:warehouseos123@cluster0.k7hby3a.mongodb.net/warehouseos?retryWrites=true&w=majority&appName=Cluster0';
-
-let client: MongoClient | null = null;
-let db: Db | null = null;
-
-// Helper function to convert MongoDB documents to strings
-const convertToString = (doc: any) => {
-  if (!doc) return doc;
-  return {
-    ...doc,
-    _id: doc._id?.toString()
-  };
-};
-
-const connectToDatabase = async () => {
-  if (!client) {
-    client = new MongoClient(MONGODB_URI);
-    await client.connect();
-    db = client.db('warehouseos');
-  }
-  return { client, db };
-};
-
+// Browser-compatible inventory service
 export const InventoryService = {
-  // Test connection
+  // Test connection (browser storage)
   async testConnection() {
     try {
-      const { client: mongoClient } = await connectToDatabase();
-      await mongoClient.db('admin').admin().ping();
-      return { success: true, message: 'Connected to MongoDB successfully' };
+      await browserStorage.getStats();
+      return { success: true, message: 'Browser storage connected successfully' };
     } catch (error) {
-      console.error('MongoDB connection error:', error);
+      console.error('Browser storage error:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   },
@@ -40,11 +17,7 @@ export const InventoryService = {
   // Products CRUD
   async getProducts() {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const products = await database.collection('products').find({}).toArray();
-      return products.map(convertToString);
+      return await browserStorage.find('products');
     } catch (error) {
       console.error('Error fetching products:', error);
       throw error;
@@ -53,11 +26,7 @@ export const InventoryService = {
 
   async createProduct(product: any) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('products').insertOne(product);
-      return convertToString({ ...product, _id: result.insertedId });
+      return await browserStorage.insertOne('products', product);
     } catch (error) {
       console.error('Error creating product:', error);
       throw error;
@@ -66,14 +35,8 @@ export const InventoryService = {
 
   async updateProduct(id: string, product: any) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('products').updateOne(
-        { _id: id },
-        { $set: product }
-      );
-      return result.modifiedCount > 0;
+      const result = await browserStorage.updateOne('products', { id }, product);
+      return result !== null;
     } catch (error) {
       console.error('Error updating product:', error);
       throw error;
@@ -82,11 +45,7 @@ export const InventoryService = {
 
   async deleteProduct(id: string) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('products').deleteOne({ _id: id });
-      return result.deletedCount > 0;
+      return await browserStorage.deleteOne('products', { id });
     } catch (error) {
       console.error('Error deleting product:', error);
       throw error;
@@ -96,11 +55,7 @@ export const InventoryService = {
   // Categories CRUD
   async getCategories() {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const categories = await database.collection('categories').find({}).toArray();
-      return categories.map(convertToString);
+      return await browserStorage.find('categories');
     } catch (error) {
       console.error('Error fetching categories:', error);
       throw error;
@@ -109,11 +64,7 @@ export const InventoryService = {
 
   async createCategory(category: any) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('categories').insertOne(category);
-      return convertToString({ ...category, _id: result.insertedId });
+      return await browserStorage.insertOne('categories', category);
     } catch (error) {
       console.error('Error creating category:', error);
       throw error;
@@ -122,14 +73,8 @@ export const InventoryService = {
 
   async updateCategory(id: string, category: any) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('categories').updateOne(
-        { _id: id },
-        { $set: category }
-      );
-      return result.modifiedCount > 0;
+      const result = await browserStorage.updateOne('categories', { id }, category);
+      return result !== null;
     } catch (error) {
       console.error('Error updating category:', error);
       throw error;
@@ -138,11 +83,7 @@ export const InventoryService = {
 
   async deleteCategory(id: string) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('categories').deleteOne({ _id: id });
-      return result.deletedCount > 0;
+      return await browserStorage.deleteOne('categories', { id });
     } catch (error) {
       console.error('Error deleting category:', error);
       throw error;
@@ -152,11 +93,7 @@ export const InventoryService = {
   // Warehouses CRUD
   async getWarehouses() {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const warehouses = await database.collection('warehouses').find({}).toArray();
-      return warehouses.map(convertToString);
+      return await browserStorage.find('warehouses');
     } catch (error) {
       console.error('Error fetching warehouses:', error);
       throw error;
@@ -165,11 +102,7 @@ export const InventoryService = {
 
   async createWarehouse(warehouse: any) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('warehouses').insertOne(warehouse);
-      return convertToString({ ...warehouse, _id: result.insertedId });
+      return await browserStorage.insertOne('warehouses', warehouse);
     } catch (error) {
       console.error('Error creating warehouse:', error);
       throw error;
@@ -178,14 +111,8 @@ export const InventoryService = {
 
   async updateWarehouse(id: string, warehouse: any) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('warehouses').updateOne(
-        { _id: id },
-        { $set: warehouse }
-      );
-      return result.modifiedCount > 0;
+      const result = await browserStorage.updateOne('warehouses', { id }, warehouse);
+      return result !== null;
     } catch (error) {
       console.error('Error updating warehouse:', error);
       throw error;
@@ -194,11 +121,7 @@ export const InventoryService = {
 
   async deleteWarehouse(id: string) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('warehouses').deleteOne({ _id: id });
-      return result.deletedCount > 0;
+      return await browserStorage.deleteOne('warehouses', { id });
     } catch (error) {
       console.error('Error deleting warehouse:', error);
       throw error;
@@ -206,13 +129,10 @@ export const InventoryService = {
   },
 
   // Locations CRUD
-  async getLocations() {
+  async getLocations(warehouseId?: string) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const locations = await database.collection('locations').find({}).toArray();
-      return locations.map(convertToString);
+      const filter = warehouseId ? { warehouse_id: warehouseId } : {};
+      return await browserStorage.find('locations', filter);
     } catch (error) {
       console.error('Error fetching locations:', error);
       throw error;
@@ -221,11 +141,7 @@ export const InventoryService = {
 
   async createLocation(location: any) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('locations').insertOne(location);
-      return convertToString({ ...location, _id: result.insertedId });
+      return await browserStorage.insertOne('locations', location);
     } catch (error) {
       console.error('Error creating location:', error);
       throw error;
@@ -234,14 +150,8 @@ export const InventoryService = {
 
   async updateLocation(id: string, location: any) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('locations').updateOne(
-        { _id: id },
-        { $set: location }
-      );
-      return result.modifiedCount > 0;
+      const result = await browserStorage.updateOne('locations', { id }, location);
+      return result !== null;
     } catch (error) {
       console.error('Error updating location:', error);
       throw error;
@@ -250,11 +160,7 @@ export const InventoryService = {
 
   async deleteLocation(id: string) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('locations').deleteOne({ _id: id });
-      return result.deletedCount > 0;
+      return await browserStorage.deleteOne('locations', { id });
     } catch (error) {
       console.error('Error deleting location:', error);
       throw error;
@@ -262,27 +168,36 @@ export const InventoryService = {
   },
 
   // Stock levels
-  async getStockLevels() {
+  async getStockLevels(productId?: string, locationId?: string) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const stockLevels = await database.collection('stock_levels').find({}).toArray();
-      return stockLevels.map(convertToString);
+      const filter: any = {};
+      if (productId) filter.product_id = productId;
+      if (locationId) filter.location_id = locationId;
+      return await browserStorage.find('stock_levels', filter);
     } catch (error) {
       console.error('Error fetching stock levels:', error);
       throw error;
     }
   },
 
-  // Stock movements
-  async getStockMovements() {
+  async updateStockLevel(productId: string, locationId: string, updates: any) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const movements = await database.collection('stock_movements').find({}).toArray();
-      return movements.map(convertToString);
+      const result = await browserStorage.updateOne('stock_levels', 
+        { product_id: productId, location_id: locationId }, 
+        updates
+      );
+      return result !== null;
+    } catch (error) {
+      console.error('Error updating stock level:', error);
+      throw error;
+    }
+  },
+
+  // Stock movements
+  async getStockMovements(productId?: string) {
+    try {
+      const filter = productId ? { product_id: productId } : {};
+      return await browserStorage.find('stock_movements', filter);
     } catch (error) {
       console.error('Error fetching stock movements:', error);
       throw error;
@@ -291,13 +206,28 @@ export const InventoryService = {
 
   async createStockMovement(movement: any) {
     try {
-      const { db: database } = await connectToDatabase();
-      if (!database) throw new Error('Database connection failed');
-      
-      const result = await database.collection('stock_movements').insertOne(movement);
-      return convertToString({ ...movement, _id: result.insertedId });
+      return await browserStorage.insertOne('stock_movements', movement);
     } catch (error) {
       console.error('Error creating stock movement:', error);
+      throw error;
+    }
+  },
+
+  // Suppliers
+  async getSuppliers() {
+    try {
+      return await browserStorage.find('suppliers');
+    } catch (error) {
+      console.error('Error fetching suppliers:', error);
+      throw error;
+    }
+  },
+
+  async createSupplier(supplier: any) {
+    try {
+      return await browserStorage.insertOne('suppliers', supplier);
+    } catch (error) {
+      console.error('Error creating supplier:', error);
       throw error;
     }
   }
