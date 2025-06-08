@@ -1,7 +1,7 @@
 
 import { MongoClient, Db } from 'mongodb';
 
-const MONGODB_URI = 'mongodb+srv://mlcastro:<db_password>@cluster0.k7hby3a.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+const MONGODB_URI = 'mongodb+srv://mlcastro:Futuro2025,@cluster0.k7hby3a.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 const DB_NAME = 'warehouseos';
 
 let client: MongoClient | null = null;
