@@ -1,5 +1,4 @@
 
-
 import { connectToDatabase } from "@/lib/mongodb";
 import type { Product, Category, Location, Warehouse, StockLevel, StockMovement, CycleCount, Supplier, ProductSupplier } from "@/types/inventory";
 
