@@ -1,4 +1,3 @@
-
 import { connectToDatabase } from "@/lib/mongodb";
 import type { Product, Category, Location, Warehouse, StockLevel, StockMovement, CycleCount, Supplier, ProductSupplier } from "@/types/inventory";
 
@@ -367,4 +366,3 @@ export class InventoryService {
     return convertToString(result);
   }
 }
-</lov-code>
