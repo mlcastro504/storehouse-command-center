@@ -1,4 +1,5 @@
 
+
 import { connectToDatabase } from "@/lib/mongodb";
 import type { Product, Category, Location, Warehouse, StockLevel, StockMovement, CycleCount, Supplier, ProductSupplier } from "@/types/inventory";
 
@@ -9,7 +10,7 @@ const getCurrentUserId = () => {
 
 // Función auxiliar para convertir ObjectId a string
 const convertToString = (doc: any) => {
-  if (doc._id) {
+  if (doc && doc._id) {
     doc.id = doc._id.toString();
     delete doc._id;
   }
@@ -130,7 +131,7 @@ export class InventoryService {
       .sort({ name: 1 })
       .toArray();
 
-    return categories.map(convertToString);
+    return categories.map(category => convertToString(category));
   }
 
   static async createCategory(category: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
@@ -163,7 +164,7 @@ export class InventoryService {
       .sort({ name: 1 })
       .toArray();
 
-    return warehouses.map(convertToString);
+    return warehouses.map(warehouse => convertToString(warehouse));
   }
 
   static async createWarehouse(warehouse: Omit<Warehouse, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
@@ -368,7 +369,7 @@ export class InventoryService {
       .sort({ name: 1 })
       .toArray();
 
-    return suppliers.map(convertToString);
+    return suppliers.map(supplier => convertToString(supplier));
   }
 
   static async createSupplier(supplier: Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
@@ -391,3 +392,4 @@ export class InventoryService {
     };
   }
 }
+
