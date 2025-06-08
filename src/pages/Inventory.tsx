@@ -6,16 +6,26 @@ import { ProductsList } from '@/components/inventory/ProductsList';
 import { CreateProductDialog } from '@/components/inventory/CreateProductDialog';
 import { CategoriesList } from '@/components/inventory/CategoriesList';
 import { CreateCategoryDialog } from '@/components/inventory/CreateCategoryDialog';
+import { WarehousesList } from '@/components/inventory/WarehousesList';
+import { CreateWarehouseDialog } from '@/components/inventory/CreateWarehouseDialog';
+import { LocationsList } from '@/components/inventory/LocationsList';
+import { CreateLocationDialog } from '@/components/inventory/CreateLocationDialog';
+import { StockLevelsList } from '@/components/inventory/StockLevelsList';
+import { StockMovementsList } from '@/components/inventory/StockMovementsList';
 import { ConnectionTest } from '@/components/inventory/ConnectionTest';
-import { useProducts, useCategories } from '@/hooks/useInventory';
+import { useProducts, useCategories, useWarehouses, useLocations } from '@/hooks/useInventory';
 import { Package, Warehouse, MapPin, TrendingDown, Tag } from 'lucide-react';
 
 export default function Inventory() {
   const { data: products } = useProducts();
   const { data: categories } = useCategories();
+  const { data: warehouses } = useWarehouses();
+  const { data: locations } = useLocations();
 
   const totalProducts = products?.length || 0;
   const totalCategories = categories?.length || 0;
+  const totalWarehouses = warehouses?.length || 0;
+  const totalLocations = locations?.length || 0;
   const lowStockProducts = products?.filter(p => p.min_stock_level <= 10).length || 0;
 
   return (
@@ -27,11 +37,13 @@ export default function Inventory() {
         </div>
         <div className="flex gap-2">
           <CreateCategoryDialog />
+          <CreateWarehouseDialog />
+          <CreateLocationDialog />
           <CreateProductDialog />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
@@ -63,13 +75,27 @@ export default function Inventory() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
+              Almacenes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center">
+              <Warehouse className="h-5 w-5 text-purple-500 mr-2" />
+              <span className="text-2xl font-bold">{totalWarehouses}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
               Ubicaciones
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center">
-              <MapPin className="h-5 w-5 text-purple-500 mr-2" />
-              <span className="text-2xl font-bold">0</span>
+              <MapPin className="h-5 w-5 text-indigo-500 mr-2" />
+              <span className="text-2xl font-bold">{totalLocations}</span>
             </div>
           </CardContent>
         </Card>
@@ -129,9 +155,7 @@ export default function Inventory() {
                   <CardTitle>Almacenes</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center text-gray-500 py-8">
-                    Funcionalidad de almacenes en desarrollo
-                  </div>
+                  <WarehousesList />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -142,9 +166,7 @@ export default function Inventory() {
                   <CardTitle>Ubicaciones</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center text-gray-500 py-8">
-                    Funcionalidad de ubicaciones en desarrollo
-                  </div>
+                  <LocationsList />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -155,9 +177,7 @@ export default function Inventory() {
                   <CardTitle>Niveles de Stock</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center text-gray-500 py-8">
-                    Funcionalidad de niveles de stock en desarrollo
-                  </div>
+                  <StockLevelsList />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -168,9 +188,7 @@ export default function Inventory() {
                   <CardTitle>Movimientos de Stock</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center text-gray-500 py-8">
-                    Funcionalidad de movimientos en desarrollo
-                  </div>
+                  <StockMovementsList />
                 </CardContent>
               </Card>
             </TabsContent>

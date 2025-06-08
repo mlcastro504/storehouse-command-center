@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import Inventory from "./pages/Inventory";
 import Accounting from "./pages/Accounting";
 import Ecommerce from "./pages/Ecommerce";
 import Settings from "./pages/Settings";
@@ -26,11 +27,11 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/inventory" element={<Inventory />} />
               <Route path="/accounting" element={<Accounting />} />
               <Route path="/ecommerce" element={<Ecommerce />} />
               <Route path="/settings" element={<Settings />} />
               {/* Rutas de módulos - se expandirán según necesidad */}
-              <Route path="/inventory" element={<Dashboard />} />
               <Route path="/locations" element={<Dashboard />} />
               <Route path="/putaway" element={<Dashboard />} />
               <Route path="/stock-movements" element={<Dashboard />} />
