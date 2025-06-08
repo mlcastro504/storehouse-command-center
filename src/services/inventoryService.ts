@@ -1,10 +1,9 @@
+
 import { connectToDatabase } from "@/lib/mongodb";
-import { ObjectId } from 'mongodb';
 import type { Product, Category, Location, Warehouse, StockLevel, StockMovement, CycleCount, Supplier, ProductSupplier } from "@/types/inventory";
 
 // Función auxiliar para obtener el user_id (simulado por ahora)
 const getCurrentUserId = () => {
-  // Por ahora retornamos un ID fijo, pero esto debería venir de un sistema de autenticación
   return "user_123";
 };
 
@@ -21,7 +20,7 @@ export class InventoryService {
   // Test de conexión
   static async testConnection() {
     try {
-      console.log('Testing MongoDB connection...');
+      console.log('Testing database connection...');
       const db = await connectToDatabase();
       
       // Test básico de lectura
@@ -33,13 +32,13 @@ export class InventoryService {
         test: true, 
         timestamp: new Date() 
       });
-      console.log('Write test successful:', testResult.insertedId);
+      console.log('Write test successful:', testResult);
       
       // Limpiar el test
-      await db.collection('connection_test').deleteOne({ _id: testResult.insertedId });
+      await db.collection('connection_test').deleteOne({ id: testResult.id });
       console.log('Connection test completed successfully');
       
-      return { success: true, message: 'MongoDB connection is working properly' };
+      return { success: true, message: 'Database connection is working properly' };
     } catch (error) {
       console.error('Connection test failed:', error);
       return { success: false, error: error.message };
@@ -60,7 +59,7 @@ export class InventoryService {
     const productsWithCategories = await Promise.all(
       products.map(async (product) => {
         const category = await db.collection('categories')
-          .findOne({ _id: new ObjectId(product.category_id) });
+          .findOne({ id: product.category_id });
         
         return {
           ...convertToString(product),
@@ -84,9 +83,8 @@ export class InventoryService {
     };
 
     const result = await db.collection('products').insertOne(newProduct);
-    const createdProduct = await db.collection('products').findOne({ _id: result.insertedId });
     
-    return convertToString(createdProduct);
+    return convertToString(result);
   }
 
   static async updateProduct(id: string, updates: Partial<Product>) {
@@ -100,12 +98,12 @@ export class InventoryService {
     delete updatedProduct._id;
     delete updatedProduct.id;
 
-    await db.collection('products').updateOne(
-      { _id: new ObjectId(id) },
+    const result = await db.collection('products').updateOne(
+      { id: id },
       { $set: updatedProduct }
     );
 
-    const product = await db.collection('products').findOne({ _id: new ObjectId(id) });
+    const product = await db.collection('products').findOne({ id: id });
     return convertToString(product);
   }
 
@@ -113,7 +111,7 @@ export class InventoryService {
     const db = await connectToDatabase();
     
     await db.collection('products').updateOne(
-      { _id: new ObjectId(id) },
+      { id: id },
       { $set: { is_active: false, updated_at: new Date() } }
     );
   }
@@ -143,9 +141,8 @@ export class InventoryService {
     };
 
     const result = await db.collection('categories').insertOne(newCategory);
-    const createdCategory = await db.collection('categories').findOne({ _id: result.insertedId });
     
-    return convertToString(createdCategory);
+    return convertToString(result);
   }
 
   // Warehouses
@@ -173,9 +170,8 @@ export class InventoryService {
     };
 
     const result = await db.collection('warehouses').insertOne(newWarehouse);
-    const createdWarehouse = await db.collection('warehouses').findOne({ _id: result.insertedId });
     
-    return convertToString(createdWarehouse);
+    return convertToString(result);
   }
 
   // Locations
@@ -197,7 +193,7 @@ export class InventoryService {
     const locationsWithWarehouses = await Promise.all(
       locations.map(async (location) => {
         const warehouse = await db.collection('warehouses')
-          .findOne({ _id: new ObjectId(location.warehouse_id) });
+          .findOne({ id: location.warehouse_id });
         
         return {
           ...convertToString(location),
@@ -221,9 +217,8 @@ export class InventoryService {
     };
 
     const result = await db.collection('locations').insertOne(newLocation);
-    const createdLocation = await db.collection('locations').findOne({ _id: result.insertedId });
     
-    return convertToString(createdLocation);
+    return convertToString(result);
   }
 
   // Stock Levels
@@ -243,9 +238,9 @@ export class InventoryService {
     const stockLevelsWithRefs = await Promise.all(
       stockLevels.map(async (stockLevel) => {
         const product = await db.collection('products')
-          .findOne({ _id: new ObjectId(stockLevel.product_id) });
+          .findOne({ id: stockLevel.product_id });
         const location = await db.collection('locations')
-          .findOne({ _id: new ObjectId(stockLevel.location_id) });
+          .findOne({ id: stockLevel.location_id });
         
         return {
           ...convertToString(stockLevel),
@@ -273,11 +268,18 @@ export class InventoryService {
     delete stockLevel._id;
     delete stockLevel.id;
 
-    await db.collection('stock_levels').updateOne(
-      { product_id: productId, location_id: locationId, user_id: userId },
-      { $set: stockLevel },
-      { upsert: true }
-    );
+    // Try to update existing, if not found, create new
+    const existing = await db.collection('stock_levels')
+      .findOne({ product_id: productId, location_id: locationId, user_id: userId });
+
+    if (existing) {
+      await db.collection('stock_levels').updateOne(
+        { product_id: productId, location_id: locationId, user_id: userId },
+        { $set: stockLevel }
+      );
+    } else {
+      await db.collection('stock_levels').insertOne(stockLevel);
+    }
 
     const updatedStockLevel = await db.collection('stock_levels')
       .findOne({ product_id: productId, location_id: locationId, user_id: userId });
@@ -302,11 +304,11 @@ export class InventoryService {
     const movementsWithRefs = await Promise.all(
       movements.map(async (movement) => {
         const product = await db.collection('products')
-          .findOne({ _id: new ObjectId(movement.product_id) });
+          .findOne({ id: movement.product_id });
         const fromLocation = movement.from_location_id ? 
-          await db.collection('locations').findOne({ _id: new ObjectId(movement.from_location_id) }) : null;
+          await db.collection('locations').findOne({ id: movement.from_location_id }) : null;
         const toLocation = await db.collection('locations')
-          .findOne({ _id: new ObjectId(movement.to_location_id) });
+          .findOne({ id: movement.to_location_id });
         
         return {
           ...convertToString(movement),
@@ -332,9 +334,8 @@ export class InventoryService {
     };
 
     const result = await db.collection('stock_movements').insertOne(newMovement);
-    const createdMovement = await db.collection('stock_movements').findOne({ _id: result.insertedId });
     
-    return convertToString(createdMovement);
+    return convertToString(result);
   }
 
   // Suppliers
@@ -362,8 +363,8 @@ export class InventoryService {
     };
 
     const result = await db.collection('suppliers').insertOne(newSupplier);
-    const createdSupplier = await db.collection('suppliers').findOne({ _id: result.insertedId });
     
-    return convertToString(createdSupplier);
+    return convertToString(result);
   }
 }
+</lov-code>
