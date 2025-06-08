@@ -1,3 +1,4 @@
+
 import { connectToDatabase } from "@/lib/mongodb";
 import type { Product, Category, Location, Warehouse, StockLevel, StockMovement, CycleCount, Supplier, ProductSupplier } from "@/types/inventory";
 
@@ -83,7 +84,11 @@ export class InventoryService {
 
     const result = await db.collection('products').insertOne(newProduct);
     
-    return convertToString(result);
+    // Return the inserted document with the generated id
+    return {
+      ...newProduct,
+      id: result.insertedId || result.id
+    };
   }
 
   static async updateProduct(id: string, updates: Partial<Product>) {
@@ -141,7 +146,11 @@ export class InventoryService {
 
     const result = await db.collection('categories').insertOne(newCategory);
     
-    return convertToString(result);
+    // Return the inserted document with the generated id
+    return {
+      ...newCategory,
+      id: result.insertedId || result.id
+    };
   }
 
   // Warehouses
@@ -170,7 +179,11 @@ export class InventoryService {
 
     const result = await db.collection('warehouses').insertOne(newWarehouse);
     
-    return convertToString(result);
+    // Return the inserted document with the generated id
+    return {
+      ...newWarehouse,
+      id: result.insertedId || result.id
+    };
   }
 
   // Locations
@@ -217,7 +230,11 @@ export class InventoryService {
 
     const result = await db.collection('locations').insertOne(newLocation);
     
-    return convertToString(result);
+    // Return the inserted document with the generated id
+    return {
+      ...newLocation,
+      id: result.insertedId || result.id
+    };
   }
 
   // Stock Levels
@@ -334,7 +351,11 @@ export class InventoryService {
 
     const result = await db.collection('stock_movements').insertOne(newMovement);
     
-    return convertToString(result);
+    // Return the inserted document with the generated id
+    return {
+      ...newMovement,
+      id: result.insertedId || result.id
+    };
   }
 
   // Suppliers
@@ -363,6 +384,10 @@ export class InventoryService {
 
     const result = await db.collection('suppliers').insertOne(newSupplier);
     
-    return convertToString(result);
+    // Return the inserted document with the generated id
+    return {
+      ...newSupplier,
+      id: result.insertedId || result.id
+    };
   }
 }
