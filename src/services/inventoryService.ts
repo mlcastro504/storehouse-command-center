@@ -1,4 +1,3 @@
-
 import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from 'mongodb';
 import type { Product, Category, Location, Warehouse, StockLevel, StockMovement, CycleCount, Supplier, ProductSupplier } from "@/types/inventory";
@@ -19,6 +18,34 @@ const convertToString = (doc: any) => {
 };
 
 export class InventoryService {
+  // Test de conexión
+  static async testConnection() {
+    try {
+      console.log('Testing MongoDB connection...');
+      const db = await connectToDatabase();
+      
+      // Test básico de lectura
+      const collections = await db.listCollections().toArray();
+      console.log('Available collections:', collections.map(c => c.name));
+      
+      // Test de escritura con una colección temporal
+      const testResult = await db.collection('connection_test').insertOne({ 
+        test: true, 
+        timestamp: new Date() 
+      });
+      console.log('Write test successful:', testResult.insertedId);
+      
+      // Limpiar el test
+      await db.collection('connection_test').deleteOne({ _id: testResult.insertedId });
+      console.log('Connection test completed successfully');
+      
+      return { success: true, message: 'MongoDB connection is working properly' };
+    } catch (error) {
+      console.error('Connection test failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   // Products
   static async getProducts() {
     const db = await connectToDatabase();
