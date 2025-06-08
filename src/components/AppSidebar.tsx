@@ -4,6 +4,7 @@ import * as LucideIcons from "lucide-react"
 import { useTheme } from "next-themes"
 import { useAuth } from '@/hooks/useAuth'
 import { getModulesForUser } from '@/data/modules'
+import { useState, useEffect } from 'react'
 import {
   Sidebar,
   SidebarContent,
@@ -23,8 +24,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 export function AppSidebar() {
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
+  const [companyName, setCompanyName] = useState('WarehouseOS')
+  const [companyLogo, setCompanyLogo] = useState('')
   
   const userModules = user ? getModulesForUser(user.role.level) : []
+
+  // Cargar configuraciones de la empresa
+  useEffect(() => {
+    const savedName = localStorage.getItem('companyName')
+    const savedLogo = localStorage.getItem('companyLogo')
+    
+    if (savedName) {
+      setCompanyName(savedName)
+    }
+    if (savedLogo) {
+      setCompanyLogo(savedLogo)
+    }
+  }, [])
 
   const getIcon = (iconName: string) => {
     const IconComponent = LucideIcons[iconName as keyof typeof LucideIcons] as React.ComponentType<any>
@@ -35,11 +51,19 @@ export function AppSidebar() {
     <Sidebar className="border-r">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 warehouse-gradient rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">WOS</span>
-          </div>
+          {companyLogo ? (
+            <img 
+              src={companyLogo} 
+              alt="Logo" 
+              className="w-8 h-8 object-contain rounded-lg"
+            />
+          ) : (
+            <div className="w-8 h-8 warehouse-gradient rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">WOS</span>
+            </div>
+          )}
           <div>
-            <h2 className="font-bold text-lg">WarehouseOS</h2>
+            <h2 className="font-bold text-lg">{companyName}</h2>
             <p className="text-xs text-muted-foreground">Sistema de Gestión</p>
           </div>
         </div>
