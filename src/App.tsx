@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,12 @@ import Ecommerce from "./pages/Ecommerce";
 import Settings from "./pages/Settings";
 import Locations from "./pages/Locations";
 import PutAway from "./pages/PutAway";
+import StockMovements from "./pages/StockMovements";
+import Scanner from "./pages/Scanner";
+import Loading from "./pages/Loading";
+import Customers from "./pages/Customers";
+import Chat from "./pages/Chat";
+import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,15 +41,14 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/locations" element={<Locations />} />
               <Route path="/putaway" element={<PutAway />} />
-              {/* Rutas de módulos - se expandirán según necesidad */}
-              <Route path="/stock-movements" element={<Dashboard />} />
+              <Route path="/stock-movements" element={<StockMovements />} />
               <Route path="/picking" element={<Dashboard />} />
-              <Route path="/scanner" element={<Dashboard />} />
-              <Route path="/loading" element={<Dashboard />} />
-              <Route path="/docks" element={<Dashboard />} />
-              <Route path="/customers" element={<Dashboard />} />
-              <Route path="/chat" element={<Dashboard />} />
-              <Route path="/users" element={<Dashboard />} />
+              <Route path="/scanner" element={<Scanner />} />
+              <Route path="/loading" element={<Loading />} />
+              <Route path="/docks" element={<Loading />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/chat" element={<Chat />} />
+              <Route path="/users" element={<Users />} />
               <Route path="/reports" element={<Dashboard />} />
               <Route path="/help" element={<Dashboard />} />
               <Route path="*" element={<NotFound />} />
