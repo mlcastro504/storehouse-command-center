@@ -35,7 +35,7 @@ export class InventoryService {
       console.log('Write test successful:', testResult);
       
       // Limpiar el test
-      await db.collection('connection_test').deleteOne({ id: testResult.id });
+      await db.collection('connection_test').deleteOne({ id: testResult.insertedId });
       console.log('Connection test completed successfully');
       
       return { success: true, message: 'Database connection is working properly' };
