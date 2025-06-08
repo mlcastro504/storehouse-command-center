@@ -1,4 +1,3 @@
-
 // Browser-compatible storage service that mimics MongoDB operations
 export interface StorageDocument {
   id: string;
@@ -127,7 +126,8 @@ class BrowserStorage {
   async getStats() {
     const collections = [
       'products', 'categories', 'warehouses', 'locations', 
-      'stock_levels', 'stock_movements', 'suppliers', 'cycle_counts'
+      'stock_levels', 'stock_movements', 'suppliers', 'cycle_counts',
+      'putaway_tasks', 'putaway_rules', 'putaway_performance'
     ];
     
     let totalDocs = 0;
@@ -159,6 +159,7 @@ class BrowserStorage {
       const electronicsCategory = await this.insertOne('categories', {
         name: 'Electrónicos',
         description: 'Productos electrónicos',
+        code: 'ELEC',
         is_active: true,
         user_id: 'user_123'
       });
@@ -166,6 +167,7 @@ class BrowserStorage {
       const clothingCategory = await this.insertOne('categories', {
         name: 'Ropa',
         description: 'Productos de vestimenta',
+        code: 'ROPA',
         is_active: true,
         user_id: 'user_123'
       });
@@ -178,6 +180,7 @@ class BrowserStorage {
         city: 'Ciudad de México',
         state: 'CDMX',
         postal_code: '01000',
+        country: 'México',
         phone: '+52 55 1234 5678',
         email: 'almacen@empresa.com',
         is_active: true,
@@ -197,16 +200,29 @@ class BrowserStorage {
         user_id: 'user_123'
       });
 
+      const locationA2 = await this.insertOne('locations', {
+        name: 'Pasillo A - Estante 2',
+        code: 'A1-002',
+        type: 'shelf',
+        warehouse_id: mainWarehouse.id,
+        capacity: 100,
+        current_occupancy: 0,
+        coordinates: { x: 1, y: 2 },
+        is_active: true,
+        user_id: 'user_123'
+      });
+
       // Sample products
       const laptop = await this.insertOne('products', {
         name: 'Laptop Dell Inspiron',
         sku: 'DELL-INS-001',
         description: 'Laptop Dell Inspiron 15 pulgadas',
         category_id: electronicsCategory.id,
-        unit_price: 15000,
         cost_price: 12000,
+        sale_price: 15000,
         min_stock_level: 5,
         max_stock_level: 50,
+        reorder_point: 10,
         unit_of_measure: 'unidad',
         weight: 2.5,
         dimensions: { length: 35, width: 25, height: 2 },

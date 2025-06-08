@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +11,8 @@ import Inventory from "./pages/Inventory";
 import Accounting from "./pages/Accounting";
 import Ecommerce from "./pages/Ecommerce";
 import Settings from "./pages/Settings";
+import Locations from "./pages/Locations";
+import PutAway from "./pages/PutAway";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,9 +32,9 @@ const App = () => (
               <Route path="/accounting" element={<Accounting />} />
               <Route path="/ecommerce" element={<Ecommerce />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/locations" element={<Locations />} />
+              <Route path="/putaway" element={<PutAway />} />
               {/* Rutas de módulos - se expandirán según necesidad */}
-              <Route path="/locations" element={<Dashboard />} />
-              <Route path="/putaway" element={<Dashboard />} />
               <Route path="/stock-movements" element={<Dashboard />} />
               <Route path="/picking" element={<Dashboard />} />
               <Route path="/scanner" element={<Dashboard />} />
