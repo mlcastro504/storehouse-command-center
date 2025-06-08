@@ -1,5 +1,5 @@
 
-import { MongoClient, Db } from 'mongodb';
+import { MongoClient, Db, AuthMechanism } from 'mongodb';
 
 const MONGODB_PUBLIC_KEY = 'tnaivpin';
 const MONGODB_PRIVATE_KEY = 'a57a85e2-7988-44a3-949c-14b5811b6907';
@@ -16,30 +16,13 @@ export async function connectToDatabase() {
   }
 
   try {
-    console.log('Attempting to connect to MongoDB with API credentials...');
+    console.log('Attempting to connect to MongoDB...');
     
-    // Configurar las opciones de conexión con las credenciales de API
-    const options = {
-      auth: {
-        username: MONGODB_PUBLIC_KEY,
-        password: MONGODB_PRIVATE_KEY
-      },
-      authSource: '$external',
-      authMechanism: 'MONGODB-AWS'
-    };
-
-    // Intentar primero con las credenciales de API
-    try {
-      client = new MongoClient(MONGODB_URI, options);
-      await client.connect();
-      console.log('Connected to MongoDB using API credentials');
-    } catch (apiError) {
-      console.log('API credentials failed, trying with connection string...');
-      // Si falla con API, usar la conexión directa
-      client = new MongoClient(MONGODB_URI);
-      await client.connect();
-      console.log('Connected to MongoDB using connection string');
-    }
+    // Usar conexión directa con la cadena de conexión
+    // Las API keys de MongoDB Atlas se usan típicamente para la API REST, no para conexiones de driver
+    client = new MongoClient(MONGODB_URI);
+    await client.connect();
+    console.log('Connected to MongoDB using connection string');
     
     // Test the connection
     await client.db("admin").command({ ping: 1 });
@@ -55,7 +38,6 @@ export async function connectToDatabase() {
   } catch (error) {
     console.error('Failed to connect to MongoDB:', error);
     console.error('Connection details:', {
-      publicKey: MONGODB_PUBLIC_KEY,
       database: DB_NAME,
       connectionString: MONGODB_URI.replace(/\/\/.*:.*@/, '//***:***@')
     });
