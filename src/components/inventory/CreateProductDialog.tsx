@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,6 +30,7 @@ import {
 } from '@/components/ui/select';
 import { useCreateProduct, useCategories } from '@/hooks/useInventory';
 import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 
 const productSchema = z.object({
   sku: z.string().min(1, 'SKU es requerido'),
@@ -55,7 +57,7 @@ interface CreateProductDialogProps {
 
 export const CreateProductDialog = ({ children }: CreateProductDialogProps) => {
   const [open, setOpen] = React.useState(false);
-  const { data: categories } = useCategories();
+  const { data: categories, isLoading: categoriesLoading } = useCategories();
   const createProduct = useCreateProduct();
 
   const form = useForm<ProductFormData>({
@@ -80,14 +82,20 @@ export const CreateProductDialog = ({ children }: CreateProductDialogProps) => {
 
   const onSubmit = async (data: ProductFormData) => {
     try {
-      // El user_id se maneja automáticamente en el servicio
+      console.log('Creating product with data:', data);
+      
+      if (!categories || categories.length === 0) {
+        toast.error('No hay categorías disponibles. Crea una categoría primero.');
+        return;
+      }
+
       await createProduct.mutateAsync({
         sku: data.sku,
         name: data.name,
-        description: data.description,
+        description: data.description || '',
         category_id: data.category_id,
-        brand: data.brand,
-        model: data.model,
+        brand: data.brand || '',
+        model: data.model || '',
         unit_of_measure: data.unit_of_measure,
         weight: data.weight ? parseFloat(data.weight) : undefined,
         cost_price: data.cost_price ? parseFloat(data.cost_price) : undefined,
@@ -95,13 +103,16 @@ export const CreateProductDialog = ({ children }: CreateProductDialogProps) => {
         min_stock_level: parseInt(data.min_stock_level),
         max_stock_level: parseInt(data.max_stock_level),
         reorder_point: parseInt(data.reorder_point),
-        barcode: data.barcode,
+        barcode: data.barcode || '',
         is_active: true,
       });
+      
       setOpen(false);
       form.reset();
+      console.log('Product created successfully');
     } catch (error) {
       console.error('Error creating product:', error);
+      toast.error('Error al crear el producto');
     }
   };
 
@@ -188,7 +199,7 @@ export const CreateProductDialog = ({ children }: CreateProductDialogProps) => {
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar categoría" />
+                          <SelectValue placeholder={categoriesLoading ? "Cargando..." : "Seleccionar categoría"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -197,6 +208,11 @@ export const CreateProductDialog = ({ children }: CreateProductDialogProps) => {
                             {category.name}
                           </SelectItem>
                         ))}
+                        {(!categories || categories.length === 0) && !categoriesLoading && (
+                          <SelectItem value="" disabled>
+                            No hay categorías disponibles
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
