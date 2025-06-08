@@ -1,264 +1,342 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { connectToDatabase } from "@/lib/mongodb";
+import { ObjectId } from 'mongodb';
 import type { Product, Category, Location, Warehouse, StockLevel, StockMovement, CycleCount, Supplier, ProductSupplier } from "@/types/inventory";
+
+// Función auxiliar para obtener el user_id (simulado por ahora)
+const getCurrentUserId = () => {
+  // Por ahora retornamos un ID fijo, pero esto debería venir de un sistema de autenticación
+  return "user_123";
+};
+
+// Función auxiliar para convertir ObjectId a string
+const convertToString = (doc: any) => {
+  if (doc._id) {
+    doc.id = doc._id.toString();
+    delete doc._id;
+  }
+  return doc;
+};
 
 export class InventoryService {
   // Products
   static async getProducts() {
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        category:categories(*)
-      `)
-      .eq('is_active', true)
-      .order('name');
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
+    
+    const products = await db.collection('products')
+      .find({ user_id: userId, is_active: true })
+      .sort({ name: 1 })
+      .toArray();
 
-    if (error) throw error;
-    return data;
+    // Hacer lookup para las categorías
+    const productsWithCategories = await Promise.all(
+      products.map(async (product) => {
+        const category = await db.collection('categories')
+          .findOne({ _id: new ObjectId(product.category_id) });
+        
+        return {
+          ...convertToString(product),
+          category: category ? convertToString(category) : null
+        };
+      })
+    );
+
+    return productsWithCategories;
   }
 
-  static async createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuario no autenticado');
+  static async createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
 
-    const { data, error } = await supabase
-      .from('products')
-      .insert({
-        ...product,
-        user_id: user.id
-      })
-      .select()
-      .single();
+    const newProduct = {
+      ...product,
+      user_id: userId,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
 
-    if (error) throw error;
-    return data;
+    const result = await db.collection('products').insertOne(newProduct);
+    const createdProduct = await db.collection('products').findOne({ _id: result.insertedId });
+    
+    return convertToString(createdProduct);
   }
 
   static async updateProduct(id: string, updates: Partial<Product>) {
-    const { data, error } = await supabase
-      .from('products')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+    const db = await connectToDatabase();
+    
+    const updatedProduct = {
+      ...updates,
+      updated_at: new Date()
+    };
+    
+    delete updatedProduct._id;
+    delete updatedProduct.id;
 
-    if (error) throw error;
-    return data;
+    await db.collection('products').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updatedProduct }
+    );
+
+    const product = await db.collection('products').findOne({ _id: new ObjectId(id) });
+    return convertToString(product);
   }
 
   static async deleteProduct(id: string) {
-    const { error } = await supabase
-      .from('products')
-      .update({ is_active: false })
-      .eq('id', id);
-
-    if (error) throw error;
+    const db = await connectToDatabase();
+    
+    await db.collection('products').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { is_active: false, updated_at: new Date() } }
+    );
   }
 
   // Categories
   static async getCategories() {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('is_active', true)
-      .order('name');
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
+    
+    const categories = await db.collection('categories')
+      .find({ user_id: userId, is_active: true })
+      .sort({ name: 1 })
+      .toArray();
 
-    if (error) throw error;
-    return data;
+    return categories.map(convertToString);
   }
 
-  static async createCategory(category: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'user_id'>) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuario no autenticado');
+  static async createCategory(category: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
 
-    const { data, error } = await supabase
-      .from('categories')
-      .insert({
-        ...category,
-        user_id: user.id
-      })
-      .select()
-      .single();
+    const newCategory = {
+      ...category,
+      user_id: userId,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
 
-    if (error) throw error;
-    return data;
+    const result = await db.collection('categories').insertOne(newCategory);
+    const createdCategory = await db.collection('categories').findOne({ _id: result.insertedId });
+    
+    return convertToString(createdCategory);
   }
 
   // Warehouses
   static async getWarehouses() {
-    const { data, error } = await supabase
-      .from('warehouses')
-      .select('*')
-      .eq('is_active', true)
-      .order('name');
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
+    
+    const warehouses = await db.collection('warehouses')
+      .find({ user_id: userId, is_active: true })
+      .sort({ name: 1 })
+      .toArray();
 
-    if (error) throw error;
-    return data;
+    return warehouses.map(convertToString);
   }
 
-  static async createWarehouse(warehouse: Omit<Warehouse, 'id' | 'created_at' | 'updated_at' | 'user_id'>) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuario no autenticado');
+  static async createWarehouse(warehouse: Omit<Warehouse, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
 
-    const { data, error } = await supabase
-      .from('warehouses')
-      .insert({
-        ...warehouse,
-        user_id: user.id
-      })
-      .select()
-      .single();
+    const newWarehouse = {
+      ...warehouse,
+      user_id: userId,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
 
-    if (error) throw error;
-    return data;
+    const result = await db.collection('warehouses').insertOne(newWarehouse);
+    const createdWarehouse = await db.collection('warehouses').findOne({ _id: result.insertedId });
+    
+    return convertToString(createdWarehouse);
   }
 
   // Locations
   static async getLocations(warehouseId?: string) {
-    let query = supabase
-      .from('locations')
-      .select(`
-        *,
-        warehouse:warehouses(*)
-      `)
-      .eq('is_active', true);
-
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
+    
+    const filter: any = { user_id: userId, is_active: true };
     if (warehouseId) {
-      query = query.eq('warehouse_id', warehouseId);
+      filter.warehouse_id = warehouseId;
     }
 
-    const { data, error } = await query.order('name');
+    const locations = await db.collection('locations')
+      .find(filter)
+      .sort({ name: 1 })
+      .toArray();
 
-    if (error) throw error;
-    return data;
+    // Hacer lookup para los warehouses
+    const locationsWithWarehouses = await Promise.all(
+      locations.map(async (location) => {
+        const warehouse = await db.collection('warehouses')
+          .findOne({ _id: new ObjectId(location.warehouse_id) });
+        
+        return {
+          ...convertToString(location),
+          warehouse: warehouse ? convertToString(warehouse) : null
+        };
+      })
+    );
+
+    return locationsWithWarehouses;
   }
 
-  static async createLocation(location: Omit<Location, 'id' | 'created_at' | 'updated_at' | 'user_id'>) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuario no autenticado');
+  static async createLocation(location: Omit<Location, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
 
-    const { data, error } = await supabase
-      .from('locations')
-      .insert({
-        ...location,
-        user_id: user.id
-      })
-      .select()
-      .single();
+    const newLocation = {
+      ...location,
+      user_id: userId,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
 
-    if (error) throw error;
-    return data;
+    const result = await db.collection('locations').insertOne(newLocation);
+    const createdLocation = await db.collection('locations').findOne({ _id: result.insertedId });
+    
+    return convertToString(createdLocation);
   }
 
   // Stock Levels
   static async getStockLevels(productId?: string, locationId?: string) {
-    let query = supabase
-      .from('stock_levels')
-      .select(`
-        *,
-        product:products(*),
-        location:locations(*)
-      `);
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
+    
+    const filter: any = { user_id: userId };
+    if (productId) filter.product_id = productId;
+    if (locationId) filter.location_id = locationId;
 
-    if (productId) {
-      query = query.eq('product_id', productId);
-    }
+    const stockLevels = await db.collection('stock_levels')
+      .find(filter)
+      .toArray();
 
-    if (locationId) {
-      query = query.eq('location_id', locationId);
-    }
+    // Hacer lookup para productos y ubicaciones
+    const stockLevelsWithRefs = await Promise.all(
+      stockLevels.map(async (stockLevel) => {
+        const product = await db.collection('products')
+          .findOne({ _id: new ObjectId(stockLevel.product_id) });
+        const location = await db.collection('locations')
+          .findOne({ _id: new ObjectId(stockLevel.location_id) });
+        
+        return {
+          ...convertToString(stockLevel),
+          product: product ? convertToString(product) : null,
+          location: location ? convertToString(location) : null
+        };
+      })
+    );
 
-    const { data, error } = await query;
-
-    if (error) throw error;
-    return data;
+    return stockLevelsWithRefs;
   }
 
   static async updateStockLevel(productId: string, locationId: string, updates: Partial<StockLevel>) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuario no autenticado');
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
 
-    const { data, error } = await supabase
-      .from('stock_levels')
-      .upsert({
-        product_id: productId,
-        location_id: locationId,
-        user_id: user.id,
-        ...updates
-      })
-      .select()
-      .single();
+    const stockLevel = {
+      product_id: productId,
+      location_id: locationId,
+      user_id: userId,
+      last_updated: new Date(),
+      ...updates
+    };
 
-    if (error) throw error;
-    return data;
+    delete stockLevel._id;
+    delete stockLevel.id;
+
+    await db.collection('stock_levels').updateOne(
+      { product_id: productId, location_id: locationId, user_id: userId },
+      { $set: stockLevel },
+      { upsert: true }
+    );
+
+    const updatedStockLevel = await db.collection('stock_levels')
+      .findOne({ product_id: productId, location_id: locationId, user_id: userId });
+    
+    return convertToString(updatedStockLevel);
   }
 
   // Stock Movements
   static async getStockMovements(productId?: string) {
-    let query = supabase
-      .from('stock_movements')
-      .select(`
-        *,
-        product:products(*),
-        from_location:locations!stock_movements_from_location_id_fkey(*),
-        to_location:locations!stock_movements_to_location_id_fkey(*)
-      `);
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
+    
+    const filter: any = { user_id: userId };
+    if (productId) filter.product_id = productId;
 
-    if (productId) {
-      query = query.eq('product_id', productId);
-    }
+    const movements = await db.collection('stock_movements')
+      .find(filter)
+      .sort({ timestamp: -1 })
+      .toArray();
 
-    const { data, error } = await query.order('timestamp', { ascending: false });
+    // Hacer lookup para productos y ubicaciones
+    const movementsWithRefs = await Promise.all(
+      movements.map(async (movement) => {
+        const product = await db.collection('products')
+          .findOne({ _id: new ObjectId(movement.product_id) });
+        const fromLocation = movement.from_location_id ? 
+          await db.collection('locations').findOne({ _id: new ObjectId(movement.from_location_id) }) : null;
+        const toLocation = await db.collection('locations')
+          .findOne({ _id: new ObjectId(movement.to_location_id) });
+        
+        return {
+          ...convertToString(movement),
+          product: product ? convertToString(product) : null,
+          from_location: fromLocation ? convertToString(fromLocation) : null,
+          to_location: toLocation ? convertToString(toLocation) : null
+        };
+      })
+    );
 
-    if (error) throw error;
-    return data;
+    return movementsWithRefs;
   }
 
-  static async createStockMovement(movement: Omit<StockMovement, 'id' | 'timestamp' | 'performed_by' | 'user_id'>) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuario no autenticado');
+  static async createStockMovement(movement: Omit<StockMovement, 'id' | 'timestamp' | 'performed_by' | 'user_id' | '_id'>) {
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
 
-    const { data, error } = await supabase
-      .from('stock_movements')
-      .insert({
-        ...movement,
-        performed_by: user.id,
-        user_id: user.id
-      })
-      .select()
-      .single();
+    const newMovement = {
+      ...movement,
+      performed_by: userId,
+      user_id: userId,
+      timestamp: new Date()
+    };
 
-    if (error) throw error;
-    return data;
+    const result = await db.collection('stock_movements').insertOne(newMovement);
+    const createdMovement = await db.collection('stock_movements').findOne({ _id: result.insertedId });
+    
+    return convertToString(createdMovement);
   }
 
   // Suppliers
   static async getSuppliers() {
-    const { data, error } = await supabase
-      .from('suppliers')
-      .select('*')
-      .eq('is_active', true)
-      .order('name');
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
+    
+    const suppliers = await db.collection('suppliers')
+      .find({ user_id: userId, is_active: true })
+      .sort({ name: 1 })
+      .toArray();
 
-    if (error) throw error;
-    return data;
+    return suppliers.map(convertToString);
   }
 
-  static async createSupplier(supplier: Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'user_id'>) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuario no autenticado');
+  static async createSupplier(supplier: Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'user_id' | '_id'>) {
+    const db = await connectToDatabase();
+    const userId = getCurrentUserId();
 
-    const { data, error } = await supabase
-      .from('suppliers')
-      .insert({
-        ...supplier,
-        user_id: user.id
-      })
-      .select()
-      .single();
+    const newSupplier = {
+      ...supplier,
+      user_id: userId,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
 
-    if (error) throw error;
-    return data;
+    const result = await db.collection('suppliers').insertOne(newSupplier);
+    const createdSupplier = await db.collection('suppliers').findOne({ _id: result.insertedId });
+    
+    return convertToString(createdSupplier);
   }
 }

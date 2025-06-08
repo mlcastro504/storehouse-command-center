@@ -1,8 +1,11 @@
 
+import { ObjectId } from 'mongodb';
+
 // Tipos para el módulo de inventario
 
 export interface Product {
-  id: string;
+  _id?: ObjectId;
+  id?: string;
   sku: string;
   name: string;
   description?: string;
@@ -24,36 +27,41 @@ export interface Product {
   max_stock_level: number;
   reorder_point: number;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
   user_id: string;
 }
 
 export interface Category {
-  id: string;
+  _id?: ObjectId;
+  id?: string;
   name: string;
   description?: string;
   parent_id?: string;
   code: string;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
+  user_id: string;
 }
 
 export interface StockLevel {
-  id: string;
+  _id?: ObjectId;
+  id?: string;
   product_id: string;
   location_id: string;
   quantity_available: number;
   quantity_reserved: number;
   quantity_on_order: number;
-  last_updated: string;
+  last_updated: Date;
+  user_id: string;
   product?: Product;
   location?: Location;
 }
 
 export interface Location {
-  id: string;
+  _id?: ObjectId;
+  id?: string;
   code: string;
   name: string;
   type: 'warehouse' | 'zone' | 'aisle' | 'rack' | 'shelf' | 'bin';
@@ -68,12 +76,14 @@ export interface Location {
     z?: number;
   };
   barcode?: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
+  user_id: string;
 }
 
 export interface Warehouse {
-  id: string;
+  _id?: ObjectId;
+  id?: string;
   code: string;
   name: string;
   address: string;
@@ -86,12 +96,14 @@ export interface Warehouse {
   manager_id?: string;
   is_active: boolean;
   total_capacity?: number;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
+  user_id: string;
 }
 
 export interface StockMovement {
-  id: string;
+  _id?: ObjectId;
+  id?: string;
   product_id: string;
   from_location_id?: string;
   to_location_id: string;
@@ -102,34 +114,38 @@ export interface StockMovement {
   reason: string;
   notes?: string;
   performed_by: string;
-  timestamp: string;
+  timestamp: Date;
   cost_per_unit?: number;
   total_cost?: number;
   batch_number?: string;
-  expiry_date?: string;
+  expiry_date?: Date;
   status: 'pending' | 'completed' | 'cancelled';
+  user_id: string;
   product?: Product;
   from_location?: Location;
   to_location?: Location;
 }
 
 export interface CycleCount {
-  id: string;
+  _id?: ObjectId;
+  id?: string;
   location_id: string;
   product_id?: string;
-  scheduled_date: string;
-  completed_date?: string;
+  scheduled_date: Date;
+  completed_date?: Date;
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
   assigned_to: string;
   notes?: string;
   created_by: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
+  user_id: string;
   cycle_count_lines?: CycleCountLine[];
 }
 
 export interface CycleCountLine {
-  id: string;
+  _id?: ObjectId;
+  id?: string;
   cycle_count_id: string;
   product_id: string;
   location_id: string;
@@ -138,13 +154,15 @@ export interface CycleCountLine {
   variance?: number;
   notes?: string;
   counted_by?: string;
-  counted_at?: string;
+  counted_at?: Date;
+  user_id: string;
   product?: Product;
   location?: Location;
 }
 
 export interface Supplier {
-  id: string;
+  _id?: ObjectId;
+  id?: string;
   code: string;
   name: string;
   contact_person?: string;
@@ -159,12 +177,14 @@ export interface Supplier {
   payment_terms?: string;
   lead_time_days?: number;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
+  user_id: string;
 }
 
 export interface ProductSupplier {
-  id: string;
+  _id?: ObjectId;
+  id?: string;
   product_id: string;
   supplier_id: string;
   supplier_sku: string;
@@ -172,8 +192,9 @@ export interface ProductSupplier {
   lead_time_days: number;
   min_order_quantity: number;
   is_preferred: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
+  user_id: string;
   product?: Product;
   supplier?: Supplier;
 }
