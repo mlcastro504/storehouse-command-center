@@ -1,4 +1,3 @@
-
 import { connectToDatabase } from '@/lib/mongodb';
 import { BrowserStorage } from '@/lib/browserStorage';
 import {
@@ -198,7 +197,8 @@ export class ScannerService {
         ...scanData,
         id: `scan_${Date.now()}`,
         timestamp: new Date().toISOString(),
-        retry_count: 0
+        retry_count: 0,
+        device_id: scanData.device_id || 'unknown'
       } as ScanRecord;
 
       // Validar el escaneo
@@ -221,7 +221,7 @@ export class ScannerService {
           validation_status: scan.validation_status,
           validation_message: scan.validation_message
         },
-        device_id: scanData.device_id || '',
+        device_id: scan.device_id,
         user_id: scan.user_id
       });
 
@@ -341,24 +341,29 @@ export class ScannerService {
     }
   }
 
-  // Gestión de métricas
+  // Gestión de métricas con fallback para missing database methods
   static async getMetrics(): Promise<ScannerMetrics> {
     try {
       const db = await connectToDatabase();
       
-      const [devices, sessions, scansToday, errorStats] = await Promise.all([
-        db.collection('scan_devices').find({}).toArray(),
-        db.collection('scan_sessions').find({ status: 'active' }).toArray(),
-        db.collection('scan_records').find({
-          timestamp: { $gte: new Date().toISOString().split('T')[0] }
-        }).toArray(),
-        db.collection('scan_records').aggregate([
-          { $match: { validation_status: 'invalid' } },
-          { $group: { _id: '$validation_message', count: { $sum: 1 } } },
-          { $sort: { count: -1 } },
-          { $limit: 5 }
-        ]).toArray()
-      ]);
+      const devices = await db.collection('scan_devices').find({}).toArray();
+      const sessions = await db.collection('scan_sessions').find({ status: 'active' }).toArray();
+      const scansToday = await db.collection('scan_records').find({
+        timestamp: { $gte: new Date().toISOString().split('T')[0] }
+      }).toArray();
+
+      // Simple error aggregation fallback
+      const errorRecords = await db.collection('scan_records').find({ validation_status: 'invalid' }).toArray();
+      const errorStats = errorRecords.reduce((acc: any, record: any) => {
+        const error = record.validation_message || 'Error desconocido';
+        acc[error] = (acc[error] || 0) + 1;
+        return acc;
+      }, {});
+
+      const topErrors = Object.entries(errorStats)
+        .map(([error_type, count]) => ({ error_type, count: count as number }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
 
       const devicesByType = devices.reduce((acc: any, device: any) => {
         const type = device.device_type === 'mobile_app' ? 'mobile' : 
@@ -376,10 +381,7 @@ export class ScannerService {
         scans_today: totalScans,
         error_rate: totalScans > 0 ? (errorScans / totalScans) * 100 : 0,
         devices_by_type: devicesByType,
-        top_errors: errorStats.map((error: any) => ({
-          error_type: error._id,
-          count: error.count
-        }))
+        top_errors: topErrors
       };
     } catch (error) {
       console.error('Error getting scanner metrics:', error);
@@ -442,7 +444,7 @@ export class ScannerService {
     }
   }
 
-  // Asignación de dispositivos
+  // Asignación de dispositivos with updated collection method
   static async assignDevice(deviceId: string, userId: string, assignedBy: string, assignmentType: 'permanent' | 'temporary' | 'shift_based'): Promise<DeviceAssignment | null> {
     try {
       const assignment: DeviceAssignment = {
@@ -457,11 +459,14 @@ export class ScannerService {
 
       const db = await connectToDatabase();
       
-      // Desactivar asignaciones anteriores del dispositivo
-      await db.collection('device_assignments').updateMany(
-        { device_id: deviceId, is_active: true },
-        { $set: { is_active: false } }
-      );
+      // Desactivar asignaciones anteriores del dispositivo usando updateOne en loop
+      const existingAssignments = await db.collection('device_assignments').find({ device_id: deviceId, is_active: true }).toArray();
+      for (const existing of existingAssignments) {
+        await db.collection('device_assignments').updateOne(
+          { id: existing.id },
+          { $set: { is_active: false } }
+        );
+      }
 
       await db.collection('device_assignments').insertOne(assignment);
       return assignment;
@@ -506,8 +511,7 @@ export class ScannerService {
 
       await db.collection('scanner_settings').updateOne(
         { user_id: userId },
-        { $set: updatedSettings },
-        { upsert: true }
+        { $set: updatedSettings }
       );
 
       return await this.getScannerSettings(userId);

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useForm } from 'react-hook-form';
 import { useScanDevices, useCreateScanDevice, useAssignDevice, useDeviceAssignments } from '@/hooks/useScanner';
 import { Plus, Smartphone, Tablet, Camera, Settings, User, Battery, Wifi, WifiOff } from 'lucide-react';
+import { ScanDevice } from '@/types/scanner';
 
 export const DeviceManagement = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -27,9 +27,9 @@ export const DeviceManagement = () => {
   const assignForm = useForm();
 
   const onCreateDevice = async (data: any) => {
-    const deviceData = {
+    const deviceData: Partial<ScanDevice> = {
       device_name: data.device_name,
-      device_type: data.device_type,
+      device_type: data.device_type as 'handheld' | 'fixed' | 'mobile_app' | 'tablet' | 'camera_device',
       device_model: data.device_model,
       device_id: `${data.device_type}_${Date.now()}`,
       capabilities: {
@@ -43,13 +43,13 @@ export const DeviceManagement = () => {
         has_flashlight: data.device_type === 'mobile_app' || data.device_type === 'tablet' || data.device_type === 'handheld'
       },
       settings: {
-        preferred_camera: 'rear',
+        preferred_camera: 'rear' as 'rear' | 'front' | 'auto',
         vibration_enabled: true,
         sound_enabled: true,
         flashlight_enabled: false,
         auto_focus: true,
         scan_timeout: 5000,
-        validation_mode: 'normal'
+        validation_mode: 'normal' as 'strict' | 'normal' | 'lenient'
       }
     };
 
@@ -63,7 +63,7 @@ export const DeviceManagement = () => {
       await assignDevice.mutateAsync({
         deviceId: selectedDevice,
         userId: data.user_id,
-        assignmentType: data.assignment_type
+        assignmentType: data.assignment_type as 'permanent' | 'temporary' | 'shift_based'
       });
       setSelectedDevice(null);
       assignForm.reset();
