@@ -62,12 +62,17 @@ export const useProcessScan = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ScannerService.processScan,
+    mutationFn: (data: { scanned_value: string; scan_type: string; session_id: string; device_id: string }) => 
+      ScannerService.processScan({
+        sessionId: data.session_id,
+        scannedData: data.scanned_value,
+        scanType: data.scan_type as 'barcode' | 'qr_code' | 'manual'
+      }),
     onSuccess: (data) => {
       if (data?.validation_status === 'valid') {
         toast.success('Escaneo procesado exitosamente');
       } else {
-        toast.warning(`Escaneo con advertencia: ${data?.validation_message}`);
+        toast.warning(`Escaneo con advertencia: ${data?.validation_message || 'Error de validación'}`);
       }
       queryClient.invalidateQueries({ queryKey: ['scan-sessions'] });
     },
@@ -137,7 +142,7 @@ export const useAssignDevice = () => {
   });
 };
 
-// Hooks para Stock Move
+// Hooks para Stock Move (redirects para compatibilidad)
 export const usePendingStockMoveTasks = () => {
   return useQuery({
     queryKey: ['pending-stock-move-tasks'],

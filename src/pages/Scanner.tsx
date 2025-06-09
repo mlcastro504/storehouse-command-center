@@ -100,7 +100,11 @@ export default function Scanner() {
                     scan_area_overlay: true,
                     continuous_scan: false,
                     beep_on_scan: true,
-                    vibrate_on_scan: true
+                    vibrate_on_scan: true,
+                    quality: 'medium',
+                    flashEnabled: false,
+                    autoFocus: true,
+                    formats: ['CODE_128', 'QR_CODE']
                   }}
                 />
               </CardContent>

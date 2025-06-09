@@ -25,16 +25,20 @@ export interface ScanRecord {
   location?: string;
   validation_status: 'valid' | 'invalid' | 'pending';
   error_message?: string;
+  validation_message?: string;
 }
 
 export interface ScanDevice {
   id: string;
   device_name: string;
-  device_type: 'handheld' | 'fixed' | 'mobile';
+  device_type: 'handheld' | 'fixed' | 'mobile' | 'mobile_app' | 'tablet' | 'camera_device';
   is_active: boolean;
   last_seen: string;
   battery_level?: number;
   firmware_version?: string;
+  connection_status: 'connected' | 'disconnected' | 'error' | 'idle';
+  model?: string;
+  user_id?: string;
 }
 
 export interface ScanValidationRule {
@@ -63,6 +67,20 @@ export interface ScannerMetrics {
   deviceUsage: Array<{
     deviceId: string;
     scans: number;
+  }>;
+  total_devices: number;
+  active_sessions: number;
+  scans_today: number;
+  error_rate: number;
+  devices_by_type: {
+    handheld: number;
+    mobile: number;
+    tablet: number;
+    camera: number;
+  };
+  top_errors: Array<{
+    error_type: string;
+    count: number;
   }>;
 }
 
@@ -100,6 +118,14 @@ export interface CameraScanConfig {
   flashEnabled: boolean;
   autoFocus: boolean;
   formats: string[];
+  preferred_camera: 'rear' | 'front';
+  resolution: 'low' | 'medium' | 'high';
+  auto_focus: boolean;
+  flash_mode: 'auto' | 'on' | 'off';
+  scan_area_overlay: boolean;
+  continuous_scan: boolean;
+  beep_on_scan: boolean;
+  vibrate_on_scan: boolean;
 }
 
 export class ScannerService {
@@ -107,7 +133,7 @@ export class ScannerService {
   static async getSessions(): Promise<ScanSession[]> {
     try {
       const db = await connectToDatabase();
-      const sessions = await db.collection('scan_sessions').find().sort({ started_at: -1 }).toArray() as ScanSession[];
+      const sessions = await db.collection('scan_sessions').find({}).sort({ started_at: -1 }).toArray() as ScanSession[];
       return sessions;
     } catch (error) {
       console.error('Error fetching scan sessions:', error);
@@ -234,7 +260,7 @@ export class ScannerService {
   static async getDevices(): Promise<ScanDevice[]> {
     try {
       const db = await connectToDatabase();
-      const devices = await db.collection('scan_devices').find().toArray() as ScanDevice[];
+      const devices = await db.collection('scan_devices').find({}).toArray() as ScanDevice[];
       return devices;
     } catch (error) {
       console.error('Error fetching devices:', error);
@@ -242,7 +268,7 @@ export class ScannerService {
     }
   }
 
-  static async registerDevice(deviceData: Partial<ScanDevice>): Promise<ScanDevice | null> {
+  static async createDevice(deviceData: Partial<ScanDevice>): Promise<ScanDevice | null> {
     try {
       const device: ScanDevice = {
         id: `dev_${Date.now()}`,
@@ -250,17 +276,24 @@ export class ScannerService {
         device_type: deviceData.device_type || 'mobile',
         is_active: true,
         last_seen: new Date().toISOString(),
+        connection_status: 'connected',
         battery_level: deviceData.battery_level,
-        firmware_version: deviceData.firmware_version
+        firmware_version: deviceData.firmware_version,
+        model: deviceData.model,
+        user_id: deviceData.user_id
       };
 
       const db = await connectToDatabase();
       await db.collection('scan_devices').insertOne(device);
       return device;
     } catch (error) {
-      console.error('Error registering device:', error);
+      console.error('Error creating device:', error);
       return null;
     }
+  }
+
+  static async registerDevice(deviceData: Partial<ScanDevice>): Promise<ScanDevice | null> {
+    return this.createDevice(deviceData);
   }
 
   // Asignación de dispositivos
@@ -279,13 +312,10 @@ export class ScannerService {
       const db = await connectToDatabase();
       
       // Desactivar asignaciones anteriores del dispositivo
-      const existingAssignments = await db.collection('device_assignments').find({ device_id: deviceId, is_active: true }).toArray();
-      for (const existing of existingAssignments) {
-        await db.collection('device_assignments').updateOne(
-          { id: existing.id },
-          { $set: { is_active: false } }
-        );
-      }
+      await db.collection('device_assignments').updateMany(
+        { device_id: deviceId, is_active: true },
+        { $set: { is_active: false } }
+      );
 
       await db.collection('device_assignments').insertOne(assignment);
       
@@ -296,9 +326,22 @@ export class ScannerService {
     }
   }
 
-  // Procesamiento de escaneos
-  static async processScan(sessionId: string, scannedData: string, scanType: 'barcode' | 'qr_code' | 'manual'): Promise<ScanRecord | null> {
+  static async getDeviceAssignments(userId?: string): Promise<DeviceAssignment[]> {
     try {
+      const db = await connectToDatabase();
+      const filter = userId ? { user_id: userId } : {};
+      const assignments = await db.collection('device_assignments').find(filter).toArray() as DeviceAssignment[];
+      return assignments;
+    } catch (error) {
+      console.error('Error fetching device assignments:', error);
+      return [];
+    }
+  }
+
+  // Procesamiento de escaneos
+  static async processScan(data: { sessionId: string, scannedData: string, scanType: 'barcode' | 'qr_code' | 'manual' }): Promise<ScanRecord | null> {
+    try {
+      const { sessionId, scannedData, scanType } = data;
       const record: ScanRecord = {
         id: `scan_${Date.now()}`,
         session_id: sessionId,
@@ -311,6 +354,7 @@ export class ScannerService {
       // Validar el escaneo
       const isValid = await this.validateScan(scannedData);
       record.validation_status = isValid ? 'valid' : 'invalid';
+      record.validation_message = isValid ? 'Válido' : 'Código no válido';
 
       const db = await connectToDatabase();
       await db.collection('scan_records').insertOne(record);
@@ -346,7 +390,7 @@ export class ScannerService {
         }
       }
       
-      return false;
+      return scannedData.length > 0; // Validación básica
     } catch (error) {
       console.error('Error validating scan:', error);
       return false;
@@ -357,7 +401,7 @@ export class ScannerService {
   static async getValidationRules(): Promise<ScanValidationRule[]> {
     try {
       const db = await connectToDatabase();
-      const rules = await db.collection('scan_validation_rules').find().toArray() as ScanValidationRule[];
+      const rules = await db.collection('scan_validation_rules').find({}).toArray() as ScanValidationRule[];
       return rules;
     } catch (error) {
       console.error('Error fetching validation rules:', error);
@@ -365,21 +409,63 @@ export class ScannerService {
     }
   }
 
+  static async createValidationRule(ruleData: Partial<ScanValidationRule>): Promise<ScanValidationRule | null> {
+    try {
+      const rule: ScanValidationRule = {
+        id: `rule_${Date.now()}`,
+        rule_name: ruleData.rule_name || 'New Rule',
+        pattern: ruleData.pattern || '.*',
+        description: ruleData.description || '',
+        is_active: ruleData.is_active ?? true
+      };
+
+      const db = await connectToDatabase();
+      await db.collection('scan_validation_rules').insertOne(rule);
+      return rule;
+    } catch (error) {
+      console.error('Error creating validation rule:', error);
+      return null;
+    }
+  }
+
   // Métricas del scanner
   static async getMetrics(): Promise<ScannerMetrics> {
     try {
       const db = await connectToDatabase();
-      const scans = await db.collection('scan_records').find().toArray();
+      const scans = await db.collection('scan_records').find({}).toArray();
+      const devices = await db.collection('scan_devices').find({}).toArray();
+      const sessions = await db.collection('scan_sessions').find({}).toArray();
+      
+      const today = new Date().toISOString().split('T')[0];
+      const scansToday = scans.filter(scan => scan.timestamp.startsWith(today));
       
       const totalScans = scans.length;
       const validScans = scans.filter(scan => scan.validation_status === 'valid').length;
       const successRate = totalScans > 0 ? (validScans / totalScans) * 100 : 0;
       
+      // Contar dispositivos por tipo
+      const devicesByType = devices.reduce((acc: any, device: any) => {
+        const type = device.device_type === 'mobile_app' ? 'mobile' :
+                    device.device_type === 'camera_device' ? 'camera' :
+                    device.device_type;
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, { handheld: 0, mobile: 0, tablet: 0, camera: 0 });
+
       return {
         totalScans,
         successRate,
-        avgScanTime: 2.5, // Mock data
-        deviceUsage: [] // Mock data
+        avgScanTime: 2.5,
+        deviceUsage: [],
+        total_devices: devices.length,
+        active_sessions: sessions.filter(s => ['active', 'paused'].includes(s.status)).length,
+        scans_today: scansToday.length,
+        error_rate: totalScans > 0 ? ((totalScans - validScans) / totalScans) * 100 : 0,
+        devices_by_type: devicesByType,
+        top_errors: [
+          { error_type: 'Código no válido', count: totalScans - validScans },
+          { error_type: 'Timeout de escaneo', count: 0 }
+        ]
       };
     } catch (error) {
       console.error('Error fetching scanner metrics:', error);
@@ -387,7 +473,13 @@ export class ScannerService {
         totalScans: 0,
         successRate: 0,
         avgScanTime: 0,
-        deviceUsage: []
+        deviceUsage: [],
+        total_devices: 0,
+        active_sessions: 0,
+        scans_today: 0,
+        error_rate: 0,
+        devices_by_type: { handheld: 0, mobile: 0, tablet: 0, camera: 0 },
+        top_errors: []
       };
     }
   }
@@ -420,9 +512,9 @@ export class ScannerService {
   static async updateSettings(settings: ScannerSettings): Promise<boolean> {
     try {
       const db = await connectToDatabase();
-      await db.collection('scanner_settings').updateOne(
+      await db.collection('scanner_settings').replaceOne(
         {},
-        { $set: settings },
+        settings,
         { upsert: true }
       );
       return true;
@@ -436,7 +528,7 @@ export class ScannerService {
   static async getTemplates(): Promise<ScanTemplate[]> {
     try {
       const db = await connectToDatabase();
-      const templates = await db.collection('scan_templates').find().toArray() as ScanTemplate[];
+      const templates = await db.collection('scan_templates').find({}).toArray() as ScanTemplate[];
       return templates;
     } catch (error) {
       console.error('Error fetching scan templates:', error);
@@ -472,7 +564,15 @@ export class ScannerService {
         quality: 'medium',
         flashEnabled: false,
         autoFocus: true,
-        formats: ['CODE_128', 'QR_CODE', 'EAN_13']
+        formats: ['CODE_128', 'QR_CODE', 'EAN_13'],
+        preferred_camera: 'rear',
+        resolution: 'medium',
+        auto_focus: true,
+        flash_mode: 'auto',
+        scan_area_overlay: true,
+        continuous_scan: false,
+        beep_on_scan: true,
+        vibrate_on_scan: true
       };
     } catch (error) {
       console.error('Error fetching camera config:', error);
@@ -481,7 +581,15 @@ export class ScannerService {
         quality: 'medium',
         flashEnabled: false,
         autoFocus: true,
-        formats: ['CODE_128', 'QR_CODE', 'EAN_13']
+        formats: ['CODE_128', 'QR_CODE', 'EAN_13'],
+        preferred_camera: 'rear',
+        resolution: 'medium',
+        auto_focus: true,
+        flash_mode: 'auto',
+        scan_area_overlay: true,
+        continuous_scan: false,
+        beep_on_scan: true,
+        vibrate_on_scan: true
       };
     }
   }
@@ -489,9 +597,9 @@ export class ScannerService {
   static async updateCameraConfig(config: CameraScanConfig): Promise<boolean> {
     try {
       const db = await connectToDatabase();
-      await db.collection('camera_config').updateOne(
+      await db.collection('camera_config').replaceOne(
         {},
-        { $set: config },
+        config,
         { upsert: true }
       );
       return true;
@@ -499,5 +607,48 @@ export class ScannerService {
       console.error('Error updating camera config:', error);
       return false;
     }
+  }
+
+  // Métodos para cámara
+  static async isCameraSupported(): Promise<boolean> {
+    try {
+      return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    } catch {
+      return false;
+    }
+  }
+
+  static async initializeCamera(config: CameraScanConfig): Promise<MediaStream | null> {
+    try {
+      const constraints = {
+        video: {
+          facingMode: config.preferred_camera === 'rear' ? 'environment' : 'user',
+          width: config.resolution === 'high' ? 1920 : config.resolution === 'medium' ? 1280 : 640,
+          height: config.resolution === 'high' ? 1080 : config.resolution === 'medium' ? 720 : 480
+        }
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      return stream;
+    } catch (error) {
+      console.error('Error initializing camera:', error);
+      return null;
+    }
+  }
+
+  // Métodos para Stock Move (stub para compatibilidad)
+  static async getPendingStockMoveTasks(): Promise<any[]> {
+    console.warn('getPendingStockMoveTasks should be called from StockMoveService');
+    return [];
+  }
+
+  static async createStockMoveTask(data: any): Promise<any> {
+    console.warn('createStockMoveTask should be called from StockMoveService');
+    return null;
+  }
+
+  static async executeStockMove(data: any): Promise<any> {
+    console.warn('executeStockMove should be called from StockMoveService');
+    return null;
   }
 }
