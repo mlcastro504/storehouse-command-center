@@ -53,8 +53,14 @@ export const CreateTaskDialog = () => {
         .order('name');
       
       if (error) throw error;
-      // Filter out products with empty or null IDs
-      return data?.filter(product => product.id && product.id.trim() !== '') || [];
+      // Filter out products with empty, null, or invalid IDs
+      return data?.filter(product => 
+        product.id && 
+        typeof product.id === 'string' && 
+        product.id.trim() !== '' &&
+        product.name &&
+        product.sku
+      ) || [];
     }
   });
 
@@ -68,8 +74,15 @@ export const CreateTaskDialog = () => {
         .order('code');
       
       if (error) throw error;
-      // Filter out locations with empty or null IDs
-      return data?.filter(location => location.id && location.id.trim() !== '') || [];
+      // Filter out locations with empty, null, or invalid IDs
+      return data?.filter(location => 
+        location.id && 
+        typeof location.id === 'string' && 
+        location.id.trim() !== '' &&
+        location.code &&
+        location.name &&
+        location.type
+      ) || [];
     }
   });
 
@@ -116,13 +129,26 @@ export const CreateTaskDialog = () => {
     });
   };
 
-  const sourceLocations = locations?.filter(loc => 
-    ['rack', 'shelf', 'bin'].includes(loc.type) && loc.id && loc.id.trim() !== ''
-  ) || [];
+  // Ensure we have valid arrays with proper filtering
+  const sourceLocations = (locations || []).filter(loc => 
+    loc.id && 
+    typeof loc.id === 'string' && 
+    loc.id.trim() !== '' &&
+    ['rack', 'shelf', 'bin'].includes(loc.type)
+  );
 
-  const destinationLocations = locations?.filter(loc => 
-    ['packing', 'shipping', 'bin', 'buffer'].includes(loc.type) && loc.id && loc.id.trim() !== ''
-  ) || [];
+  const destinationLocations = (locations || []).filter(loc => 
+    loc.id && 
+    typeof loc.id === 'string' && 
+    loc.id.trim() !== '' &&
+    ['packing', 'shipping', 'bin', 'buffer'].includes(loc.type)
+  );
+
+  const validProducts = (products || []).filter(product => 
+    product.id && 
+    typeof product.id === 'string' && 
+    product.id.trim() !== ''
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -149,11 +175,17 @@ export const CreateTaskDialog = () => {
                 <SelectValue placeholder="Seleccionar producto" />
               </SelectTrigger>
               <SelectContent>
-                {products?.map((product) => (
-                  <SelectItem key={product.id} value={product.id}>
-                    {product.name} ({product.sku})
+                {validProducts.length > 0 ? (
+                  validProducts.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name} ({product.sku})
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-products" disabled>
+                    No hay productos disponibles
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -180,11 +212,17 @@ export const CreateTaskDialog = () => {
                 <SelectValue placeholder="Seleccionar origen" />
               </SelectTrigger>
               <SelectContent>
-                {sourceLocations.map((location) => (
-                  <SelectItem key={location.id} value={location.id}>
-                    {location.code} - {location.name} ({location.type})
+                {sourceLocations.length > 0 ? (
+                  sourceLocations.map((location) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.code} - {location.name} ({location.type})
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-source-locations" disabled>
+                    No hay ubicaciones de origen disponibles
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -199,11 +237,17 @@ export const CreateTaskDialog = () => {
                 <SelectValue placeholder="Seleccionar destino" />
               </SelectTrigger>
               <SelectContent>
-                {destinationLocations.map((location) => (
-                  <SelectItem key={location.id} value={location.id}>
-                    {location.code} - {location.name} ({location.type})
+                {destinationLocations.length > 0 ? (
+                  destinationLocations.map((location) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.code} - {location.name} ({location.type})
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-dest-locations" disabled>
+                    No hay ubicaciones de destino disponibles
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>
