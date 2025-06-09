@@ -193,7 +193,7 @@ export class ScannerService {
   }
 
   // Gestión de escaneos
-  static async processScan(scanData: Partial<ScanRecord>): Promise<ScanRecord | null> {
+  static async processScan(scanData: Partial<ScanRecord> & { device_id?: string }): Promise<ScanRecord | null> {
     try {
       const scan: ScanRecord = {
         id: `scan_${Date.now()}`,
@@ -516,7 +516,7 @@ export class ScannerService {
 
       await db.collection('scanner_settings').updateOne(
         { user_id: userId },
-        { $set: updatedSettings },
+        { $set: updatedSettings, $setOnInsert: { created_at: new Date().toISOString() } },
         { upsert: true }
       );
 
