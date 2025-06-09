@@ -53,7 +53,8 @@ export const CreateTaskDialog = () => {
         .order('name');
       
       if (error) throw error;
-      return data;
+      // Filter out products with empty or null IDs
+      return data?.filter(product => product.id && product.id.trim() !== '') || [];
     }
   });
 
@@ -67,7 +68,8 @@ export const CreateTaskDialog = () => {
         .order('code');
       
       if (error) throw error;
-      return data;
+      // Filter out locations with empty or null IDs
+      return data?.filter(location => location.id && location.id.trim() !== '') || [];
     }
   });
 
@@ -115,11 +117,11 @@ export const CreateTaskDialog = () => {
   };
 
   const sourceLocations = locations?.filter(loc => 
-    ['rack', 'shelf', 'bin'].includes(loc.type)
+    ['rack', 'shelf', 'bin'].includes(loc.type) && loc.id && loc.id.trim() !== ''
   ) || [];
 
   const destinationLocations = locations?.filter(loc => 
-    ['packing', 'shipping', 'bin', 'buffer'].includes(loc.type)
+    ['packing', 'shipping', 'bin', 'buffer'].includes(loc.type) && loc.id && loc.id.trim() !== ''
   ) || [];
 
   return (
