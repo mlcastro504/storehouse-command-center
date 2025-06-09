@@ -38,6 +38,15 @@ import { EcommerceChannel } from '@/types/ecommerce-advanced';
 export const EcommerceChannelsManager = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedChannel, setSelectedChannel] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    platform_type: '',
+    api_endpoint: '',
+    api_key: '',
+    webhook_url: '',
+    sync_frequency: '10',
+    is_sandbox: false
+  });
   const queryClient = useQueryClient();
 
   // Query para obtener canales
@@ -52,6 +61,15 @@ export const EcommerceChannelsManager = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ecommerce-channels'] });
       setIsCreateDialogOpen(false);
+      setFormData({
+        name: '',
+        platform_type: '',
+        api_endpoint: '',
+        api_key: '',
+        webhook_url: '',
+        sync_frequency: '10',
+        is_sandbox: false
+      });
       toast.success('Canal creado exitosamente');
     },
     onError: () => {
@@ -72,17 +90,22 @@ export const EcommerceChannelsManager = () => {
     }
   });
 
-  const handleCreateChannel = (formData: FormData) => {
-    const platformType = formData.get('platform_type') as string;
+  const handleCreateChannel = (e: React.FormEvent) => {
+    e.preventDefault();
     
+    if (!formData.platform_type) {
+      toast.error('Por favor selecciona una plataforma');
+      return;
+    }
+
     const channelData: Partial<EcommerceChannel> = {
-      name: formData.get('name') as string,
-      platform_type: platformType as EcommerceChannel['platform_type'],
-      api_endpoint: formData.get('api_endpoint') as string,
-      api_key_encrypted: formData.get('api_key') as string,
-      webhook_url: formData.get('webhook_url') as string,
-      is_sandbox: formData.get('is_sandbox') === 'on',
-      sync_frequency_minutes: parseInt(formData.get('sync_frequency') as string) || 10,
+      name: formData.name,
+      platform_type: formData.platform_type as EcommerceChannel['platform_type'],
+      api_endpoint: formData.api_endpoint,
+      api_key_encrypted: formData.api_key,
+      webhook_url: formData.webhook_url,
+      is_sandbox: formData.is_sandbox,
+      sync_frequency_minutes: parseInt(formData.sync_frequency) || 10,
       settings: {},
       user_id: 'current_user_id'
     };
@@ -135,23 +158,24 @@ export const EcommerceChannelsManager = () => {
             <DialogHeader>
               <DialogTitle>Crear Nuevo Canal</DialogTitle>
             </DialogHeader>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              handleCreateChannel(new FormData(e.currentTarget));
-            }} className="space-y-4">
+            <form onSubmit={handleCreateChannel} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre del Canal</Label>
                 <Input
                   id="name"
-                  name="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
                   placeholder="Ej: Mi Tienda Shopify"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="platform_type">Plataforma</Label>
-                <Select name="platform_type" required>
+                <Label>Plataforma</Label>
+                <Select 
+                  value={formData.platform_type} 
+                  onValueChange={(value) => setFormData({...formData, platform_type: value})}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar plataforma" />
                   </SelectTrigger>
@@ -169,7 +193,8 @@ export const EcommerceChannelsManager = () => {
                 <Label htmlFor="api_endpoint">API Endpoint</Label>
                 <Input
                   id="api_endpoint"
-                  name="api_endpoint"
+                  value={formData.api_endpoint}
+                  onChange={(e) => setFormData({...formData, api_endpoint: e.target.value})}
                   placeholder="https://mi-tienda.myshopify.com"
                 />
               </div>
@@ -178,8 +203,9 @@ export const EcommerceChannelsManager = () => {
                 <Label htmlFor="api_key">API Key / Token</Label>
                 <Input
                   id="api_key"
-                  name="api_key"
                   type="password"
+                  value={formData.api_key}
+                  onChange={(e) => setFormData({...formData, api_key: e.target.value})}
                   placeholder="Tu API key o token de acceso"
                 />
               </div>
@@ -188,7 +214,8 @@ export const EcommerceChannelsManager = () => {
                 <Label htmlFor="webhook_url">Webhook URL (Opcional)</Label>
                 <Input
                   id="webhook_url"
-                  name="webhook_url"
+                  value={formData.webhook_url}
+                  onChange={(e) => setFormData({...formData, webhook_url: e.target.value})}
                   placeholder="https://tu-webhook.com/ecommerce"
                 />
               </div>
@@ -197,15 +224,19 @@ export const EcommerceChannelsManager = () => {
                 <Label htmlFor="sync_frequency">Frecuencia de Sync (minutos)</Label>
                 <Input
                   id="sync_frequency"
-                  name="sync_frequency"
                   type="number"
-                  defaultValue="10"
+                  value={formData.sync_frequency}
+                  onChange={(e) => setFormData({...formData, sync_frequency: e.target.value})}
                   min="1"
                 />
               </div>
 
               <div className="flex items-center space-x-2">
-                <Switch id="is_sandbox" name="is_sandbox" />
+                <Switch 
+                  id="is_sandbox" 
+                  checked={formData.is_sandbox}
+                  onCheckedChange={(checked) => setFormData({...formData, is_sandbox: checked})}
+                />
                 <Label htmlFor="is_sandbox">Modo Sandbox/Testing</Label>
               </div>
 
@@ -307,4 +338,22 @@ export const EcommerceChannelsManager = () => {
       )}
     </div>
   );
+
+  function getStatusIcon(status: string) {
+    switch (status) {
+      case 'connected': return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'error': return <AlertCircle className="w-4 h-4 text-red-500" />;
+      case 'syncing': return <Clock className="w-4 h-4 text-blue-500" />;
+      default: return <AlertCircle className="w-4 h-4 text-gray-500" />;
+    }
+  }
+
+  function getStatusColor(status: string) {
+    switch (status) {
+      case 'connected': return 'default';
+      case 'error': return 'destructive';
+      case 'syncing': return 'secondary';
+      default: return 'outline';
+    }
+  }
 };
