@@ -36,7 +36,7 @@ export interface PutAwayTask {
   operator_id: string;
   suggested_location_id: string;
   actual_location_id?: string;
-  status: 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   started_at: string;
   completed_at?: string;
@@ -46,6 +46,14 @@ export interface PutAwayTask {
   pallet?: Pallet;
   suggested_location?: Location;
   actual_location?: Location;
+  // Additional fields for the component
+  product?: Product;
+  from_location?: Location;
+  to_location?: Location;
+  quantity_completed?: number;
+  quantity_to_putaway: number;
+  assigned_to?: string;
+  created_date: string;
 }
 
 export interface LocationConfirmation {

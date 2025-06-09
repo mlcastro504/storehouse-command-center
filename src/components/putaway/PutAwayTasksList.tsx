@@ -108,17 +108,17 @@ export const PutAwayTasksList = () => {
                 <div className="space-y-1 text-sm">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3 w-3 text-muted-foreground" />
-                    <span>Desde: {task.from_location?.name}</span>
+                    <span>Desde: {task.from_location?.name || 'N/A'}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3 w-3 text-green-600" />
-                    <span>Hacia: {task.to_location?.name}</span>
+                    <span>Hacia: {task.to_location?.name || task.suggested_location?.name || 'N/A'}</span>
                   </div>
                 </div>
               </TableCell>
               <TableCell>
                 <div className="text-sm">
-                  <div>{task.quantity_completed || 0} / {task.quantity_to_putaway}</div>
+                  <div>{task.quantity_completed || 0} / {task.quantity_to_putaway || 0}</div>
                   <div className="text-muted-foreground">unidades</div>
                 </div>
               </TableCell>
@@ -137,7 +137,7 @@ export const PutAwayTasksList = () => {
               <TableCell>
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  {format(new Date(task.created_date), 'dd/MM/yyyy', { locale: es })}
+                  {format(new Date(task.created_date || task.started_at), 'dd/MM/yyyy', { locale: es })}
                 </div>
               </TableCell>
               <TableCell>

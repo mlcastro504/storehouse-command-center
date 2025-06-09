@@ -54,7 +54,7 @@ export async function closeDatabaseConnection() {
 export async function getDatabaseStats() {
   try {
     if (isBrowser) {
-      return await browserStorage.getStats();
+      return await BrowserStorage.getStats();
     }
     
     const database = await connectToDatabase();

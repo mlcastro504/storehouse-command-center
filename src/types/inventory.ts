@@ -213,3 +213,9 @@ export interface ProductSupplier {
   product?: Product;
   supplier?: Supplier;
 }
+
+export interface InventoryStats {
+  totalProducts: number;
+  totalLocations: number;
+  totalStockLevels: number;
+}
