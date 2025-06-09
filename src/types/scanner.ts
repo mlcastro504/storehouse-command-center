@@ -20,6 +20,10 @@ export interface ScanDevice {
   created_at: string;
   updated_at: string;
   user_id?: string;
+  status?: 'active' | 'inactive' | 'maintenance';
+  name?: string;
+  type?: 'handheld' | 'mobile' | 'tablet' | 'camera';
+  config?: any;
 }
 
 export interface DeviceCapabilities {
@@ -62,6 +66,13 @@ export interface ScanSession {
   notes?: string;
   created_at: string;
   updated_at: string;
+  is_active?: boolean;
+  name?: string;
+  description?: string;
+  config?: any;
+  scan_count?: number;
+  error_count?: number;
+  last_scan_at?: Date | null;
 }
 
 export interface ScanRecord {
@@ -80,6 +91,8 @@ export interface ScanRecord {
   device_id?: string;
   retry_count: number;
   metadata?: Record<string, any>;
+  is_valid?: boolean;
+  validation_errors?: string[];
 }
 
 export interface ScanValidationRule {
@@ -99,6 +112,9 @@ export interface ScanValidationRule {
   priority: number;
   created_at: string;
   updated_at: string;
+  name?: string;
+  pattern?: string;
+  rule_type?: 'format' | 'length' | 'existence' | 'range';
 }
 
 export interface ScanTemplate {

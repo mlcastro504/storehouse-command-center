@@ -2,9 +2,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ScannerService } from '@/services/scannerService';
 import { toast } from 'sonner';
+import { ScanDevice, ScanSession, ScanRecord, ScannerMetrics } from '@/types/scanner';
 
 export const useScanDevices = () => {
-  return useQuery({
+  return useQuery<ScanDevice[]>({
     queryKey: ['scan-devices'],
     queryFn: ScannerService.getDevices,
   });
@@ -27,14 +28,14 @@ export const useCreateScanDevice = () => {
 };
 
 export const useScanSessions = () => {
-  return useQuery({
+  return useQuery<ScanSession[]>({
     queryKey: ['scan-sessions'],
     queryFn: ScannerService.getSessions,
   });
 };
 
 export const useActiveScanSessions = () => {
-  return useQuery({
+  return useQuery<ScanSession[]>({
     queryKey: ['active-scan-sessions'],
     queryFn: ScannerService.getActiveSessions,
     refetchInterval: 5000, // Refrescar cada 5 segundos
@@ -66,10 +67,10 @@ export const useProcessScan = () => {
       ScannerService.processScan({
         sessionId: data.session_id,
         scannedData: data.scanned_value,
-        scanType: data.scan_type as 'barcode' | 'qr_code' | 'manual'
+        scanType: data.scan_type
       }),
-    onSuccess: (data) => {
-      if (data?.validation_status === 'valid') {
+    onSuccess: (data: ScanRecord) => {
+      if (data?.validation_status === 'valid' || data?.is_valid) {
         toast.success('Escaneo procesado exitosamente');
       } else {
         toast.warning(`Escaneo con advertencia: ${data?.validation_message || 'Error de validación'}`);
@@ -84,7 +85,7 @@ export const useProcessScan = () => {
 };
 
 export const useScannerMetrics = () => {
-  return useQuery({
+  return useQuery<ScannerMetrics>({
     queryKey: ['scanner-metrics'],
     queryFn: ScannerService.getMetrics,
     refetchInterval: 30000, // Refrescar cada 30 segundos
@@ -171,7 +172,7 @@ export const useExecuteStockMove = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ScannerService.executeStockMove,
+    mutationFn: (taskId: string) => ScannerService.executeStockMove(taskId, {}),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['pending-stock-move-tasks'] });
       if (data?.execution_status === 'completed') {

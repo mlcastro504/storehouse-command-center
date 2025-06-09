@@ -157,6 +157,15 @@ export class StockMoveService {
     }
   }
 
+  // Actualizar estado de tarea
+  static async updateTaskStatus(taskId: string, status: string): Promise<boolean> {
+    const result = await BrowserStorage.updateOne('stock_move_tasks', 
+      { id: taskId }, 
+      { $set: { status, updated_at: new Date().toISOString() } }
+    );
+    return result.modifiedCount > 0;
+  }
+
   // Completar una tarea con validación
   static async completeTask(
     taskId: string,
@@ -589,9 +598,9 @@ export class StockMoveService {
       { id: taskId },
       { $set: { 
         status: 'completed', 
-        completed_at: new Date(), 
-        updated_at: new Date(),
-        execution_data: executionData
+        execution_data: executionData,
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }}
     );
 

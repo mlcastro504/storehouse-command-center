@@ -9,13 +9,21 @@ export class ScannerService {
   static async createScanSession(sessionData: Partial<ScanSession>): Promise<ScanSession> {
     const newSession: ScanSession = {
       id: Date.now().toString(),
+      session_id: `session_${Date.now()}`,
+      session_type: sessionData.session_type || 'inventory',
+      device_id: sessionData.device_id || '',
+      user_id: sessionData.user_id || 'current_user',
+      status: 'active',
+      started_at: new Date().toISOString(),
+      total_scans: 0,
+      successful_scans: 0,
+      error_scans: 0,
+      scan_records: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       name: sessionData.name || `Session ${Date.now()}`,
       description: sessionData.description || '',
-      created_at: new Date(),
-      updated_at: new Date(),
       is_active: true,
-      user_id: sessionData.user_id || 'current_user',
-      session_type: sessionData.session_type || 'inventory',
       scan_count: 0,
       error_count: 0,
       last_scan_at: null,
@@ -33,21 +41,20 @@ export class ScannerService {
     return newSession;
   }
 
-  static async updateScanSession(sessionId: string, updates: Partial<ScanSession>): Promise<boolean> {
-    const result = await BrowserStorage.updateOne('scan_sessions', 
-      { id: sessionId }, 
-      { $set: { ...updates, updated_at: new Date() } }
-    );
-    return result.modifiedCount > 0;
+  static async getSessions(): Promise<ScanSession[]> {
+    return this.getScanSessions();
   }
 
-  static async deleteScanSession(sessionId: string): Promise<boolean> {
-    const result = await BrowserStorage.deleteOne('scan_sessions', { id: sessionId });
-    return result.deletedCount > 0;
+  static async createSession(sessionData: Partial<ScanSession>): Promise<ScanSession> {
+    return this.createScanSession(sessionData);
   }
 
-  static async getActiveScanSession(): Promise<ScanSession | null> {
-    return await BrowserStorage.findOne('scan_sessions', { is_active: true });
+  static async getActiveSessions(): Promise<ScanSession[]> {
+    return await BrowserStorage.find('scan_sessions', { is_active: true });
+  }
+
+  static async getDevices(): Promise<ScanDevice[]> {
+    return this.getScanDevices();
   }
 
   static async getScanDevices(): Promise<ScanDevice[]> {
@@ -57,12 +64,38 @@ export class ScannerService {
   static async createDevice(deviceData: Partial<ScanDevice>): Promise<ScanDevice> {
     const newDevice: ScanDevice = {
       id: Date.now().toString(),
-      name: deviceData.name || `Device ${Date.now()}`,
-      type: deviceData.type || 'mobile',
+      device_id: `${deviceData.device_type || 'device'}_${Date.now()}`,
+      device_type: deviceData.device_type || 'mobile_app',
+      device_name: deviceData.device_name || deviceData.name || `Device ${Date.now()}`,
+      connection_status: 'connected',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      last_sync_at: new Date().toISOString(),
       status: 'active',
-      created_at: new Date(),
-      updated_at: new Date(),
-      last_ping_at: new Date(),
+      name: deviceData.device_name || deviceData.name || `Device ${Date.now()}`,
+      type: deviceData.device_type === 'mobile_app' ? 'mobile' : 
+            deviceData.device_type === 'camera_device' ? 'camera' :
+            deviceData.device_type === 'tablet' ? 'tablet' : 'handheld',
+      capabilities: {
+        has_camera: deviceData.device_type === 'mobile_app' || deviceData.device_type === 'tablet' || deviceData.device_type === 'camera_device',
+        has_rear_camera: deviceData.device_type === 'mobile_app' || deviceData.device_type === 'tablet',
+        has_front_camera: deviceData.device_type === 'mobile_app' || deviceData.device_type === 'tablet',
+        supports_barcode: true,
+        supports_qr: true,
+        supports_rfid: deviceData.device_type === 'handheld',
+        can_vibrate: deviceData.device_type === 'mobile_app' || deviceData.device_type === 'tablet',
+        has_flashlight: deviceData.device_type === 'mobile_app' || deviceData.device_type === 'tablet' || deviceData.device_type === 'handheld'
+      },
+      settings: {
+        preferred_camera: 'rear',
+        vibration_enabled: true,
+        sound_enabled: true,
+        flashlight_enabled: false,
+        auto_focus: true,
+        scan_timeout: 5000,
+        validation_mode: 'normal'
+      },
       config: deviceData.config || {
         preferred_camera: 'rear',
         enabled: true,
@@ -84,10 +117,27 @@ export class ScannerService {
     return newDevice;
   }
 
+  static async updateScanSession(sessionId: string, updates: Partial<ScanSession>): Promise<boolean> {
+    const result = await BrowserStorage.updateOne('scan_sessions', 
+      { id: sessionId }, 
+      { $set: { ...updates, updated_at: new Date().toISOString() } }
+    );
+    return result.modifiedCount > 0;
+  }
+
+  static async deleteScanSession(sessionId: string): Promise<boolean> {
+    const result = await BrowserStorage.deleteOne('scan_sessions', { id: sessionId });
+    return result.deletedCount > 0;
+  }
+
+  static async getActiveScanSession(): Promise<ScanSession | null> {
+    return await BrowserStorage.findOne('scan_sessions', { is_active: true });
+  }
+
   static async updateDevice(deviceId: string, updates: Partial<ScanDevice>): Promise<boolean> {
     const result = await BrowserStorage.updateOne('scan_devices', 
       { id: deviceId }, 
-      { $set: { ...updates, updated_at: new Date() } }
+      { $set: { ...updates, updated_at: new Date().toISOString() } }
     );
     return result.modifiedCount > 0;
   }
@@ -100,7 +150,7 @@ export class ScannerService {
   static async pingDevice(deviceId: string): Promise<boolean> {
     const result = await BrowserStorage.updateOne('scan_devices', 
       { id: deviceId }, 
-      { $set: { last_ping_at: new Date() } }
+      { $set: { last_sync_at: new Date().toISOString() } }
     );
     return result.modifiedCount > 0;
   }
@@ -108,7 +158,7 @@ export class ScannerService {
   static async assignUserToDevice(deviceId: string, userId: string): Promise<boolean> {
     const result = await BrowserStorage.updateOne('scan_devices', 
       { id: deviceId }, 
-      { $set: { user_id: userId, updated_at: new Date() } }
+      { $set: { user_id: userId, updated_at: new Date().toISOString() } }
     );
     return result.modifiedCount > 0;
   }
@@ -116,7 +166,7 @@ export class ScannerService {
   static async unassignUserFromDevice(deviceId: string): Promise<boolean> {
     const result = await BrowserStorage.updateOne('scan_devices', 
       { id: deviceId }, 
-      { $set: { user_id: null, updated_at: new Date() } }
+      { $set: { user_id: null, updated_at: new Date().toISOString() } }
     );
     return result.modifiedCount > 0;
   }
@@ -125,11 +175,11 @@ export class ScannerService {
     return await BrowserStorage.find('scan_devices', { user_id: userId });
   }
 
-  static async bulkUpdateDeviceStatus(deviceIds: string[], status: ScanDevice['status']): Promise<boolean> {
+  static async bulkUpdateDeviceStatus(deviceIds: string[], status: string): Promise<boolean> {
     const collection = BrowserStorage.collection('scan_devices');
     const result = await collection.updateMany(
       { id: { $in: deviceIds } }, 
-      { $set: { status, updated_at: new Date() } }
+      { $set: { status, updated_at: new Date().toISOString() } }
     );
     return result.modifiedCount > 0;
   }
@@ -177,7 +227,10 @@ export class ScannerService {
       device_id: recordData.device_id || '',
       scanned_value: recordData.scanned_value || '',
       scan_type: recordData.scan_type || 'barcode',
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
+      validation_status: recordData.is_valid !== false ? 'valid' : 'invalid',
+      user_id: recordData.user_id || 'current_user',
+      retry_count: 0,
       is_valid: recordData.is_valid !== false,
       validation_errors: recordData.validation_errors || [],
       metadata: recordData.metadata || {}
@@ -197,14 +250,14 @@ export class ScannerService {
     return newRecord;
   }
 
-  static async validateScan(sessionId: string, scannedData: string, scanType: 'barcode' | 'qr_code' | 'manual' = 'barcode'): Promise<ScanRecord> {
+  static async validateScan(sessionId: string, scannedData: string, scanType: 'barcode' | 'qr_code' | 'manual_entry' = 'barcode'): Promise<ScanRecord> {
     const validationRules = await this.getValidationRules();
     const errors: string[] = [];
     
     // Apply validation rules
     for (const rule of validationRules) {
-      if (rule.is_active) {
-        const regex = new RegExp(rule.pattern);
+      if (rule.is_active && rule.rule_pattern) {
+        const regex = new RegExp(rule.rule_pattern);
         if (!regex.test(scannedData)) {
           errors.push(rule.error_message);
         }
@@ -222,6 +275,10 @@ export class ScannerService {
     return record;
   }
 
+  static async processScan(data: { sessionId: string; scannedData: string; scanType: string }): Promise<ScanRecord> {
+    return this.validateScan(data.sessionId, data.scannedData, data.scanType as 'barcode' | 'qr_code' | 'manual_entry');
+  }
+
   static async deleteScanRecord(recordId: string): Promise<boolean> {
     const result = await BrowserStorage.deleteOne('scan_records', { id: recordId });
     return result.deletedCount > 0;
@@ -234,13 +291,18 @@ export class ScannerService {
   static async createValidationRule(ruleData: Partial<ScanValidationRule>): Promise<ScanValidationRule> {
     const newRule: ScanValidationRule = {
       id: Date.now().toString(),
-      name: ruleData.name || `Rule ${Date.now()}`,
+      rule_name: ruleData.rule_name || ruleData.name || `Rule ${Date.now()}`,
       description: ruleData.description || '',
-      pattern: ruleData.pattern || '.*',
+      scan_type: ruleData.scan_type || 'any',
+      validation_type: ruleData.validation_type || 'format',
+      rule_pattern: ruleData.rule_pattern || ruleData.pattern || '.*',
       error_message: ruleData.error_message || 'Invalid format',
       is_active: ruleData.is_active !== false,
-      created_at: new Date(),
-      updated_at: new Date(),
+      priority: ruleData.priority || 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      name: ruleData.rule_name || ruleData.name || `Rule ${Date.now()}`,
+      pattern: ruleData.rule_pattern || ruleData.pattern || '.*',
       rule_type: ruleData.rule_type || 'format'
     };
 
@@ -251,7 +313,7 @@ export class ScannerService {
   static async updateValidationRule(ruleId: string, updates: Partial<ScanValidationRule>): Promise<boolean> {
     const result = await BrowserStorage.updateOne('scan_validation_rules', 
       { id: ruleId }, 
-      { $set: { ...updates, updated_at: new Date() } }
+      { $set: { ...updates, updated_at: new Date().toISOString() } }
     );
     return result.modifiedCount > 0;
   }
@@ -274,26 +336,36 @@ export class ScannerService {
     ).length;
     
     const errorRate = records.length > 0 
-      ? (records.filter(record => !record.is_valid).length / records.length) * 100 
+      ? (records.filter(record => record.validation_status === 'invalid' || record.is_valid === false).length / records.length) * 100 
       : 0;
 
     return {
-      totalDevices: devices.length,
-      activeSessions: sessions.filter(s => s.is_active).length,
-      scansToday,
-      errorRate,
-      devicesByType: devices.reduce((acc, device) => {
-        acc[device.type] = (acc[device.type] || 0) + 1;
+      total_devices: devices.length,
+      active_sessions: sessions.filter(s => s.is_active || s.status === 'active').length,
+      scans_today: scansToday,
+      error_rate: errorRate,
+      devices_by_type: devices.reduce((acc, device) => {
+        const deviceType = device.type || 'mobile';
+        acc[deviceType as keyof typeof acc] = (acc[deviceType as keyof typeof acc] || 0) + 1;
         return acc;
-      }, {} as Record<string, number>),
-      topErrors: records
-        .filter(record => !record.is_valid)
-        .flatMap(record => record.validation_errors)
+      }, { handheld: 0, mobile: 0, tablet: 0, camera: 0 }),
+      top_errors: records
+        .filter(record => record.validation_status === 'invalid' || record.is_valid === false)
+        .flatMap(record => record.validation_errors || [])
         .reduce((acc, error) => {
-          acc[error] = (acc[error] || 0) + 1;
+          const existing = acc.find(item => item.error_type === error);
+          if (existing) {
+            existing.count++;
+          } else {
+            acc.push({ error_type: error, count: 1 });
+          }
           return acc;
-        }, {} as Record<string, number>)
+        }, [] as Array<{ error_type: string; count: number }>)
     };
+  }
+
+  static async getMetrics(): Promise<ScannerMetrics> {
+    return this.getScannerMetrics();
   }
 
   static async exportScanData(sessionId?: string): Promise<any[]> {
@@ -302,8 +374,8 @@ export class ScannerService {
       timestamp: record.timestamp,
       scanned_value: record.scanned_value,
       scan_type: record.scan_type,
-      is_valid: record.is_valid,
-      validation_errors: record.validation_errors.join(', '),
+      is_valid: record.is_valid || record.validation_status === 'valid',
+      validation_errors: (record.validation_errors || []).join(', '),
       session_id: record.session_id,
       device_id: record.device_id
     }));
@@ -313,7 +385,7 @@ export class ScannerService {
     const collection = BrowserStorage.collection('scan_devices');
     const result = await collection.replaceOne(
       { id: deviceId },
-      { config, updated_at: new Date() },
+      { config, updated_at: new Date().toISOString() },
       { upsert: false }
     );
     return result.modifiedCount > 0;
@@ -343,7 +415,7 @@ export class ScannerService {
 
     const result = await BrowserStorage.updateOne('scan_devices', 
       { id: deviceId }, 
-      { $set: { config: defaultConfig, updated_at: new Date() } }
+      { $set: { config: defaultConfig, updated_at: new Date().toISOString() } }
     );
     return result.modifiedCount > 0;
   }
@@ -352,7 +424,7 @@ export class ScannerService {
     const collection = BrowserStorage.collection('scan_sessions');
     const result = await collection.replaceOne(
       { id: sessionId },
-      { config, updated_at: new Date() },
+      { config, updated_at: new Date().toISOString() },
       { upsert: false }
     );
     return result.modifiedCount > 0;
@@ -372,8 +444,8 @@ export class ScannerService {
     const newTask = {
       id: Date.now().toString(),
       ...taskData,
-      created_at: new Date(),
-      updated_at: new Date(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       status: 'pending'
     };
 
@@ -384,7 +456,7 @@ export class ScannerService {
   static async executeStockMove(taskId: string, scanData: any): Promise<any> {
     const result = await BrowserStorage.updateOne('stock_move_tasks', 
       { id: taskId }, 
-      { $set: { status: 'completed', scan_data: scanData, completed_at: new Date() } }
+      { $set: { status: 'completed', scan_data: scanData, completed_at: new Date().toISOString() } }
     );
     
     return {
@@ -394,12 +466,27 @@ export class ScannerService {
   }
 
   // Device assignment methods
-  static async getDeviceAssignments(): Promise<any[]> {
-    const devices = await this.getScanDevices();
-    return devices.filter(device => device.user_id).map(device => ({
-      device_id: device.id,
-      user_id: device.user_id,
-      assigned_at: device.updated_at
-    }));
+  static async getDeviceAssignments(userId?: string): Promise<any[]> {
+    const filter = userId ? { user_id: userId } : {};
+    return await BrowserStorage.find('device_assignments', filter);
+  }
+
+  static async assignDevice(deviceId: string, userId: string, assignedBy: string, assignmentType: string): Promise<any> {
+    const assignment = {
+      id: Date.now().toString(),
+      device_id: deviceId,
+      user_id: userId,
+      assigned_by: assignedBy,
+      assignment_type: assignmentType,
+      assigned_at: new Date().toISOString(),
+      is_active: true
+    };
+
+    await BrowserStorage.insertOne('device_assignments', assignment);
+    
+    // Update device with user assignment
+    await this.assignUserToDevice(deviceId, userId);
+    
+    return assignment;
   }
 }
