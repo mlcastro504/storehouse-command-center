@@ -21,7 +21,7 @@ export const modules = [
     name: 'Dashboard',
     displayName: 'Panel Principal',
     description: 'Vista general del sistema y métricas principales',
-    icon: BarChart3,
+    icon: 'BarChart3',
     path: '/dashboard',
     isActive: true,
     requiredRoleLevel: 1
@@ -31,7 +31,7 @@ export const modules = [
     name: 'Inventory',
     displayName: 'Inventario',
     description: 'Gestión de productos, categorías y control de stock',
-    icon: Package,
+    icon: 'Package',
     path: '/inventory',
     isActive: true,
     requiredRoleLevel: 2
@@ -41,7 +41,7 @@ export const modules = [
     name: 'Locations',
     displayName: 'Ubicaciones',
     description: 'Gestión de almacenes, zonas y ubicaciones físicas',
-    icon: MapPin,
+    icon: 'MapPin',
     path: '/locations',
     isActive: true,
     requiredRoleLevel: 2
@@ -51,7 +51,7 @@ export const modules = [
     name: 'StockMovements',
     displayName: 'Movimientos de Stock',
     description: 'Registro y seguimiento de movimientos de inventario',
-    icon: TruckIcon,
+    icon: 'TruckIcon',
     path: '/stock-movements',
     isActive: true,
     requiredRoleLevel: 2
@@ -61,7 +61,7 @@ export const modules = [
     name: 'StockMove',
     displayName: 'Stock Move',
     description: 'Módulo de reposición automática y movimientos de stock',
-    icon: ArrowUpDown,
+    icon: 'ArrowUpDown',
     path: '/stock-move',
     isActive: true,
     requiredRoleLevel: 2
@@ -71,7 +71,7 @@ export const modules = [
     name: 'PutAway',
     displayName: 'Put Away',
     description: 'Gestión de tareas de almacenamiento y ubicación',
-    icon: Archive,
+    icon: 'Archive',
     path: '/putaway',
     isActive: true,
     requiredRoleLevel: 2
@@ -81,7 +81,7 @@ export const modules = [
     name: 'Scanner',
     displayName: 'Escáner',
     description: 'Sistema de escaneo y captura de códigos de barras',
-    icon: ScanLine,
+    icon: 'ScanLine',
     path: '/scanner',
     isActive: true,
     requiredRoleLevel: 2
@@ -91,7 +91,7 @@ export const modules = [
     name: 'Loading',
     displayName: 'Carga',
     description: 'Gestión de muelles de carga y programación de citas',
-    icon: TruckIcon,
+    icon: 'TruckIcon',
     path: '/loading',
     isActive: true,
     requiredRoleLevel: 2
@@ -101,7 +101,7 @@ export const modules = [
     name: 'Users',
     displayName: 'Usuarios',
     description: 'Gestión de usuarios, roles y permisos del sistema',
-    icon: Users,
+    icon: 'Users',
     path: '/users',
     isActive: true,
     requiredRoleLevel: 1
@@ -111,7 +111,7 @@ export const modules = [
     name: 'Customers',
     displayName: 'Clientes',
     description: 'Gestión de clientes y relaciones comerciales',
-    icon: UserPlus,
+    icon: 'UserPlus',
     path: '/customers',
     isActive: true,
     requiredRoleLevel: 2
@@ -121,7 +121,7 @@ export const modules = [
     name: 'Ecommerce',
     displayName: 'E-commerce',
     description: 'Integración con plataformas de comercio electrónico',
-    icon: ShoppingCart,
+    icon: 'ShoppingCart',
     path: '/ecommerce',
     isActive: true,
     requiredRoleLevel: 2
@@ -131,7 +131,7 @@ export const modules = [
     name: 'Accounting',
     displayName: 'Contabilidad',
     description: 'Gestión contable, facturas y transacciones financieras',
-    icon: Calculator,
+    icon: 'Calculator',
     path: '/accounting',
     isActive: true,
     requiredRoleLevel: 3
@@ -141,7 +141,7 @@ export const modules = [
     name: 'Chat',
     displayName: 'Chat',
     description: 'Sistema de comunicación interna y colaboración',
-    icon: MessageSquare,
+    icon: 'MessageSquare',
     path: '/chat',
     isActive: true,
     requiredRoleLevel: 5
@@ -151,9 +151,15 @@ export const modules = [
     name: 'Settings',
     displayName: 'Configuración',
     description: 'Configuración del sistema y preferencias de usuario',
-    icon: Settings,
+    icon: 'Settings',
     path: '/settings',
     isActive: true,
     requiredRoleLevel: 1
   }
 ];
+
+export const getModulesForUser = (userRoleLevel: number) => {
+  return modules.filter(module => 
+    module.isActive && userRoleLevel >= module.requiredRoleLevel
+  );
+};

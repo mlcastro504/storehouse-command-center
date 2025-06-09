@@ -1,4 +1,3 @@
-
 import { ObjectId } from 'mongodb';
 
 // Tipos principales del sistema de escaneo
@@ -191,6 +190,10 @@ export interface CameraScanConfig {
   continuous_scan: boolean;
   beep_on_scan: boolean;
   vibrate_on_scan: boolean;
+  quality: 'low' | 'medium' | 'high';
+  flashEnabled: boolean;
+  autoFocus: boolean;
+  formats: string[];
 }
 
 // Tipos para el nuevo módulo Stock Move

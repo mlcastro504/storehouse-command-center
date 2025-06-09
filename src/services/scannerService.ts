@@ -1,4 +1,3 @@
-
 import { connectToDatabase } from '@/lib/mongodb';
 import { BrowserStorage } from '@/lib/browserStorage';
 
@@ -488,7 +487,7 @@ export class ScannerService {
   static async getSettings(): Promise<ScannerSettings> {
     try {
       const db = await connectToDatabase();
-      const settings = await db.collection('scanner_settings').findOne() as ScannerSettings;
+      const settings = await db.collection('scanner_settings').findOne({}) as ScannerSettings;
       
       return settings || {
         autoSave: true,
@@ -557,14 +556,10 @@ export class ScannerService {
   static async getCameraConfig(): Promise<CameraScanConfig> {
     try {
       const db = await connectToDatabase();
-      const config = await db.collection('camera_config').findOne() as CameraScanConfig;
+      const config = await db.collection('camera_config').findOne({}) as CameraScanConfig;
       
       return config || {
         enabled: true,
-        quality: 'medium',
-        flashEnabled: false,
-        autoFocus: true,
-        formats: ['CODE_128', 'QR_CODE', 'EAN_13'],
         preferred_camera: 'rear',
         resolution: 'medium',
         auto_focus: true,
@@ -572,16 +567,16 @@ export class ScannerService {
         scan_area_overlay: true,
         continuous_scan: false,
         beep_on_scan: true,
-        vibrate_on_scan: true
+        vibrate_on_scan: true,
+        quality: 'medium',
+        flashEnabled: false,
+        autoFocus: true,
+        formats: ['CODE_128', 'QR_CODE', 'EAN_13']
       };
     } catch (error) {
       console.error('Error fetching camera config:', error);
       return {
         enabled: true,
-        quality: 'medium',
-        flashEnabled: false,
-        autoFocus: true,
-        formats: ['CODE_128', 'QR_CODE', 'EAN_13'],
         preferred_camera: 'rear',
         resolution: 'medium',
         auto_focus: true,
@@ -589,7 +584,11 @@ export class ScannerService {
         scan_area_overlay: true,
         continuous_scan: false,
         beep_on_scan: true,
-        vibrate_on_scan: true
+        vibrate_on_scan: true,
+        quality: 'medium',
+        flashEnabled: false,
+        autoFocus: true,
+        formats: ['CODE_128', 'QR_CODE', 'EAN_13']
       };
     }
   }
