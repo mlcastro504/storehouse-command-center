@@ -1,4 +1,3 @@
-
 // Mock collection for browser storage
 class MockCollection {
   private collectionName: string;

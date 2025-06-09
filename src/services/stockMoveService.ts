@@ -1,4 +1,3 @@
-
 import { BrowserStorage } from '@/lib/browserStorage';
 
 export interface StockMoveTask {
@@ -103,6 +102,20 @@ export class StockMoveService {
       console.error('Error fetching user tasks:', error);
       return [];
     }
+  }
+
+  // Crear tarea manual
+  static async createTask(taskData: any) {
+    const newTask = {
+      id: Date.now().toString(),
+      ...taskData,
+      status: 'pending',
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+
+    await BrowserStorage.insertOne('stock_move_tasks', newTask);
+    return newTask;
   }
 
   // Tomar una tarea
@@ -312,9 +325,9 @@ export class StockMoveService {
   }
 
   // Obtener historial de ejecuciones
-  static async getExecutionHistory(taskId?: string): Promise<StockMoveExecution[]> {
+  static async getExecutionHistory(userId?: string): Promise<StockMoveExecution[]> {
     try {
-      const filter = taskId ? { task_id: taskId } : {};
+      const filter = userId ? { assigned_to: userId } : {};
       const executions = await BrowserStorage.find('stock_move_executions', filter);
 
       // Enriquecer con datos de tarea y producto
@@ -428,5 +441,160 @@ export class StockMoveService {
       console.error('Error fetching locations:', error);
       return [];
     }
+  }
+
+  // Obtener tareas por ubicación
+  static async getTasksByLocation(locationId: string): Promise<StockMoveTask[]> {
+    const tasks = await BrowserStorage.find('stock_move_tasks');
+    return tasks.filter(task => 
+      task.source_location_id === locationId || 
+      task.destination_location_id === locationId
+    );
+  }
+
+  // Obtener tareas por producto
+  static async getTasksByProduct(productId: string): Promise<StockMoveTask[]> {
+    return await BrowserStorage.find('stock_move_tasks', { product_id: productId });
+  }
+
+  // Actualizar prioridad de tarea
+  static async updateTaskPriority(taskId: string, priority: 'low' | 'medium' | 'high' | 'urgent') {
+    const result = await BrowserStorage.updateOne('stock_move_tasks',
+      { id: taskId },
+      { $set: { priority, updated_at: new Date() } }
+    );
+    return result.modifiedCount > 0;
+  }
+
+  // Asignar múltiples tareas a un usuario
+  static async bulkAssignTasks(taskIds: string[], userId: string) {
+    let successCount = 0;
+    
+    for (const taskId of taskIds) {
+      const result = await BrowserStorage.updateOne('stock_move_tasks',
+        { id: taskId },
+        { $set: { assigned_to: userId, status: 'assigned', updated_at: new Date() } }
+      );
+      if (result.modifiedCount > 0) {
+        successCount++;
+      }
+    }
+    
+    return successCount;
+  }
+
+  // Obtener estadísticas de tareas
+  static async getTaskStatistics() {
+    const tasks = await BrowserStorage.find('stock_move_tasks');
+    
+    const statusCounts = tasks.reduce((acc, task) => {
+      acc[task.status] = (acc[task.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const priorityCounts = tasks.reduce((acc, task) => {
+      const priority = task.priority || 'medium';
+      acc[priority] = (acc[priority] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      total_tasks: tasks.length,
+      status_distribution: statusCounts,
+      priority_distribution: priorityCounts,
+      average_completion_time: this.calculateAverageCompletionTime(tasks)
+    };
+  }
+
+  // Calcular tiempo promedio de completado
+  private static calculateAverageCompletionTime(tasks: any[]): number {
+    const completedTasks = tasks.filter(task => 
+      task.status === 'completed' && task.started_at && task.completed_at
+    );
+
+    if (completedTasks.length === 0) return 0;
+
+    const totalTime = completedTasks.reduce((sum, task) => {
+      const startTime = new Date(task.started_at).getTime();
+      const endTime = new Date(task.completed_at).getTime();
+      return sum + (endTime - startTime);
+    }, 0);
+
+    return Math.round(totalTime / completedTasks.length / 1000 / 60); // Return in minutes
+  }
+
+  // Obtener métricas del dashboard
+  static async getDashboardMetrics() {
+    const allTasks = await BrowserStorage.find('stock_move_tasks');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const pendingTasks = allTasks.filter(task => task.status === 'pending');
+    const inProgressTasks = allTasks.filter(task => task.status === 'in_progress');
+    const completedToday = allTasks.filter(task => 
+      task.status === 'completed' && 
+      new Date(task.completed_at) >= today
+    );
+
+    const products = await BrowserStorage.find('products');
+    const locations = await BrowserStorage.find('locations');
+    const stockLevels = await BrowserStorage.find('stock_levels');
+
+    return {
+      pending_tasks: pendingTasks.length,
+      in_progress_tasks: inProgressTasks.length,
+      completed_today: completedToday.length,
+      total_products: products.length,
+      total_locations: locations.length,
+      low_stock_items: stockLevels.filter(level => level.quantity < 10).length
+    };
+  }
+
+  // Ejecutar tarea
+  static async executeTask(taskId: string, executionData: any) {
+    // Get the task first
+    const task = await BrowserStorage.findOne('stock_move_tasks', { id: taskId });
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    // Validate required data
+    const sourceLocation = await BrowserStorage.findOne('locations', { id: task.source_location_id });
+    const targetLocation = await BrowserStorage.findOne('locations', { id: task.target_location_id });
+    const product = await BrowserStorage.findOne('products', { id: task.product_id });
+
+    if (!sourceLocation || !targetLocation || !product) {
+      throw new Error('Invalid task data - missing locations or product');
+    }
+
+    // Update stock levels
+    await BrowserStorage.updateOne('stock_levels',
+      { 
+        product_id: task.product_id, 
+        location_id: task.source_location_id 
+      },
+      { $inc: { quantity: -task.quantity } }
+    );
+
+    await BrowserStorage.updateOne('stock_levels',
+      { 
+        product_id: task.product_id, 
+        location_id: task.target_location_id 
+      },
+      { $inc: { quantity: task.quantity } }
+    );
+
+    // Mark task as completed
+    const result = await BrowserStorage.updateOne('stock_move_tasks',
+      { id: taskId },
+      { $set: { 
+        status: 'completed', 
+        completed_at: new Date(), 
+        updated_at: new Date(),
+        execution_data: executionData
+      }}
+    );
+
+    return result.modifiedCount > 0;
   }
 }

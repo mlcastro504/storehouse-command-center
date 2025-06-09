@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,10 +19,9 @@ export default function Scanner() {
     console.log('Scan successful:', value);
     // Aquí se procesaría el escaneo
     processScan.mutate({
-      scanned_value: value,
-      scan_type: 'barcode',
       session_id: 'current_session', // Se obtendría de la sesión activa
-      device_id: 'current_device'
+      scanned_value: value,
+      scan_type: 'barcode'
     });
   };
 
@@ -92,9 +90,9 @@ export default function Scanner() {
                   onScanSuccess={handleScanSuccess}
                   onScanError={handleScanError}
                   config={{
-                    enabled: true,
                     preferred_camera: 'rear',
-                    resolution: 'high',
+                    enabled: true,
+                    resolution: 'medium',
                     auto_focus: true,
                     flash_mode: 'auto',
                     scan_area_overlay: true,

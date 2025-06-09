@@ -1,571 +1,71 @@
-
-import { connectToDatabase } from '@/lib/mongodb';
 import { BrowserStorage } from '@/lib/browserStorage';
-
-export interface ScanSession {
-  id: string;
-  session_id: string;
-  device_id: string;
-  user_id: string;
-  status: 'active' | 'paused' | 'completed';
-  started_at: string;
-  ended_at?: string;
-  total_scans: number;
-  successful_scans: number;
-  error_scans: number;
-  scan_records: ScanRecord[];
-}
-
-export interface ScanRecord {
-  id: string;
-  session_id: string;
-  scanned_data: string;
-  scan_type: 'barcode' | 'qr_code' | 'manual';
-  timestamp: string;
-  location?: string;
-  validation_status: 'valid' | 'invalid' | 'pending';
-  error_message?: string;
-  validation_message?: string;
-}
-
-export interface ScanDevice {
-  id: string;
-  device_name: string;
-  device_type: 'handheld' | 'fixed' | 'mobile' | 'mobile_app' | 'tablet' | 'camera_device';
-  is_active: boolean;
-  last_seen: string;
-  battery_level?: number;
-  firmware_version?: string;
-  connection_status: 'connected' | 'disconnected' | 'error' | 'idle';
-  model?: string;
-  user_id?: string;
-}
-
-export interface ScanValidationRule {
-  id: string;
-  rule_name: string;
-  pattern: string;
-  description: string;
-  is_active: boolean;
-}
-
-export interface ScanTemplate {
-  id: string;
-  template_name: string;
-  fields: Array<{
-    name: string;
-    type: string;
-    required: boolean;
-    validation?: string;
-  }>;
-}
-
-export interface ScannerMetrics {
-  totalScans: number;
-  successRate: number;
-  avgScanTime: number;
-  deviceUsage: Array<{
-    deviceId: string;
-    scans: number;
-  }>;
-  total_devices: number;
-  active_sessions: number;
-  scans_today: number;
-  error_rate: number;
-  devices_by_type: {
-    handheld: number;
-    mobile: number;
-    tablet: number;
-    camera: number;
-  };
-  top_errors: Array<{
-    error_type: string;
-    count: number;
-  }>;
-}
-
-export interface ScannerSettings {
-  autoSave: boolean;
-  soundEnabled: boolean;
-  vibrationEnabled: boolean;
-  duplicateCheck: boolean;
-  batchSize: number;
-}
-
-export interface DeviceAssignment {
-  id: string;
-  device_id: string;
-  user_id: string;
-  assigned_by: string;
-  assigned_at: string;
-  is_active: boolean;
-  assignment_type: 'permanent' | 'temporary' | 'shift_based';
-}
-
-export interface ScanEvent {
-  id: string;
-  session_id: string;
-  event_type: 'scan_start' | 'scan_end' | 'error' | 'validation';
-  event_data: any;
-  timestamp: string;
-  device_id: string;
-  user_id: string;
-}
-
-export interface CameraScanConfig {
-  enabled: boolean;
-  quality: 'low' | 'medium' | 'high';
-  flashEnabled: boolean;
-  autoFocus: boolean;
-  formats: string[];
-  preferred_camera: 'rear' | 'front';
-  resolution: 'low' | 'medium' | 'high';
-  auto_focus: boolean;
-  flash_mode: 'auto' | 'on' | 'off';
-  scan_area_overlay: boolean;
-  continuous_scan: boolean;
-  beep_on_scan: boolean;
-  vibrate_on_scan: boolean;
-}
+import { ScanSession, ScanDevice, ScanRecord, ScanValidationRule, ScannerMetrics } from '@/types/scanner';
 
 export class ScannerService {
-  // Gestión de sesiones
-  static async getSessions(): Promise<ScanSession[]> {
-    try {
-      const db = await connectToDatabase();
-      const sessions = await db.collection('scan_sessions').find({}).sort({ started_at: -1 }).toArray() as ScanSession[];
-      return sessions;
-    } catch (error) {
-      console.error('Error fetching scan sessions:', error);
-      return [];
-    }
+  static async getScanSessions(): Promise<ScanSession[]> {
+    return await BrowserStorage.find('scan_sessions');
   }
 
-  static async getActiveSessions(): Promise<ScanSession[]> {
-    try {
-      const db = await connectToDatabase();
-      const sessions = await db.collection('scan_sessions').find({ 
-        status: { $in: ['active', 'paused'] }
-      }).toArray() as ScanSession[];
-      return sessions;
-    } catch (error) {
-      console.error('Error fetching active sessions:', error);
-      return [];
-    }
-  }
-
-  static async createSession(sessionData: Partial<ScanSession>): Promise<ScanSession | null> {
-    try {
-      const session: ScanSession = {
-        ...sessionData,
-        id: `sess_${Date.now()}`,
-        session_id: `SCAN-${Date.now()}`,
-        status: 'active',
-        started_at: new Date().toISOString(),
-        total_scans: 0,
-        successful_scans: 0,
-        error_scans: 0,
-        scan_records: []
-      } as ScanSession;
-
-      const db = await connectToDatabase();
-      await db.collection('scan_sessions').insertOne(session);
-      
-      // Crear evento de inicio
-      await this.createScanEvent({
-        session_id: session.id,
-        event_type: 'scan_start',
-        device_id: session.device_id,
-        user_id: session.user_id
-      });
-      
-      return session;
-    } catch (error) {
-      console.error('Error creating scan session:', error);
-      return null;
-    }
-  }
-
-  static async pauseSession(sessionId: string): Promise<boolean> {
-    try {
-      const db = await connectToDatabase();
-      await db.collection('scan_sessions').updateOne(
-        { id: sessionId },
-        { $set: { status: 'paused' } }
-      );
-      
-      return true;
-    } catch (error) {
-      console.error('Error pausing session:', error);
-      return false;
-    }
-  }
-
-  static async resumeSession(sessionId: string): Promise<boolean> {
-    try {
-      const db = await connectToDatabase();
-      await db.collection('scan_sessions').updateOne(
-        { id: sessionId },
-        { $set: { status: 'active' } }
-      );
-      return true;
-    } catch (error) {
-      console.error('Error resuming session:', error);
-      return false;
-    }
-  }
-
-  static async endSession(sessionId: string): Promise<boolean> {
-    try {
-      const db = await connectToDatabase();
-      await db.collection('scan_sessions').updateOne(
-        { id: sessionId },
-        { 
-          $set: { 
-            status: 'completed',
-            ended_at: new Date().toISOString()
-          }
-        }
-      );
-      return true;
-    } catch (error) {
-      console.error('Error ending session:', error);
-      return false;
-    }
-  }
-
-  // Gestión de eventos
-  static async createScanEvent(eventData: Partial<ScanEvent>): Promise<ScanEvent | null> {
-    try {
-      const event: ScanEvent = {
-        id: `event_${Date.now()}`,
-        session_id: eventData.session_id || '',
-        event_type: eventData.event_type || 'scan_start',
-        event_data: eventData.event_data || {},
-        timestamp: new Date().toISOString(),
-        device_id: eventData.device_id || '',
-        user_id: eventData.user_id || ''
-      };
-
-      const db = await connectToDatabase();
-      await db.collection('scan_events').insertOne(event);
-      return event;
-    } catch (error) {
-      console.error('Error creating scan event:', error);
-      return null;
-    }
-  }
-
-  // Gestión de dispositivos
-  static async getDevices(): Promise<ScanDevice[]> {
-    try {
-      const db = await connectToDatabase();
-      const devices = await db.collection('scan_devices').find({}).toArray() as ScanDevice[];
-      return devices;
-    } catch (error) {
-      console.error('Error fetching devices:', error);
-      return [];
-    }
-  }
-
-  static async createDevice(deviceData: Partial<ScanDevice>): Promise<ScanDevice | null> {
-    try {
-      const device: ScanDevice = {
-        id: `dev_${Date.now()}`,
-        device_name: deviceData.device_name || 'Unknown Device',
-        device_type: deviceData.device_type || 'mobile',
-        is_active: true,
-        last_seen: new Date().toISOString(),
-        connection_status: 'connected',
-        battery_level: deviceData.battery_level,
-        firmware_version: deviceData.firmware_version,
-        model: deviceData.model,
-        user_id: deviceData.user_id
-      };
-
-      const db = await connectToDatabase();
-      await db.collection('scan_devices').insertOne(device);
-      return device;
-    } catch (error) {
-      console.error('Error creating device:', error);
-      return null;
-    }
-  }
-
-  static async registerDevice(deviceData: Partial<ScanDevice>): Promise<ScanDevice | null> {
-    return this.createDevice(deviceData);
-  }
-
-  // Asignación de dispositivos
-  static async assignDevice(deviceId: string, userId: string, assignedBy: string, assignmentType: 'permanent' | 'temporary' | 'shift_based'): Promise<DeviceAssignment | null> {
-    try {
-      const assignment: DeviceAssignment = {
-        id: `assign_${Date.now()}`,
-        device_id: deviceId,
-        user_id: userId,
-        assigned_by: assignedBy,
-        assigned_at: new Date().toISOString(),
-        is_active: true,
-        assignment_type: assignmentType
-      };
-
-      const db = await connectToDatabase();
-      const collection = db.collection('device_assignments');
-      
-      // Desactivar asignaciones anteriores del dispositivo usando updateMany
-      await collection.updateMany(
-        { device_id: deviceId, is_active: true },
-        { $set: { is_active: false } }
-      );
-
-      await collection.insertOne(assignment);
-      
-      return assignment;
-    } catch (error) {
-      console.error('Error assigning device:', error);
-      return null;
-    }
-  }
-
-  static async getDeviceAssignments(userId?: string): Promise<DeviceAssignment[]> {
-    try {
-      const db = await connectToDatabase();
-      const filter = userId ? { user_id: userId } : {};
-      const assignments = await db.collection('device_assignments').find(filter).toArray() as DeviceAssignment[];
-      return assignments;
-    } catch (error) {
-      console.error('Error fetching device assignments:', error);
-      return [];
-    }
-  }
-
-  // Procesamiento de escaneos
-  static async processScan(data: { sessionId: string, scannedData: string, scanType: 'barcode' | 'qr_code' | 'manual' }): Promise<ScanRecord | null> {
-    try {
-      const { sessionId, scannedData, scanType } = data;
-      const record: ScanRecord = {
-        id: `scan_${Date.now()}`,
-        session_id: sessionId,
-        scanned_data: scannedData,
-        scan_type: scanType,
-        timestamp: new Date().toISOString(),
-        validation_status: 'pending'
-      };
-
-      // Validar el escaneo
-      const isValid = await this.validateScan(scannedData);
-      record.validation_status = isValid ? 'valid' : 'invalid';
-      record.validation_message = isValid ? 'Válido' : 'Código no válido';
-
-      const db = await connectToDatabase();
-      await db.collection('scan_records').insertOne(record);
-
-      // Actualizar contadores de la sesión
-      const updateFields = isValid 
-        ? { $inc: { total_scans: 1, successful_scans: 1 } }
-        : { $inc: { total_scans: 1, error_scans: 1 } };
-
-      await db.collection('scan_sessions').updateOne(
-        { id: sessionId },
-        updateFields
-      );
-
-      return record;
-    } catch (error) {
-      console.error('Error processing scan:', error);
-      return null;
-    }
-  }
-
-  // Validación de escaneos
-  static async validateScan(scannedData: string): Promise<boolean> {
-    try {
-      const rules = await this.getValidationRules();
-      
-      for (const rule of rules) {
-        if (rule.is_active) {
-          const regex = new RegExp(rule.pattern);
-          if (regex.test(scannedData)) {
-            return true;
-          }
-        }
+  static async createScanSession(sessionData: Partial<ScanSession>): Promise<ScanSession> {
+    const newSession: ScanSession = {
+      id: Date.now().toString(),
+      name: sessionData.name || `Session ${Date.now()}`,
+      description: sessionData.description || '',
+      created_at: new Date(),
+      updated_at: new Date(),
+      is_active: true,
+      user_id: sessionData.user_id || 'current_user',
+      session_type: sessionData.session_type || 'inventory',
+      scan_count: 0,
+      error_count: 0,
+      last_scan_at: null,
+      config: sessionData.config || {
+        validation_enabled: true,
+        allow_duplicates: false,
+        auto_complete: false,
+        sound_enabled: true,
+        vibration_enabled: true,
+        continuous_mode: false
       }
-      
-      return scannedData.length > 0; // Validación básica
-    } catch (error) {
-      console.error('Error validating scan:', error);
-      return false;
-    }
+    };
+
+    await BrowserStorage.insertOne('scan_sessions', newSession);
+    return newSession;
   }
 
-  // Reglas de validación
-  static async getValidationRules(): Promise<ScanValidationRule[]> {
-    try {
-      const db = await connectToDatabase();
-      const rules = await db.collection('scan_validation_rules').find({}).toArray() as ScanValidationRule[];
-      return rules;
-    } catch (error) {
-      console.error('Error fetching validation rules:', error);
-      return [];
-    }
+  static async updateScanSession(sessionId: string, updates: Partial<ScanSession>): Promise<boolean> {
+    const result = await BrowserStorage.updateOne('scan_sessions', 
+      { id: sessionId }, 
+      { $set: { ...updates, updated_at: new Date() } }
+    );
+    return result.modifiedCount > 0;
   }
 
-  static async createValidationRule(ruleData: Partial<ScanValidationRule>): Promise<ScanValidationRule | null> {
-    try {
-      const rule: ScanValidationRule = {
-        id: `rule_${Date.now()}`,
-        rule_name: ruleData.rule_name || 'New Rule',
-        pattern: ruleData.pattern || '.*',
-        description: ruleData.description || '',
-        is_active: ruleData.is_active ?? true
-      };
-
-      const db = await connectToDatabase();
-      await db.collection('scan_validation_rules').insertOne(rule);
-      return rule;
-    } catch (error) {
-      console.error('Error creating validation rule:', error);
-      return null;
-    }
+  static async deleteScanSession(sessionId: string): Promise<boolean> {
+    const result = await BrowserStorage.deleteOne('scan_sessions', { id: sessionId });
+    return result.deletedCount > 0;
   }
 
-  // Métricas del scanner
-  static async getMetrics(): Promise<ScannerMetrics> {
-    try {
-      const db = await connectToDatabase();
-      const scans = await db.collection('scan_records').find({}).toArray();
-      const devices = await db.collection('scan_devices').find({}).toArray();
-      const sessions = await db.collection('scan_sessions').find({}).toArray();
-      
-      const today = new Date().toISOString().split('T')[0];
-      const scansToday = scans.filter(scan => scan.timestamp.startsWith(today));
-      
-      const totalScans = scans.length;
-      const validScans = scans.filter(scan => scan.validation_status === 'valid').length;
-      const successRate = totalScans > 0 ? (validScans / totalScans) * 100 : 0;
-      
-      // Contar dispositivos por tipo
-      const devicesByType = devices.reduce((acc: any, device: any) => {
-        const type = device.device_type === 'mobile_app' ? 'mobile' :
-                    device.device_type === 'camera_device' ? 'camera' :
-                    device.device_type;
-        acc[type] = (acc[type] || 0) + 1;
-        return acc;
-      }, { handheld: 0, mobile: 0, tablet: 0, camera: 0 });
-
-      return {
-        totalScans,
-        successRate,
-        avgScanTime: 2.5,
-        deviceUsage: [],
-        total_devices: devices.length,
-        active_sessions: sessions.filter(s => ['active', 'paused'].includes(s.status)).length,
-        scans_today: scansToday.length,
-        error_rate: totalScans > 0 ? ((totalScans - validScans) / totalScans) * 100 : 0,
-        devices_by_type: devicesByType,
-        top_errors: [
-          { error_type: 'Código no válido', count: totalScans - validScans },
-          { error_type: 'Timeout de escaneo', count: 0 }
-        ]
-      };
-    } catch (error) {
-      console.error('Error fetching scanner metrics:', error);
-      return {
-        totalScans: 0,
-        successRate: 0,
-        avgScanTime: 0,
-        deviceUsage: [],
-        total_devices: 0,
-        active_sessions: 0,
-        scans_today: 0,
-        error_rate: 0,
-        devices_by_type: { handheld: 0, mobile: 0, tablet: 0, camera: 0 },
-        top_errors: []
-      };
-    }
+  static async getActiveScanSession(): Promise<ScanSession | null> {
+    return await BrowserStorage.findOne('scan_sessions', { is_active: true });
   }
 
-  // Configuración del scanner
-  static async getSettings(): Promise<ScannerSettings> {
-    try {
-      const db = await connectToDatabase();
-      const collection = db.collection('scanner_settings');
-      const settings = await collection.findOne({}) as ScannerSettings;
-      
-      return settings || {
-        autoSave: true,
-        soundEnabled: true,
-        vibrationEnabled: true,
-        duplicateCheck: true,
-        batchSize: 50
-      };
-    } catch (error) {
-      console.error('Error fetching scanner settings:', error);
-      return {
-        autoSave: true,
-        soundEnabled: true,
-        vibrationEnabled: true,
-        duplicateCheck: true,
-        batchSize: 50
-      };
-    }
+  static async getScanDevices(): Promise<ScanDevice[]> {
+    return await BrowserStorage.find('scan_devices');
   }
 
-  static async updateSettings(settings: ScannerSettings): Promise<boolean> {
-    try {
-      const db = await connectToDatabase();
-      const collection = db.collection('scanner_settings');
-      await collection.replaceOne(
-        {},
-        settings,
-        { upsert: true }
-      );
-      return true;
-    } catch (error) {
-      console.error('Error updating scanner settings:', error);
-      return false;
-    }
-  }
-
-  // Plantillas de escaneo
-  static async getTemplates(): Promise<ScanTemplate[]> {
-    try {
-      const db = await connectToDatabase();
-      const templates = await db.collection('scan_templates').find({}).toArray() as ScanTemplate[];
-      return templates;
-    } catch (error) {
-      console.error('Error fetching scan templates:', error);
-      return [];
-    }
-  }
-
-  static async createTemplate(template: Partial<ScanTemplate>): Promise<ScanTemplate | null> {
-    try {
-      const newTemplate: ScanTemplate = {
-        id: `template_${Date.now()}`,
-        template_name: template.template_name || 'New Template',
-        fields: template.fields || []
-      };
-
-      const db = await connectToDatabase();
-      await db.collection('scan_templates').insertOne(newTemplate);
-      return newTemplate;
-    } catch (error) {
-      console.error('Error creating scan template:', error);
-      return null;
-    }
-  }
-
-  // Configuración de cámara
-  static async getCameraConfig(): Promise<CameraScanConfig> {
-    try {
-      const db = await connectToDatabase();
-      const collection = db.collection('camera_config');
-      const config = await collection.findOne({}) as CameraScanConfig;
-      
-      return config || {
-        enabled: true,
+  static async createDevice(deviceData: Partial<ScanDevice>): Promise<ScanDevice> {
+    const newDevice: ScanDevice = {
+      id: Date.now().toString(),
+      name: deviceData.name || `Device ${Date.now()}`,
+      type: deviceData.type || 'mobile',
+      status: 'active',
+      created_at: new Date(),
+      updated_at: new Date(),
+      last_ping_at: new Date(),
+      config: deviceData.config || {
         preferred_camera: 'rear',
+        enabled: true,
         resolution: 'medium',
         auto_focus: true,
         flash_mode: 'auto',
@@ -576,84 +76,330 @@ export class ScannerService {
         quality: 'medium',
         flashEnabled: false,
         autoFocus: true,
-        formats: ['CODE_128', 'QR_CODE', 'EAN_13']
-      };
-    } catch (error) {
-      console.error('Error fetching camera config:', error);
-      return {
-        enabled: true,
-        preferred_camera: 'rear',
-        resolution: 'medium',
-        auto_focus: true,
-        flash_mode: 'auto',
-        scan_area_overlay: true,
-        continuous_scan: false,
-        beep_on_scan: true,
-        vibrate_on_scan: true,
-        quality: 'medium',
-        flashEnabled: false,
-        autoFocus: true,
-        formats: ['CODE_128', 'QR_CODE', 'EAN_13']
-      };
-    }
+        formats: ['CODE_128', 'QR_CODE']
+      }
+    };
+
+    await BrowserStorage.insertOne('scan_devices', newDevice);
+    return newDevice;
   }
 
-  static async updateCameraConfig(config: CameraScanConfig): Promise<boolean> {
-    try {
-      const db = await connectToDatabase();
-      const collection = db.collection('camera_config');
-      await collection.replaceOne(
-        {},
-        config,
-        { upsert: true }
-      );
-      return true;
-    } catch (error) {
-      console.error('Error updating camera config:', error);
-      return false;
-    }
+  static async updateDevice(deviceId: string, updates: Partial<ScanDevice>): Promise<boolean> {
+    const result = await BrowserStorage.updateOne('scan_devices', 
+      { id: deviceId }, 
+      { $set: { ...updates, updated_at: new Date() } }
+    );
+    return result.modifiedCount > 0;
   }
 
-  // Métodos para cámara
+  static async deleteDevice(deviceId: string): Promise<boolean> {
+    const result = await BrowserStorage.deleteOne('scan_devices', { id: deviceId });
+    return result.deletedCount > 0;
+  }
+
+  static async pingDevice(deviceId: string): Promise<boolean> {
+    const result = await BrowserStorage.updateOne('scan_devices', 
+      { id: deviceId }, 
+      { $set: { last_ping_at: new Date() } }
+    );
+    return result.modifiedCount > 0;
+  }
+
+  static async assignUserToDevice(deviceId: string, userId: string): Promise<boolean> {
+    const result = await BrowserStorage.updateOne('scan_devices', 
+      { id: deviceId }, 
+      { $set: { user_id: userId, updated_at: new Date() } }
+    );
+    return result.modifiedCount > 0;
+  }
+
+  static async unassignUserFromDevice(deviceId: string): Promise<boolean> {
+    const result = await BrowserStorage.updateOne('scan_devices', 
+      { id: deviceId }, 
+      { $set: { user_id: null, updated_at: new Date() } }
+    );
+    return result.modifiedCount > 0;
+  }
+
+  static async getDevicesByUser(userId: string): Promise<ScanDevice[]> {
+    return await BrowserStorage.find('scan_devices', { user_id: userId });
+  }
+
+  static async bulkUpdateDeviceStatus(deviceIds: string[], status: ScanDevice['status']): Promise<boolean> {
+    const collection = BrowserStorage.collection('scan_devices');
+    const result = await collection.updateMany(
+      { id: { $in: deviceIds } }, 
+      { $set: { status, updated_at: new Date() } }
+    );
+    return result.modifiedCount > 0;
+  }
+
   static async isCameraSupported(): Promise<boolean> {
     try {
-      return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-    } catch {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        return false;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach(track => track.stop());
+      return true;
+    } catch (error) {
+      console.error('Camera not supported:', error);
       return false;
     }
   }
 
-  static async initializeCamera(config: CameraScanConfig): Promise<MediaStream | null> {
+  static async initializeCamera(config: any): Promise<MediaStream | null> {
     try {
       const constraints = {
         video: {
           facingMode: config.preferred_camera === 'rear' ? 'environment' : 'user',
-          width: config.resolution === 'high' ? 1920 : config.resolution === 'medium' ? 1280 : 640,
-          height: config.resolution === 'high' ? 1080 : config.resolution === 'medium' ? 720 : 480
+          width: { ideal: config.resolution === 'high' ? 1920 : config.resolution === 'medium' ? 1280 : 640 },
+          height: { ideal: config.resolution === 'high' ? 1080 : config.resolution === 'medium' ? 720 : 480 }
         }
       };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      return stream;
+      
+      return await navigator.mediaDevices.getUserMedia(constraints);
     } catch (error) {
       console.error('Error initializing camera:', error);
       return null;
     }
   }
 
-  // Métodos para Stock Move (stub para compatibilidad)
+  static async getScanRecords(sessionId?: string): Promise<ScanRecord[]> {
+    const filter = sessionId ? { session_id: sessionId } : {};
+    return await BrowserStorage.find('scan_records', filter);
+  }
+
+  static async createScanRecord(recordData: Partial<ScanRecord>): Promise<ScanRecord> {
+    const newRecord: ScanRecord = {
+      id: Date.now().toString(),
+      session_id: recordData.session_id || '',
+      device_id: recordData.device_id || '',
+      scanned_value: recordData.scanned_value || '',
+      scan_type: recordData.scan_type || 'barcode',
+      timestamp: new Date(),
+      is_valid: recordData.is_valid !== false,
+      validation_errors: recordData.validation_errors || [],
+      metadata: recordData.metadata || {}
+    };
+
+    await BrowserStorage.insertOne('scan_records', newRecord);
+    
+    // Update session scan count
+    if (recordData.session_id) {
+      const collection = BrowserStorage.collection('scan_sessions');
+      await collection.updateOne(
+        { id: recordData.session_id },
+        { $inc: { scan_count: 1 }, $set: { last_scan_at: new Date() } }
+      );
+    }
+
+    return newRecord;
+  }
+
+  static async validateScan(sessionId: string, scannedData: string, scanType: 'barcode' | 'qr_code' | 'manual' = 'barcode'): Promise<ScanRecord> {
+    const validationRules = await this.getValidationRules();
+    const errors: string[] = [];
+    
+    // Apply validation rules
+    for (const rule of validationRules) {
+      if (rule.is_active) {
+        const regex = new RegExp(rule.pattern);
+        if (!regex.test(scannedData)) {
+          errors.push(rule.error_message);
+        }
+      }
+    }
+
+    const record = await this.createScanRecord({
+      session_id: sessionId,
+      scanned_value: scannedData,
+      scan_type: scanType,
+      is_valid: errors.length === 0,
+      validation_errors: errors
+    });
+
+    return record;
+  }
+
+  static async deleteScanRecord(recordId: string): Promise<boolean> {
+    const result = await BrowserStorage.deleteOne('scan_records', { id: recordId });
+    return result.deletedCount > 0;
+  }
+
+  static async getValidationRules(): Promise<ScanValidationRule[]> {
+    return await BrowserStorage.find('scan_validation_rules');
+  }
+
+  static async createValidationRule(ruleData: Partial<ScanValidationRule>): Promise<ScanValidationRule> {
+    const newRule: ScanValidationRule = {
+      id: Date.now().toString(),
+      name: ruleData.name || `Rule ${Date.now()}`,
+      description: ruleData.description || '',
+      pattern: ruleData.pattern || '.*',
+      error_message: ruleData.error_message || 'Invalid format',
+      is_active: ruleData.is_active !== false,
+      created_at: new Date(),
+      updated_at: new Date(),
+      rule_type: ruleData.rule_type || 'format'
+    };
+
+    await BrowserStorage.insertOne('scan_validation_rules', newRule);
+    return newRule;
+  }
+
+  static async updateValidationRule(ruleId: string, updates: Partial<ScanValidationRule>): Promise<boolean> {
+    const result = await BrowserStorage.updateOne('scan_validation_rules', 
+      { id: ruleId }, 
+      { $set: { ...updates, updated_at: new Date() } }
+    );
+    return result.modifiedCount > 0;
+  }
+
+  static async deleteValidationRule(ruleId: string): Promise<boolean> {
+    const result = await BrowserStorage.deleteOne('scan_validation_rules', { id: ruleId });
+    return result.deletedCount > 0;
+  }
+
+  static async getScannerMetrics(): Promise<ScannerMetrics> {
+    const devices = await this.getScanDevices();
+    const sessions = await this.getScanSessions();
+    const records = await this.getScanRecords();
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const scansToday = records.filter(record => 
+      new Date(record.timestamp) >= today
+    ).length;
+    
+    const errorRate = records.length > 0 
+      ? (records.filter(record => !record.is_valid).length / records.length) * 100 
+      : 0;
+
+    return {
+      totalDevices: devices.length,
+      activeSessions: sessions.filter(s => s.is_active).length,
+      scansToday,
+      errorRate,
+      devicesByType: devices.reduce((acc, device) => {
+        acc[device.type] = (acc[device.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
+      topErrors: records
+        .filter(record => !record.is_valid)
+        .flatMap(record => record.validation_errors)
+        .reduce((acc, error) => {
+          acc[error] = (acc[error] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+    };
+  }
+
+  static async exportScanData(sessionId?: string): Promise<any[]> {
+    const records = await this.getScanRecords(sessionId);
+    return records.map(record => ({
+      timestamp: record.timestamp,
+      scanned_value: record.scanned_value,
+      scan_type: record.scan_type,
+      is_valid: record.is_valid,
+      validation_errors: record.validation_errors.join(', '),
+      session_id: record.session_id,
+      device_id: record.device_id
+    }));
+  }
+
+  static async updateDeviceConfig(deviceId: string, config: any): Promise<boolean> {
+    const collection = BrowserStorage.collection('scan_devices');
+    const result = await collection.replaceOne(
+      { id: deviceId },
+      { config, updated_at: new Date() },
+      { upsert: false }
+    );
+    return result.modifiedCount > 0;
+  }
+
+  static async getDeviceConfig(deviceId: string): Promise<any | null> {
+    const device = await BrowserStorage.findOne('scan_devices', { id: deviceId });
+    return device?.config || null;
+  }
+
+  static async resetDeviceConfig(deviceId: string): Promise<boolean> {
+    const defaultConfig = {
+      preferred_camera: 'rear',
+      enabled: true,
+      resolution: 'medium',
+      auto_focus: true,
+      flash_mode: 'auto',
+      scan_area_overlay: true,
+      continuous_scan: false,
+      beep_on_scan: true,
+      vibrate_on_scan: true,
+      quality: 'medium',
+      flashEnabled: false,
+      autoFocus: true,
+      formats: ['CODE_128', 'QR_CODE']
+    };
+
+    const result = await BrowserStorage.updateOne('scan_devices', 
+      { id: deviceId }, 
+      { $set: { config: defaultConfig, updated_at: new Date() } }
+    );
+    return result.modifiedCount > 0;
+  }
+
+  static async updateSessionConfig(sessionId: string, config: any): Promise<boolean> {
+    const collection = BrowserStorage.collection('scan_sessions');
+    const result = await collection.replaceOne(
+      { id: sessionId },
+      { config, updated_at: new Date() },
+      { upsert: false }
+    );
+    return result.modifiedCount > 0;
+  }
+
+  static async getSessionConfig(sessionId: string): Promise<any | null> {
+    const session = await BrowserStorage.findOne('scan_sessions', { id: sessionId });
+    return session?.config || null;
+  }
+
+  // Stock move integration methods
   static async getPendingStockMoveTasks(): Promise<any[]> {
-    console.warn('getPendingStockMoveTasks should be called from StockMoveService');
-    return [];
+    return await BrowserStorage.find('stock_move_tasks', { status: 'pending' });
   }
 
-  static async createStockMoveTask(data: any): Promise<any> {
-    console.warn('createStockMoveTask should be called from StockMoveService');
-    return null;
+  static async createStockMoveTask(taskData: any): Promise<any> {
+    const newTask = {
+      id: Date.now().toString(),
+      ...taskData,
+      created_at: new Date(),
+      updated_at: new Date(),
+      status: 'pending'
+    };
+
+    await BrowserStorage.insertOne('stock_move_tasks', newTask);
+    return newTask;
   }
 
-  static async executeStockMove(data: any): Promise<any> {
-    console.warn('executeStockMove should be called from StockMoveService');
-    return null;
+  static async executeStockMove(taskId: string, scanData: any): Promise<any> {
+    const result = await BrowserStorage.updateOne('stock_move_tasks', 
+      { id: taskId }, 
+      { $set: { status: 'completed', scan_data: scanData, completed_at: new Date() } }
+    );
+    
+    return {
+      success: result.modifiedCount > 0,
+      executionStatus: result.modifiedCount > 0 ? 'completed' : 'failed'
+    };
+  }
+
+  // Device assignment methods
+  static async getDeviceAssignments(): Promise<any[]> {
+    const devices = await this.getScanDevices();
+    return devices.filter(device => device.user_id).map(device => ({
+      device_id: device.id,
+      user_id: device.user_id,
+      assigned_at: device.updated_at
+    }));
   }
 }

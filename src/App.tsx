@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
@@ -27,30 +28,32 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <TooltipProvider>
-          <Toaster />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/locations" element={<Locations />} />
-              <Route path="/stock-movements" element={<StockMovements />} />
-              <Route path="/stock-move" element={<StockMove />} />
-              <Route path="/scanner" element={<Scanner />} />
-              <Route path="/putaway" element={<PutAway />} />
-              <Route path="/loading" element={<Loading />} />
-              <Route path="/users" element={<Users />} />
-              <Route path="/customers" element={<Customers />} />
-              <Route path="/ecommerce" element={<Ecommerce />} />
-              <Route path="/accounting" element={<Accounting />} />
-              <Route path="/chat" element={<Chat />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/404" element={<NotFound />} />
-              <Route path="*" element={<Navigate to="/404" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/inventory" element={<Inventory />} />
+                <Route path="/locations" element={<Locations />} />
+                <Route path="/stock-movements" element={<StockMovements />} />
+                <Route path="/stock-move" element={<StockMove />} />
+                <Route path="/scanner" element={<Scanner />} />
+                <Route path="/putaway" element={<PutAway />} />
+                <Route path="/loading" element={<Loading />} />
+                <Route path="/users" element={<Users />} />
+                <Route path="/customers" element={<Customers />} />
+                <Route path="/ecommerce" element={<Ecommerce />} />
+                <Route path="/accounting" element={<Accounting />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/404" element={<NotFound />} />
+                <Route path="*" element={<Navigate to="/404" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
