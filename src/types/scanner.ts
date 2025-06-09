@@ -7,7 +7,7 @@ export interface ScanDevice {
   _id?: ObjectId;
   id: string;
   device_id: string;
-  device_type: 'handheld' | 'mobile_app' | 'tablet' | 'camera_device';
+  device_type: 'handheld' | 'mobile_app' | 'tablet' | 'camera_device' | 'fixed';
   device_name: string;
   model?: string;
   os_version?: string;
@@ -36,7 +36,7 @@ export interface DeviceCapabilities {
 }
 
 export interface DeviceSettings {
-  preferred_camera: 'rear' | 'front';
+  preferred_camera: 'rear' | 'front' | 'auto';
   vibration_enabled: boolean;
   sound_enabled: boolean;
   flashlight_enabled: boolean;

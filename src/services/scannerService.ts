@@ -144,6 +144,16 @@ export class ScannerService {
         { id: sessionId },
         { $set: { status: 'paused' } }
       );
+      
+      // Crear evento de pausa de sesión
+      await this.createScanEvent({
+        session_id: sessionId,
+        event_type: 'session_pause',
+        event_data: { paused_at: new Date().toISOString() },
+        device_id: '',
+        user_id: ''
+      });
+      
       return true;
     } catch (error) {
       console.error('Error pausing session:', error);
@@ -457,6 +467,16 @@ export class ScannerService {
       }
 
       await db.collection('device_assignments').insertOne(assignment);
+      
+      // Crear evento de asignación
+      await this.createScanEvent({
+        session_id: '',
+        event_type: 'scan_start',
+        event_data: { assignment_id: assignment.id },
+        device_id: deviceId,
+        user_id: userId
+      });
+      
       return assignment;
     } catch (error) {
       console.error('Error assigning device:', error);

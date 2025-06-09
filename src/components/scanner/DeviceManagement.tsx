@@ -30,7 +30,7 @@ export const DeviceManagement = () => {
     const deviceData: Partial<ScanDevice> = {
       device_name: data.device_name,
       device_type: data.device_type as 'handheld' | 'fixed' | 'mobile_app' | 'tablet' | 'camera_device',
-      device_model: data.device_model,
+      model: data.device_model,
       device_id: `${data.device_type}_${Date.now()}`,
       capabilities: {
         has_camera: data.device_type === 'mobile_app' || data.device_type === 'tablet' || data.device_type === 'camera_device',
@@ -49,7 +49,7 @@ export const DeviceManagement = () => {
         flashlight_enabled: false,
         auto_focus: true,
         scan_timeout: 5000,
-        validation_mode: 'normal' as 'strict' | 'normal' | 'lenient'
+        validation_mode: 'normal' as 'strict' | 'normal' | 'permissive'
       }
     };
 
@@ -63,6 +63,7 @@ export const DeviceManagement = () => {
       await assignDevice.mutateAsync({
         deviceId: selectedDevice,
         userId: data.user_id,
+        assignedBy: 'current_user', // TODO: Obtener del contexto de autenticación
         assignmentType: data.assignment_type as 'permanent' | 'temporary' | 'shift_based'
       });
       setSelectedDevice(null);
@@ -227,10 +228,10 @@ export const DeviceManagement = () => {
                       </span>
                     </div>
                     
-                    {device.device_model && (
+                    {device.model && (
                       <div className="flex justify-between">
                         <span className="text-gray-500">Modelo:</span>
-                        <span>{device.device_model}</span>
+                        <span>{device.model}</span>
                       </div>
                     )}
 
@@ -244,12 +245,12 @@ export const DeviceManagement = () => {
                       </div>
                     )}
 
-                    {device.assigned_to && (
+                    {device.user_id && (
                       <div className="flex justify-between">
                         <span className="text-gray-500">Asignado a:</span>
                         <div className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          <span className="text-xs">{device.assigned_to}</span>
+                          <span className="text-xs">{device.user_id}</span>
                         </div>
                       </div>
                     )}
