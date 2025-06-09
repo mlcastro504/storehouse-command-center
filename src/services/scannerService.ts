@@ -1,3 +1,4 @@
+
 import { connectToDatabase } from '@/lib/mongodb';
 import { BrowserStorage } from '@/lib/browserStorage';
 import {
@@ -31,6 +32,7 @@ export class ScannerService {
       const device: ScanDevice = {
         ...deviceData,
         id: `dev_${Date.now()}`,
+        device_id: deviceData.device_id || `${deviceData.device_type}_${Date.now()}`,
         connection_status: 'disconnected',
         is_active: true,
         capabilities: deviceData.capabilities || {
@@ -194,12 +196,15 @@ export class ScannerService {
   static async processScan(scanData: Partial<ScanRecord>): Promise<ScanRecord | null> {
     try {
       const scan: ScanRecord = {
-        ...scanData,
         id: `scan_${Date.now()}`,
+        session_id: scanData.session_id || '',
+        scan_type: scanData.scan_type || 'camera_scan',
+        scanned_value: scanData.scanned_value || '',
         timestamp: new Date().toISOString(),
-        retry_count: 0,
-        device_id: scanData.device_id || 'unknown'
-      } as ScanRecord;
+        validation_status: 'valid',
+        user_id: scanData.user_id || '',
+        retry_count: 0
+      };
 
       // Validar el escaneo
       const validationResult = await this.validateScan(scan);
@@ -221,7 +226,7 @@ export class ScannerService {
           validation_status: scan.validation_status,
           validation_message: scan.validation_message
         },
-        device_id: scan.device_id,
+        device_id: scanData.device_id || 'unknown',
         user_id: scan.user_id
       });
 
@@ -511,7 +516,8 @@ export class ScannerService {
 
       await db.collection('scanner_settings').updateOne(
         { user_id: userId },
-        { $set: updatedSettings }
+        { $set: updatedSettings },
+        { upsert: true }
       );
 
       return await this.getScannerSettings(userId);
