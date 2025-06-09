@@ -333,6 +333,10 @@ export type Database = {
           line_items: Json
           order_date: string
           order_number: string
+          picking_assigned_to: string | null
+          picking_completed_at: string | null
+          picking_started_at: string | null
+          picking_status: string | null
           shipping_address: Json | null
           sync_status: string
           total_amount: number
@@ -355,6 +359,10 @@ export type Database = {
           line_items?: Json
           order_date: string
           order_number: string
+          picking_assigned_to?: string | null
+          picking_completed_at?: string | null
+          picking_started_at?: string | null
+          picking_status?: string | null
           shipping_address?: Json | null
           sync_status?: string
           total_amount: number
@@ -377,6 +385,10 @@ export type Database = {
           line_items?: Json
           order_date?: string
           order_number?: string
+          picking_assigned_to?: string | null
+          picking_completed_at?: string | null
+          picking_started_at?: string | null
+          picking_status?: string | null
           shipping_address?: Json | null
           sync_status?: string
           total_amount?: number
@@ -811,6 +823,240 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      picking_history: {
+        Row: {
+          action_type: string
+          details: Json | null
+          id: string
+          location_id: string | null
+          notes: string | null
+          performed_by: string
+          picking_task_id: string
+          product_id: string | null
+          quantity: number | null
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          details?: Json | null
+          id?: string
+          location_id?: string | null
+          notes?: string | null
+          performed_by: string
+          picking_task_id: string
+          product_id?: string | null
+          quantity?: number | null
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          details?: Json | null
+          id?: string
+          location_id?: string | null
+          notes?: string | null
+          performed_by?: string
+          picking_task_id?: string
+          product_id?: string | null
+          quantity?: number | null
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      picking_lines: {
+        Row: {
+          id: string
+          location_id: string
+          notes: string | null
+          picked_at: string | null
+          picked_by: string | null
+          picking_task_id: string
+          product_id: string
+          quantity_picked: number | null
+          quantity_to_pick: number
+          scanned_barcode: string | null
+          sequence_number: number
+          status: string
+          user_id: string
+          validation_errors: Json | null
+        }
+        Insert: {
+          id?: string
+          location_id: string
+          notes?: string | null
+          picked_at?: string | null
+          picked_by?: string | null
+          picking_task_id: string
+          product_id: string
+          quantity_picked?: number | null
+          quantity_to_pick: number
+          scanned_barcode?: string | null
+          sequence_number?: number
+          status?: string
+          user_id: string
+          validation_errors?: Json | null
+        }
+        Update: {
+          id?: string
+          location_id?: string
+          notes?: string | null
+          picked_at?: string | null
+          picked_by?: string | null
+          picking_task_id?: string
+          product_id?: string
+          quantity_picked?: number | null
+          quantity_to_pick?: number
+          scanned_barcode?: string | null
+          sequence_number?: number
+          status?: string
+          user_id?: string
+          validation_errors?: Json | null
+        }
+        Relationships: []
+      }
+      picking_metrics: {
+        Row: {
+          accuracy_percentage: number | null
+          average_time_per_task: number | null
+          created_at: string
+          date: string
+          error_count: number | null
+          id: string
+          operator_id: string
+          tasks_assigned: number | null
+          tasks_completed: number | null
+          total_duration_minutes: number | null
+          total_items_picked: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy_percentage?: number | null
+          average_time_per_task?: number | null
+          created_at?: string
+          date?: string
+          error_count?: number | null
+          id?: string
+          operator_id: string
+          tasks_assigned?: number | null
+          tasks_completed?: number | null
+          total_duration_minutes?: number | null
+          total_items_picked?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy_percentage?: number | null
+          average_time_per_task?: number | null
+          created_at?: string
+          date?: string
+          error_count?: number | null
+          id?: string
+          operator_id?: string
+          tasks_assigned?: number | null
+          tasks_completed?: number | null
+          total_duration_minutes?: number | null
+          total_items_picked?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      picking_tasks: {
+        Row: {
+          actual_duration_minutes: number | null
+          assigned_at: string | null
+          assigned_to: string | null
+          channel_origin: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          destination_location_id: string
+          error_reason: string | null
+          estimated_duration_minutes: number | null
+          id: string
+          is_training_mode: boolean
+          notes: string | null
+          order_id: string | null
+          priority: string
+          product_id: string
+          quantity_picked: number | null
+          quantity_requested: number
+          source_location_id: string
+          started_at: string | null
+          status: string
+          stock_move_task_id: string | null
+          task_number: string
+          task_type: string
+          updated_at: string
+          user_id: string
+          validation_code_required: boolean
+          validation_code_used: string | null
+        }
+        Insert: {
+          actual_duration_minutes?: number | null
+          assigned_at?: string | null
+          assigned_to?: string | null
+          channel_origin?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          destination_location_id: string
+          error_reason?: string | null
+          estimated_duration_minutes?: number | null
+          id?: string
+          is_training_mode?: boolean
+          notes?: string | null
+          order_id?: string | null
+          priority?: string
+          product_id: string
+          quantity_picked?: number | null
+          quantity_requested: number
+          source_location_id: string
+          started_at?: string | null
+          status?: string
+          stock_move_task_id?: string | null
+          task_number: string
+          task_type?: string
+          updated_at?: string
+          user_id: string
+          validation_code_required?: boolean
+          validation_code_used?: string | null
+        }
+        Update: {
+          actual_duration_minutes?: number | null
+          assigned_at?: string | null
+          assigned_to?: string | null
+          channel_origin?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          destination_location_id?: string
+          error_reason?: string | null
+          estimated_duration_minutes?: number | null
+          id?: string
+          is_training_mode?: boolean
+          notes?: string | null
+          order_id?: string | null
+          priority?: string
+          product_id?: string
+          quantity_picked?: number | null
+          quantity_requested?: number
+          source_location_id?: string
+          started_at?: string | null
+          status?: string
+          stock_move_task_id?: string | null
+          task_number?: string
+          task_type?: string
+          updated_at?: string
+          user_id?: string
+          validation_code_required?: boolean
+          validation_code_used?: string | null
+        }
+        Relationships: []
       }
       product_suppliers: {
         Row: {
@@ -1419,6 +1665,39 @@ export type Database = {
           sms_critical_only?: boolean | null
           sms_emergency_alerts?: boolean | null
           sms_enabled?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_picking_zones: {
+        Row: {
+          can_assign_tasks: boolean
+          can_pick: boolean
+          created_at: string
+          id: string
+          is_zone_leader: boolean
+          location_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_assign_tasks?: boolean
+          can_pick?: boolean
+          created_at?: string
+          id?: string
+          is_zone_leader?: boolean
+          location_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_assign_tasks?: boolean
+          can_pick?: boolean
+          created_at?: string
+          id?: string
+          is_zone_leader?: boolean
+          location_id?: string
           updated_at?: string
           user_id?: string
         }
