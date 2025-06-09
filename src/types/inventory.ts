@@ -1,4 +1,3 @@
-
 import { ObjectId } from 'mongodb';
 
 // Tipos para el módulo de inventario
@@ -30,6 +29,12 @@ export interface Product {
   created_at: Date;
   updated_at: Date;
   user_id: string;
+  special_requirements?: string[];
+  storage_restrictions?: {
+    temperature_controlled?: boolean;
+    max_weight_per_location?: number;
+    requires_ground_level?: boolean;
+  };
 }
 
 export interface Category {
@@ -76,6 +81,15 @@ export interface Location {
     z?: number;
   };
   barcode?: string;
+  confirmation_code: string; // Código único para confirmación de Put Away
+  occupancy_status: 'available' | 'occupied' | 'reserved' | 'maintenance';
+  restrictions?: {
+    max_weight?: number;
+    temperature_controlled?: boolean;
+    ground_level_only?: boolean;
+    special_handling?: string[];
+  };
+  last_verified_at?: Date;
   created_at: Date;
   updated_at: Date;
   user_id: string;
@@ -108,8 +122,8 @@ export interface StockMovement {
   from_location_id?: string;
   to_location_id: string;
   quantity: number;
-  movement_type: 'inbound' | 'outbound' | 'transfer' | 'adjustment' | 'cycle_count';
-  reference_type?: 'purchase_order' | 'sales_order' | 'transfer_order' | 'adjustment' | 'cycle_count';
+  movement_type: 'inbound' | 'outbound' | 'transfer' | 'adjustment' | 'cycle_count' | 'putaway';
+  reference_type?: 'purchase_order' | 'sales_order' | 'transfer_order' | 'adjustment' | 'cycle_count' | 'putaway_task';
   reference_id?: string;
   reason: string;
   notes?: string;
@@ -124,6 +138,7 @@ export interface StockMovement {
   product?: Product;
   from_location?: Location;
   to_location?: Location;
+  pallet_id?: string; // Referencia al palet en caso de Put Away
 }
 
 export interface CycleCount {
