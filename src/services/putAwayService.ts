@@ -1,12 +1,12 @@
 
-import { browserStorage } from '@/lib/browserStorage';
+import { BrowserStorage } from '@/lib/browserStorage';
 import { Pallet, PutAwayTask, PutAwayRule, OperatorPerformance, PutAwayMetrics, LocationConfirmation } from '@/types/putaway';
 import { Location } from '@/types/inventory';
 
 export class PutAwayService {
   static async getPendingPallets(): Promise<Pallet[]> {
     try {
-      const pallets = await browserStorage.find('pallets', { status: 'waiting_putaway' });
+      const pallets = await BrowserStorage.find('pallets', { status: 'waiting_putaway' });
       return pallets.map(pallet => ({
         ...pallet,
         id: pallet._id || pallet.id,
@@ -23,7 +23,7 @@ export class PutAwayService {
         ? { operator_id: operatorId, status: 'in_progress' }
         : { status: 'in_progress' };
       
-      const tasks = await browserStorage.find('putaway_tasks', filter);
+      const tasks = await BrowserStorage.find('putaway_tasks', filter);
       return tasks.map(task => ({
         ...task,
         id: task._id || task.id,
@@ -37,13 +37,13 @@ export class PutAwayService {
   static async claimPallet(palletId: string, operatorId: string): Promise<PutAwayTask> {
     try {
       // Verificar que el palet esté disponible
-      const pallet = await browserStorage.findOne('pallets', { id: palletId, status: 'waiting_putaway' });
+      const pallet = await BrowserStorage.findOne('pallets', { id: palletId, status: 'waiting_putaway' });
       if (!pallet) {
         throw new Error('Palet no disponible o ya asignado');
       }
 
       // Actualizar estado del palet
-      await browserStorage.updateOne('pallets', { id: palletId }, {
+      await BrowserStorage.updateOne('pallets', { id: palletId }, {
         status: 'in_process',
         assigned_to: operatorId,
         assigned_at: new Date().toISOString()
@@ -64,7 +64,7 @@ export class PutAwayService {
         started_at: new Date().toISOString(),
       };
 
-      await browserStorage.insertOne('putaway_tasks', task);
+      await BrowserStorage.insertOne('putaway_tasks', task);
       return task;
     } catch (error) {
       console.error('Error claiming pallet:', error);
@@ -75,13 +75,13 @@ export class PutAwayService {
   static async completeTask(taskId: string, locationId: string, confirmationCode: string): Promise<boolean> {
     try {
       // Verificar código de confirmación
-      const location = await browserStorage.findOne('locations', { id: locationId });
+      const location = await BrowserStorage.findOne('locations', { id: locationId });
       if (!location || location.confirmation_code !== confirmationCode) {
         throw new Error('Código de confirmación incorrecto');
       }
 
       // Obtener tarea
-      const task = await browserStorage.findOne('putaway_tasks', { id: taskId });
+      const task = await BrowserStorage.findOne('putaway_tasks', { id: taskId });
       if (!task) {
         throw new Error('Tarea no encontrada');
       }
@@ -91,7 +91,7 @@ export class PutAwayService {
       const startedAt = new Date(task.started_at);
       const duration = Math.round((new Date(completedAt).getTime() - startedAt.getTime()) / 60000);
 
-      await browserStorage.updateOne('putaway_tasks', { id: taskId }, {
+      await BrowserStorage.updateOne('putaway_tasks', { id: taskId }, {
         status: 'completed',
         actual_location_id: locationId,
         completed_at: completedAt,
@@ -100,21 +100,21 @@ export class PutAwayService {
       });
 
       // Actualizar palet
-      await browserStorage.updateOne('pallets', { id: task.pallet_id }, {
+      await BrowserStorage.updateOne('pallets', { id: task.pallet_id }, {
         status: 'stored',
         location_id: locationId,
         completed_at: completedAt
       });
 
       // Actualizar ubicación
-      await browserStorage.updateOne('locations', { id: locationId }, {
+      await BrowserStorage.updateOne('locations', { id: locationId }, {
         occupancy_status: 'occupied',
         current_occupancy: (location.current_occupancy || 0) + 1,
         last_verified_at: new Date()
       });
 
       // Crear movimiento de stock
-      const pallet = await browserStorage.findOne('pallets', { id: task.pallet_id });
+      const pallet = await BrowserStorage.findOne('pallets', { id: task.pallet_id });
       if (pallet) {
         const stockMovement = {
           id: `mov_${Date.now()}`,
@@ -131,7 +131,7 @@ export class PutAwayService {
           user_id: 'system',
           pallet_id: task.pallet_id
         };
-        await browserStorage.insertOne('stock_movements', stockMovement);
+        await BrowserStorage.insertOne('stock_movements', stockMovement);
       }
 
       return true;
@@ -143,20 +143,20 @@ export class PutAwayService {
 
   static async cancelTask(taskId: string, reason: string): Promise<void> {
     try {
-      const task = await browserStorage.findOne('putaway_tasks', { id: taskId });
+      const task = await BrowserStorage.findOne('putaway_tasks', { id: taskId });
       if (!task) {
         throw new Error('Tarea no encontrada');
       }
 
       // Cancelar tarea
-      await browserStorage.updateOne('putaway_tasks', { id: taskId }, {
+      await BrowserStorage.updateOne('putaway_tasks', { id: taskId }, {
         status: 'cancelled',
         notes: reason,
         completed_at: new Date().toISOString()
       });
 
       // Liberar palet
-      await browserStorage.updateOne('pallets', { id: task.pallet_id }, {
+      await BrowserStorage.updateOne('pallets', { id: task.pallet_id }, {
         status: 'waiting_putaway',
         assigned_to: null,
         assigned_at: null
@@ -169,7 +169,7 @@ export class PutAwayService {
 
   static async getOperatorPerformance(operatorId: string, dateFrom?: string, dateTo?: string): Promise<OperatorPerformance[]> {
     try {
-      const performance = await browserStorage.find('operator_performance', { operator_id: operatorId });
+      const performance = await BrowserStorage.find('operator_performance', { operator_id: operatorId });
       return performance.map(perf => ({
         ...perf,
         id: perf._id || perf.id,
@@ -184,9 +184,9 @@ export class PutAwayService {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      const todayTasks = await browserStorage.find('putaway_tasks', {});
-      const pendingPallets = await browserStorage.find('pallets', { status: 'waiting_putaway' });
-      const activeTasks = await browserStorage.find('putaway_tasks', { status: 'in_progress' });
+      const todayTasks = await BrowserStorage.find('putaway_tasks', {});
+      const pendingPallets = await BrowserStorage.find('pallets', { status: 'waiting_putaway' });
+      const activeTasks = await BrowserStorage.find('putaway_tasks', { status: 'in_progress' });
 
       const completedToday = todayTasks.filter(task => 
         task.completed_at && task.completed_at.startsWith(today) && task.status === 'completed'
@@ -219,7 +219,7 @@ export class PutAwayService {
 
   static async getPutAwayRules(): Promise<PutAwayRule[]> {
     try {
-      const rules = await browserStorage.find('putaway_rules', { is_active: true });
+      const rules = await BrowserStorage.find('putaway_rules', { is_active: true });
       return rules.map(rule => ({
         ...rule,
         id: rule._id || rule.id,
@@ -233,7 +233,7 @@ export class PutAwayService {
   private static async findOptimalLocation(pallet: Pallet): Promise<Location> {
     try {
       // Buscar ubicaciones disponibles
-      const availableLocations = await browserStorage.find('locations', {
+      const availableLocations = await BrowserStorage.find('locations', {
         occupancy_status: 'available',
         is_active: true
       });
@@ -276,7 +276,7 @@ export class PutAwayService {
         ? { operator_id: operatorId, status: { $in: ['completed', 'cancelled'] } }
         : { status: { $in: ['completed', 'cancelled'] } };
       
-      const tasks = await browserStorage.find('putaway_tasks', filter);
+      const tasks = await BrowserStorage.find('putaway_tasks', filter);
       return tasks.map(task => ({
         ...task,
         id: task._id || task.id,
@@ -289,11 +289,65 @@ export class PutAwayService {
 
   static async validateLocationCode(locationId: string, code: string): Promise<boolean> {
     try {
-      const location = await browserStorage.findOne('locations', { id: locationId });
+      const location = await BrowserStorage.findOne('locations', { id: locationId });
       return location && location.confirmation_code === code;
     } catch (error) {
       console.error('Error validating location code:', error);
       return false;
+    }
+  }
+
+  static async createPutAwayTask(taskData: any): Promise<PutAwayTask> {
+    try {
+      const task = {
+        ...taskData,
+        id: `task_${Date.now()}`,
+        _id: `task_${Date.now()}`,
+      };
+      await BrowserStorage.insertOne('putaway_tasks', task);
+      return task;
+    } catch (error) {
+      console.error('Error creating put away task:', error);
+      throw error;
+    }
+  }
+
+  static async getPutAwayTasks(): Promise<PutAwayTask[]> {
+    try {
+      const tasks = await BrowserStorage.find('putaway_tasks', {});
+      return tasks.map(task => ({
+        ...task,
+        id: task._id || task.id,
+      }));
+    } catch (error) {
+      console.error('Error getting put away tasks:', error);
+      return [];
+    }
+  }
+
+  static async getProducts(): Promise<any[]> {
+    try {
+      const products = await BrowserStorage.find('products', {});
+      return products.map(product => ({
+        ...product,
+        id: product._id || product.id,
+      }));
+    } catch (error) {
+      console.error('Error getting products:', error);
+      return [];
+    }
+  }
+
+  static async getLocations(): Promise<any[]> {
+    try {
+      const locations = await BrowserStorage.find('locations', {});
+      return locations.map(location => ({
+        ...location,
+        id: location._id || location.id,
+      }));
+    } catch (error) {
+      console.error('Error getting locations:', error);
+      return [];
     }
   }
 }

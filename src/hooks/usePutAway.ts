@@ -121,3 +121,40 @@ export const useValidateLocationCode = () => {
       PutAwayService.validateLocationCode(locationId, code),
   });
 };
+
+export const useCreatePutAwayTask = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (taskData: any) => PutAwayService.createPutAwayTask(taskData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['putaway-tasks'] });
+      toast.success('Tarea creada exitosamente');
+    },
+    onError: (error: any) => {
+      console.error('Error creating put away task:', error);
+      toast.error('Error al crear la tarea');
+    },
+  });
+};
+
+export const usePutAwayTasks = () => {
+  return useQuery({
+    queryKey: ['putaway-tasks'],
+    queryFn: PutAwayService.getPutAwayTasks,
+  });
+};
+
+export const useProducts = () => {
+  return useQuery({
+    queryKey: ['products'],
+    queryFn: PutAwayService.getProducts,
+  });
+};
+
+export const useLocations = () => {
+  return useQuery({
+    queryKey: ['locations'],
+    queryFn: PutAwayService.getLocations,
+  });
+};

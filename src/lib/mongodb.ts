@@ -1,5 +1,5 @@
 
-import { browserStorage } from './browserStorage';
+import { BrowserStorage } from './browserStorage';
 
 // Browser compatibility check
 const isBrowser = typeof window !== 'undefined';
@@ -12,23 +12,23 @@ export async function connectToDatabase() {
     console.log('Running in browser - using localStorage as database');
     
     // Initialize sample data on first run
-    await browserStorage.initializeSampleData();
+    await BrowserStorage.initializeSampleData();
     
     return {
       collection: (name: string) => ({
         find: (filter: any = {}) => ({
           sort: () => ({
-            toArray: () => browserStorage.find(name, filter)
+            toArray: () => BrowserStorage.find(name, filter)
           }),
-          toArray: () => browserStorage.find(name, filter)
+          toArray: () => BrowserStorage.find(name, filter)
         }),
-        findOne: (filter: any) => browserStorage.findOne(name, filter),
-        insertOne: (doc: any) => browserStorage.insertOne(name, doc),
+        findOne: (filter: any) => BrowserStorage.findOne(name, filter),
+        insertOne: (doc: any) => BrowserStorage.insertOne(name, doc),
         updateOne: (filter: any, update: any) => {
           const updateData = update.$set || update;
-          return browserStorage.updateOne(name, filter, updateData);
+          return BrowserStorage.updateOne(name, filter, updateData);
         },
-        deleteOne: (filter: any) => browserStorage.deleteOne(name, filter)
+        deleteOne: (filter: any) => BrowserStorage.deleteOne(name, filter)
       }),
       listCollections: () => ({
         toArray: () => Promise.resolve([
@@ -36,7 +36,7 @@ export async function connectToDatabase() {
           { name: 'locations' }, { name: 'stock_levels' }, { name: 'stock_movements' }
         ])
       }),
-      stats: () => browserStorage.getStats()
+      stats: () => BrowserStorage.getStats()
     };
   }
 
