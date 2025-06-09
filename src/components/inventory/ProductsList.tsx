@@ -53,9 +53,7 @@ export const ProductsList = () => {
                 <CardTitle className="text-lg">{product.name}</CardTitle>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="outline">{product.sku}</Badge>
-                  <Badge variant="secondary">
-                    {product.category?.name || 'Sin categoría'}
-                  </Badge>
+                  <Badge variant="secondary">Categoría: {product.category_id}</Badge>
                 </div>
               </div>
               <div className="flex items-center gap-2">

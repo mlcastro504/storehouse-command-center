@@ -54,9 +54,6 @@ export const LocationsList = () => {
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="outline">{location.code}</Badge>
                   <Badge variant="secondary">{location.type}</Badge>
-                  {location.warehouse && (
-                    <Badge variant="outline">{location.warehouse.name}</Badge>
-                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">

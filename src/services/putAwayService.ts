@@ -62,6 +62,8 @@ export class PutAwayService {
         status: 'in_progress',
         priority: 'medium',
         started_at: new Date().toISOString(),
+        quantity_to_putaway: pallet.quantity || 1,
+        created_date: new Date().toISOString(),
       };
 
       await BrowserStorage.insertOne('putaway_tasks', task);

@@ -1,15 +1,14 @@
-
 import { connectToDatabase } from '@/lib/mongodb';
 import { BrowserStorage } from '@/lib/browserStorage';
 import {
-  Product,
-  Category,
-  Warehouse,
-  Location,
-  StockLevel,
-  StockMovement,
-  InventoryStats,
-  Supplier
+  Product, 
+  Category, 
+  Warehouse, 
+  Location, 
+  StockLevel, 
+  StockMovement, 
+  CycleCount,
+  InventoryStats
 } from '@/types/inventory';
 
 export class InventoryService {
@@ -424,13 +423,17 @@ export class InventoryService {
     }
   }
 
-  static async testConnection(): Promise<boolean> {
+  static async testConnection(): Promise<{ success: boolean; error?: string }> {
     try {
-      await connectToDatabase();
-      return true;
+      // Test basic browser storage functionality
+      await BrowserStorage.find('products', {});
+      return { success: true };
     } catch (error) {
       console.error('Connection test failed:', error);
-      return false;
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
     }
   }
 
