@@ -40,7 +40,7 @@ export const EcommerceChannelsManager = () => {
   const [selectedChannel, setSelectedChannel] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
-    platform_type: '',
+    platform_type: undefined as string | undefined,
     api_endpoint: '',
     api_key: '',
     webhook_url: '',
@@ -173,7 +173,7 @@ export const EcommerceChannelsManager = () => {
               <div className="space-y-2">
                 <Label>Plataforma</Label>
                 <Select 
-                  value={formData.platform_type} 
+                  value={formData.platform_type || ""} 
                   onValueChange={(value) => setFormData({...formData, platform_type: value})}
                 >
                   <SelectTrigger>
