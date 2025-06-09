@@ -128,15 +128,6 @@ export class ScannerService {
       const db = await connectToDatabase();
       await db.collection('scan_sessions').insertOne(session);
       
-      // Crear evento de inicio de sesión
-      await this.createScanEvent({
-        session_id: session.id,
-        event_type: 'scan_start' as const,
-        event_data: { session_type: session.session_type },
-        device_id: session.device_id || '',
-        user_id: session.user_id
-      });
-
       return session;
     } catch (error) {
       console.error('Error creating scan session:', error);
@@ -215,19 +206,6 @@ export class ScannerService {
 
       // Actualizar estadísticas de la sesión
       await this.updateSessionStats(scan.session_id, scan.validation_status === 'valid');
-
-      // Crear evento de escaneo
-      await this.createScanEvent({
-        session_id: scan.session_id,
-        event_type: scan.validation_status === 'valid' ? 'scan_success' as const : 'scan_error' as const,
-        event_data: { 
-          scanned_value: scan.scanned_value,
-          validation_status: scan.validation_status,
-          validation_message: scan.validation_message
-        },
-        device_id: scanData.device_id || 'unknown',
-        user_id: scan.user_id
-      });
 
       return scan;
     } catch (error) {
