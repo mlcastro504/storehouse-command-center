@@ -43,7 +43,7 @@ export const LocationSelector = ({
       
       console.log('LocationSelector: Raw data received:', data);
       
-      // Filter valid locations
+      // Filter valid locations with robust validation
       const validLocations = (data || []).filter(location => {
         if (!location) {
           console.warn('LocationSelector: Found null/undefined location');
@@ -61,17 +61,17 @@ export const LocationSelector = ({
           return false;
         }
         
-        if (!location.code || location.code.trim().length === 0) {
+        if (!location.code || typeof location.code !== 'string' || location.code.trim().length === 0) {
           console.warn('LocationSelector: Location missing code:', location);
           return false;
         }
         
-        if (!location.name || location.name.trim().length === 0) {
+        if (!location.name || typeof location.name !== 'string' || location.name.trim().length === 0) {
           console.warn('LocationSelector: Location missing name:', location);
           return false;
         }
         
-        if (!location.type || location.type.trim().length === 0) {
+        if (!location.type || typeof location.type !== 'string' || location.type.trim().length === 0) {
           console.warn('LocationSelector: Location missing type:', location);
           return false;
         }
@@ -89,16 +89,19 @@ export const LocationSelector = ({
     }
   });
 
-  // Additional safety check before rendering
+  // Additional safety check before rendering with even more robust validation
   const safeLocations = React.useMemo(() => {
     if (!locations) return [];
     
     return locations.filter(location => {
+      if (!location || !location._id) return false;
+      
       const idString = location._id?.toString();
-      const isValid = location && 
-                     location._id && 
-                     idString && 
-                     idString.trim().length > 0;
+      const isValid = idString && 
+                     typeof idString === 'string' && 
+                     idString.trim().length > 0 &&
+                     idString !== 'undefined' &&
+                     idString !== 'null';
       
       if (!isValid) {
         console.error('LocationSelector: Invalid location found during render:', location);
@@ -118,7 +121,7 @@ export const LocationSelector = ({
             <SelectValue placeholder="Error cargando ubicaciones" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="error-locations" disabled>
+            <SelectItem value="error-loading-locations" disabled>
               Error al cargar ubicaciones
             </SelectItem>
           </SelectContent>
@@ -136,15 +139,15 @@ export const LocationSelector = ({
         </SelectTrigger>
         <SelectContent>
           {isLoading ? (
-            <SelectItem value="loading-locations" disabled>
+            <SelectItem value="loading-locations-state" disabled>
               Cargando ubicaciones...
             </SelectItem>
           ) : safeLocations.length > 0 ? (
             safeLocations.map((location) => {
               const idString = location._id.toString();
               
-              // Final safety check per item
-              if (!idString || idString.trim().length === 0) {
+              // Final safety check per item - ensure we never render empty values
+              if (!idString || idString.trim().length === 0 || idString === 'undefined' || idString === 'null') {
                 console.error('LocationSelector: Attempting to render invalid location:', location);
                 return null;
               }
@@ -154,9 +157,9 @@ export const LocationSelector = ({
                   {location.code} - {location.name} ({location.type})
                 </SelectItem>
               );
-            })
+            }).filter(Boolean) // Remove any null items
           ) : (
-            <SelectItem value="no-locations-available" disabled>
+            <SelectItem value="no-locations-found" disabled>
               No hay ubicaciones disponibles
             </SelectItem>
           )}
