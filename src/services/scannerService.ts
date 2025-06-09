@@ -129,14 +129,13 @@ export class ScannerService {
       await db.collection('scan_sessions').insertOne(session);
       
       // Crear evento de inicio de sesión
-      const eventData = {
+      await this.createScanEvent({
         session_id: session.id,
         event_type: 'scan_start' as const,
         event_data: { session_type: session.session_type },
         device_id: session.device_id || '',
         user_id: session.user_id
-      };
-      await this.createScanEvent(eventData);
+      });
 
       return session;
     } catch (error) {
@@ -218,7 +217,7 @@ export class ScannerService {
       await this.updateSessionStats(scan.session_id, scan.validation_status === 'valid');
 
       // Crear evento de escaneo
-      const eventData = {
+      await this.createScanEvent({
         session_id: scan.session_id,
         event_type: scan.validation_status === 'valid' ? 'scan_success' as const : 'scan_error' as const,
         event_data: { 
@@ -228,8 +227,7 @@ export class ScannerService {
         },
         device_id: scanData.device_id || 'unknown',
         user_id: scan.user_id
-      };
-      await this.createScanEvent(eventData);
+      });
 
       return scan;
     } catch (error) {
@@ -406,10 +404,14 @@ export class ScannerService {
   static async createScanEvent(eventData: Partial<ScanEvent>): Promise<ScanEvent | null> {
     try {
       const event: ScanEvent = {
-        ...eventData,
         id: `event_${Date.now()}`,
-        timestamp: new Date().toISOString()
-      } as ScanEvent;
+        session_id: eventData.session_id || '',
+        event_type: eventData.event_type || 'scan_start',
+        event_data: eventData.event_data || {},
+        timestamp: new Date().toISOString(),
+        device_id: eventData.device_id || '',
+        user_id: eventData.user_id || ''
+      };
 
       const db = await connectToDatabase();
       await db.collection('scan_events').insertOne(event);
