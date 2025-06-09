@@ -1,4 +1,3 @@
-
 import { connectToDatabase } from '@/lib/mongodb';
 import { BrowserStorage } from '@/lib/browserStorage';
 import {
@@ -493,12 +492,12 @@ export class ScannerService {
     }
   }
 
-  // Configuración del escáner
+  // Gestión de configuración del escáner
   static async getScannerSettings(userId: string): Promise<ScannerSettings | null> {
     try {
       const db = await connectToDatabase();
-      const settings = await db.collection('scanner_settings').findOne({ user_id: userId }) as ScannerSettings | null;
-      return settings;
+      const settings = await db.collection('scanner_settings').find({ user_id: userId }).toArray();
+      return settings.length > 0 ? settings[0] as ScannerSettings : null;
     } catch (error) {
       console.error('Error fetching scanner settings:', error);
       return null;
@@ -514,14 +513,23 @@ export class ScannerService {
         updated_at: new Date().toISOString()
       };
 
-      await db.collection('scanner_settings').replaceOne(
-        { user_id: userId },
-        { 
+      // First try to find existing settings
+      const existing = await db.collection('scanner_settings').find({ user_id: userId }).toArray();
+      
+      if (existing.length > 0) {
+        // Update existing
+        await db.collection('scanner_settings').updateOne(
+          { user_id: userId },
+          { $set: updatedSettings }
+        );
+      } else {
+        // Insert new
+        await db.collection('scanner_settings').insertOne({
           ...updatedSettings,
+          id: `settings_${Date.now()}`,
           created_at: new Date().toISOString()
-        },
-        { upsert: true }
-      );
+        });
+      }
 
       return await this.getScannerSettings(userId);
     } catch (error) {
