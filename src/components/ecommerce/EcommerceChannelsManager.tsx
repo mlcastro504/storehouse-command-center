@@ -338,22 +338,4 @@ export const EcommerceChannelsManager = () => {
       )}
     </div>
   );
-
-  function getStatusIcon(status: string) {
-    switch (status) {
-      case 'connected': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'error': return <AlertCircle className="w-4 h-4 text-red-500" />;
-      case 'syncing': return <Clock className="w-4 h-4 text-blue-500" />;
-      default: return <AlertCircle className="w-4 h-4 text-gray-500" />;
-    }
-  }
-
-  function getStatusColor(status: string) {
-    switch (status) {
-      case 'connected': return 'default';
-      case 'error': return 'destructive';
-      case 'syncing': return 'secondary';
-      default: return 'outline';
-    }
-  }
 };
