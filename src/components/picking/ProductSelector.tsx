@@ -79,7 +79,8 @@ export const ProductSelector = ({ value, onChange }: ProductSelectorProps) => {
                      typeof idString === 'string' && 
                      idString.trim().length > 0 &&
                      idString !== 'undefined' &&
-                     idString !== 'null';
+                     idString !== 'null' &&
+                     idString !== '';
       
       if (!isValid) {
         console.error('ProductSelector: Invalid product found during render:', product);
@@ -125,7 +126,7 @@ export const ProductSelector = ({ value, onChange }: ProductSelectorProps) => {
               const idString = product._id.toString();
               
               // Final safety check per item - ensure we never render empty values
-              if (!idString || idString.trim().length === 0 || idString === 'undefined' || idString === 'null') {
+              if (!idString || idString.trim().length === 0 || idString === 'undefined' || idString === 'null' || idString === '') {
                 console.error('ProductSelector: Attempting to render invalid product:', product);
                 return null;
               }

@@ -101,7 +101,8 @@ export const LocationSelector = ({
                      typeof idString === 'string' && 
                      idString.trim().length > 0 &&
                      idString !== 'undefined' &&
-                     idString !== 'null';
+                     idString !== 'null' &&
+                     idString !== '';
       
       if (!isValid) {
         console.error('LocationSelector: Invalid location found during render:', location);
@@ -147,7 +148,7 @@ export const LocationSelector = ({
               const idString = location._id.toString();
               
               // Final safety check per item - ensure we never render empty values
-              if (!idString || idString.trim().length === 0 || idString === 'undefined' || idString === 'null') {
+              if (!idString || idString.trim().length === 0 || idString === 'undefined' || idString === 'null' || idString === '') {
                 console.error('LocationSelector: Attempting to render invalid location:', location);
                 return null;
               }
