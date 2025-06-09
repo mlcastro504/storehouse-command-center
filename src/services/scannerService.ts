@@ -516,7 +516,10 @@ export class ScannerService {
 
       await db.collection('scanner_settings').updateOne(
         { user_id: userId },
-        { $set: updatedSettings, $setOnInsert: { created_at: new Date().toISOString() } },
+        { 
+          $set: updatedSettings,
+          $setOnInsert: { created_at: new Date().toISOString() }
+        },
         { upsert: true }
       );
 
