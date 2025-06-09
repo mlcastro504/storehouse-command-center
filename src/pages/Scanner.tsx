@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,9 +20,10 @@ export default function Scanner() {
     console.log('Scan successful:', value);
     // Aquí se procesaría el escaneo
     processScan.mutate({
-      sessionId: 'current_session', // Se obtendría de la sesión activa
-      scannedData: value,
-      scanType: 'barcode'
+      scanned_value: value,
+      scan_type: 'barcode',
+      session_id: 'current_session', // Se obtendría de la sesión activa
+      device_id: 'current_device'
     });
   };
 

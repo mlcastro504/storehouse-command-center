@@ -1,3 +1,4 @@
+
 import { connectToDatabase } from '@/lib/mongodb';
 import { BrowserStorage } from '@/lib/browserStorage';
 
@@ -309,14 +310,15 @@ export class ScannerService {
       };
 
       const db = await connectToDatabase();
+      const collection = db.collection('device_assignments');
       
-      // Desactivar asignaciones anteriores del dispositivo
-      await db.collection('device_assignments').updateMany(
+      // Desactivar asignaciones anteriores del dispositivo usando updateMany
+      await collection.updateMany(
         { device_id: deviceId, is_active: true },
         { $set: { is_active: false } }
       );
 
-      await db.collection('device_assignments').insertOne(assignment);
+      await collection.insertOne(assignment);
       
       return assignment;
     } catch (error) {
@@ -487,7 +489,8 @@ export class ScannerService {
   static async getSettings(): Promise<ScannerSettings> {
     try {
       const db = await connectToDatabase();
-      const settings = await db.collection('scanner_settings').findOne({}) as ScannerSettings;
+      const collection = db.collection('scanner_settings');
+      const settings = await collection.findOne({}) as ScannerSettings;
       
       return settings || {
         autoSave: true,
@@ -511,7 +514,8 @@ export class ScannerService {
   static async updateSettings(settings: ScannerSettings): Promise<boolean> {
     try {
       const db = await connectToDatabase();
-      await db.collection('scanner_settings').replaceOne(
+      const collection = db.collection('scanner_settings');
+      await collection.replaceOne(
         {},
         settings,
         { upsert: true }
@@ -556,7 +560,8 @@ export class ScannerService {
   static async getCameraConfig(): Promise<CameraScanConfig> {
     try {
       const db = await connectToDatabase();
-      const config = await db.collection('camera_config').findOne({}) as CameraScanConfig;
+      const collection = db.collection('camera_config');
+      const config = await collection.findOne({}) as CameraScanConfig;
       
       return config || {
         enabled: true,
@@ -596,7 +601,8 @@ export class ScannerService {
   static async updateCameraConfig(config: CameraScanConfig): Promise<boolean> {
     try {
       const db = await connectToDatabase();
-      await db.collection('camera_config').replaceOne(
+      const collection = db.collection('camera_config');
+      await collection.replaceOne(
         {},
         config,
         { upsert: true }

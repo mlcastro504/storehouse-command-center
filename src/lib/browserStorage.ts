@@ -180,4 +180,70 @@ export class BrowserStorage {
   static collection(name: string) {
     return new MockCollection(name);
   }
+
+  // Additional static methods for direct access
+  static async find(collectionName: string, filter: any = {}) {
+    const collection = new MockCollection(collectionName);
+    const result = await collection.find(filter).toArray();
+    return result;
+  }
+
+  static async findOne(collectionName: string, filter: any) {
+    const collection = new MockCollection(collectionName);
+    return await collection.findOne(filter);
+  }
+
+  static async insertOne(collectionName: string, doc: any) {
+    const collection = new MockCollection(collectionName);
+    return await collection.insertOne(doc);
+  }
+
+  static async updateOne(collectionName: string, filter: any, update: any) {
+    const collection = new MockCollection(collectionName);
+    return await collection.updateOne(filter, update);
+  }
+
+  static async deleteOne(collectionName: string, filter: any) {
+    const collection = new MockCollection(collectionName);
+    return await collection.deleteOne(filter);
+  }
+
+  static async initializeSampleData() {
+    // Initialize sample data if none exists
+    if (!this.get('products')) {
+      this.set('products', []);
+    }
+    if (!this.get('categories')) {
+      this.set('categories', []);
+    }
+    if (!this.get('warehouses')) {
+      this.set('warehouses', []);
+    }
+    if (!this.get('locations')) {
+      this.set('locations', []);
+    }
+    if (!this.get('stock_levels')) {
+      this.set('stock_levels', []);
+    }
+    if (!this.get('stock_movements')) {
+      this.set('stock_movements', []);
+    }
+  }
+
+  static async getStats() {
+    const collections = ['products', 'categories', 'warehouses', 'locations', 'stock_levels', 'stock_movements'];
+    let totalSize = 0;
+    
+    collections.forEach(collection => {
+      const data = this.get(collection) || [];
+      totalSize += JSON.stringify(data).length;
+    });
+
+    return {
+      collections: collections.length,
+      dataSize: totalSize,
+      storageSize: totalSize * 1.2, // Approximate overhead
+      indexes: collections.length * 2 // Mock index count
+    };
+  }
 }
