@@ -12,7 +12,8 @@ import {
   UserPlus,
   ShoppingCart,
   Archive,
-  ArrowUpDown
+  ArrowUpDown,
+  ClipboardList
 } from 'lucide-react';
 
 export const modules = [
@@ -43,6 +44,16 @@ export const modules = [
     description: 'Gestión de almacenes, zonas y ubicaciones físicas',
     icon: 'MapPin',
     path: '/locations',
+    isActive: true,
+    requiredRoleLevel: 1
+  },
+  {
+    id: 'picking',
+    name: 'Picking',
+    displayName: 'Picking',
+    description: 'Gestión de tareas de recolección de productos',
+    icon: 'ClipboardList',
+    path: '/picking',
     isActive: true,
     requiredRoleLevel: 1
   },
