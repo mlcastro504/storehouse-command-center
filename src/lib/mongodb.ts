@@ -28,12 +28,20 @@ export async function connectToDatabase() {
           const updateData = update.$set || update;
           return BrowserStorage.updateOne(name, filter, updateData);
         },
-        deleteOne: (filter: any) => BrowserStorage.deleteOne(name, filter)
+        deleteOne: (filter: any) => BrowserStorage.deleteOne(name, filter),
+        aggregate: (pipeline: any[]) => ({
+          toArray: () => {
+            // Simple aggregation simulation for browser storage
+            console.log('Mock aggregate called with pipeline:', pipeline);
+            return BrowserStorage.find(name, {});
+          }
+        })
       }),
       listCollections: () => ({
         toArray: () => Promise.resolve([
           { name: 'products' }, { name: 'categories' }, { name: 'warehouses' },
-          { name: 'locations' }, { name: 'stock_levels' }, { name: 'stock_movements' }
+          { name: 'locations' }, { name: 'stock_levels' }, { name: 'stock_movements' },
+          { name: 'accounts' }, { name: 'transactions' }, { name: 'invoices' }, { name: 'contacts' }
         ])
       }),
       stats: () => BrowserStorage.getStats()

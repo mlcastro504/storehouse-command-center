@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Eye, Edit, Trash2, Download, Send } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Download, Send, FileText } from 'lucide-react';
 import { Invoice } from '@/types/accounting';
 import { CreateInvoiceDialog } from './CreateInvoiceDialog';
 
