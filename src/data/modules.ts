@@ -9,7 +9,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Panel principal con KPIs y resumen general',
     icon: 'LayoutDashboard',
     isActive: true,
-    requiredRoleLevel: 10,
+    requiredRoleLevel: 1,
     path: '/dashboard'
   },
   {
@@ -19,7 +19,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Gestión de productos y stock',
     icon: 'Package',
     isActive: true,
-    requiredRoleLevel: 5,
+    requiredRoleLevel: 1,
     path: '/inventory'
   },
   {
@@ -29,7 +29,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Gestión de ubicaciones del almacén',
     icon: 'MapPin',
     isActive: true,
-    requiredRoleLevel: 4,
+    requiredRoleLevel: 1,
     path: '/locations'
   },
   {
@@ -39,7 +39,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Proceso de almacenamiento de productos',
     icon: 'ArrowDownToLine',
     isActive: true,
-    requiredRoleLevel: 6,
+    requiredRoleLevel: 3,
     path: '/putaway'
   },
   {
@@ -49,7 +49,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Movimientos de stock y transferencias',
     icon: 'ArrowRightLeft',
     isActive: true,
-    requiredRoleLevel: 6,
+    requiredRoleLevel: 3,
     path: '/stock-movements'
   },
   {
@@ -59,7 +59,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Sistema de picking por voz',
     icon: 'Mic',
     isActive: true,
-    requiredRoleLevel: 7,
+    requiredRoleLevel: 3,
     path: '/picking'
   },
   {
@@ -69,7 +69,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Escáner de códigos de barras',
     icon: 'ScanLine',
     isActive: true,
-    requiredRoleLevel: 8,
+    requiredRoleLevel: 5,
     path: '/scanner'
   },
   {
@@ -79,7 +79,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Gestión de carga y descarga',
     icon: 'Truck',
     isActive: true,
-    requiredRoleLevel: 7,
+    requiredRoleLevel: 3,
     path: '/loading'
   },
   {
@@ -89,7 +89,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Gestión de muelles de carga',
     icon: 'Anchor',
     isActive: true,
-    requiredRoleLevel: 6,
+    requiredRoleLevel: 3,
     path: '/docks'
   },
   {
@@ -99,7 +99,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Gestión de clientes y proveedores',
     icon: 'Users',
     isActive: true,
-    requiredRoleLevel: 4,
+    requiredRoleLevel: 1,
     path: '/customers'
   },
   {
@@ -109,7 +109,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Integración con plataformas de e-commerce',
     icon: 'ShoppingCart',
     isActive: true,
-    requiredRoleLevel: 3,
+    requiredRoleLevel: 1,
     path: '/ecommerce'
   },
   {
@@ -119,7 +119,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Módulo de contabilidad y facturación',
     icon: 'Calculator',
     isActive: true,
-    requiredRoleLevel: 3,
+    requiredRoleLevel: 1,
     path: '/accounting'
   },
   {
@@ -129,7 +129,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Chat interno del equipo',
     icon: 'MessageSquare',
     isActive: true,
-    requiredRoleLevel: 8,
+    requiredRoleLevel: 5,
     path: '/chat'
   },
   {
@@ -139,7 +139,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Gestión de usuarios y operadores',
     icon: 'UserCog',
     isActive: true,
-    requiredRoleLevel: 2,
+    requiredRoleLevel: 1,
     path: '/users'
   },
   {
@@ -149,7 +149,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Reportes y analítica avanzada',
     icon: 'BarChart3',
     isActive: true,
-    requiredRoleLevel: 4,
+    requiredRoleLevel: 1,
     path: '/reports'
   },
   {
@@ -159,7 +159,7 @@ export const warehouseModules: WarehouseModule[] = [
     description: 'Manual de usuario y ayuda',
     icon: 'HelpCircle',
     isActive: true,
-    requiredRoleLevel: 10,
+    requiredRoleLevel: 1,
     path: '/help'
   }
 ];
