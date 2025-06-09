@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { connectToDatabase } from '@/lib/mongodb';
 
 interface LocationSelectorProps {
   label: string;
@@ -29,39 +29,35 @@ export const LocationSelector = ({
   const { data: locations, isLoading, error } = useQuery({
     queryKey: ['locations-for-picking', filterTypes],
     queryFn: async () => {
-      console.log('LocationSelector: Fetching locations for types:', filterTypes);
-      const { data, error } = await supabase
-        .from('locations')
-        .select('id, code, name, type')
-        .eq('is_active', true)
-        .order('code');
+      console.log('LocationSelector: Fetching locations from MongoDB for types:', filterTypes);
+      const db = await connectToDatabase();
+      const collection = db.collection('locations');
       
-      if (error) {
-        console.error('LocationSelector: Error fetching locations:', error);
-        throw error;
-      }
+      const data = await collection
+        .find({ 
+          is_active: true,
+          type: { $in: filterTypes }
+        })
+        .sort({ code: 1 })
+        .toArray();
       
       console.log('LocationSelector: Raw data received:', data);
       
-      // Ultra-comprehensive filtering with logging
+      // Filter valid locations
       const validLocations = (data || []).filter(location => {
         if (!location) {
           console.warn('LocationSelector: Found null/undefined location');
           return false;
         }
         
-        if (!location.id) {
-          console.warn('LocationSelector: Location missing id:', location);
+        if (!location._id) {
+          console.warn('LocationSelector: Location missing _id:', location);
           return false;
         }
         
-        if (typeof location.id !== 'string') {
-          console.warn('LocationSelector: Location id is not string:', location.id, typeof location.id);
-          return false;
-        }
-        
-        if (location.id.trim().length === 0) {
-          console.warn('LocationSelector: Location id is empty string:', location);
+        const idString = location._id.toString();
+        if (!idString || idString.trim().length === 0) {
+          console.warn('LocationSelector: Location _id is empty:', location);
           return false;
         }
         
@@ -98,10 +94,11 @@ export const LocationSelector = ({
     if (!locations) return [];
     
     return locations.filter(location => {
+      const idString = location._id?.toString();
       const isValid = location && 
-                     location.id && 
-                     typeof location.id === 'string' && 
-                     location.id.trim().length > 0;
+                     location._id && 
+                     idString && 
+                     idString.trim().length > 0;
       
       if (!isValid) {
         console.error('LocationSelector: Invalid location found during render:', location);
@@ -144,14 +141,16 @@ export const LocationSelector = ({
             </SelectItem>
           ) : safeLocations.length > 0 ? (
             safeLocations.map((location) => {
+              const idString = location._id.toString();
+              
               // Final safety check per item
-              if (!location.id || typeof location.id !== 'string' || location.id.trim().length === 0) {
+              if (!idString || idString.trim().length === 0) {
                 console.error('LocationSelector: Attempting to render invalid location:', location);
                 return null;
               }
               
               return (
-                <SelectItem key={location.id} value={location.id}>
+                <SelectItem key={idString} value={idString}>
                   {location.code} - {location.name} ({location.type})
                 </SelectItem>
               );

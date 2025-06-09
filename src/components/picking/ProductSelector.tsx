@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { connectToDatabase } from '@/lib/mongodb';
 
 interface ProductSelectorProps {
   value: string;
@@ -20,39 +20,32 @@ export const ProductSelector = ({ value, onChange }: ProductSelectorProps) => {
   const { data: products, isLoading, error } = useQuery({
     queryKey: ['products-for-picking'],
     queryFn: async () => {
-      console.log('ProductSelector: Fetching products...');
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, sku')
-        .eq('is_active', true)
-        .order('name');
+      console.log('ProductSelector: Fetching products from MongoDB...');
+      const db = await connectToDatabase();
+      const collection = db.collection('products');
       
-      if (error) {
-        console.error('ProductSelector: Error fetching products:', error);
-        throw error;
-      }
+      const data = await collection
+        .find({ is_active: true })
+        .sort({ name: 1 })
+        .toArray();
       
       console.log('ProductSelector: Raw data received:', data);
       
-      // Ultra-comprehensive filtering with logging
+      // Filter valid products
       const validProducts = (data || []).filter(product => {
         if (!product) {
           console.warn('ProductSelector: Found null/undefined product');
           return false;
         }
         
-        if (!product.id) {
-          console.warn('ProductSelector: Product missing id:', product);
+        if (!product._id) {
+          console.warn('ProductSelector: Product missing _id:', product);
           return false;
         }
         
-        if (typeof product.id !== 'string') {
-          console.warn('ProductSelector: Product id is not string:', product.id, typeof product.id);
-          return false;
-        }
-        
-        if (product.id.trim().length === 0) {
-          console.warn('ProductSelector: Product id is empty string:', product);
+        const idString = product._id.toString();
+        if (!idString || idString.trim().length === 0) {
+          console.warn('ProductSelector: Product _id is empty:', product);
           return false;
         }
         
@@ -79,10 +72,11 @@ export const ProductSelector = ({ value, onChange }: ProductSelectorProps) => {
     if (!products) return [];
     
     return products.filter(product => {
+      const idString = product._id?.toString();
       const isValid = product && 
-                     product.id && 
-                     typeof product.id === 'string' && 
-                     product.id.trim().length > 0;
+                     product._id && 
+                     idString && 
+                     idString.trim().length > 0;
       
       if (!isValid) {
         console.error('ProductSelector: Invalid product found during render:', product);
@@ -125,14 +119,16 @@ export const ProductSelector = ({ value, onChange }: ProductSelectorProps) => {
             </SelectItem>
           ) : safeProducts.length > 0 ? (
             safeProducts.map((product) => {
+              const idString = product._id.toString();
+              
               // Final safety check per item
-              if (!product.id || typeof product.id !== 'string' || product.id.trim().length === 0) {
+              if (!idString || idString.trim().length === 0) {
                 console.error('ProductSelector: Attempting to render invalid product:', product);
                 return null;
               }
               
               return (
-                <SelectItem key={product.id} value={product.id}>
+                <SelectItem key={idString} value={idString}>
                   {product.name} ({product.sku})
                 </SelectItem>
               );
