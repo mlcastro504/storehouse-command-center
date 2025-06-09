@@ -56,8 +56,13 @@ export const LocationSelector = ({
         }
         
         const idString = location._id.toString();
-        if (!idString || idString.trim().length === 0) {
-          console.warn('LocationSelector: Location _id is empty:', location);
+        if (!idString || 
+            typeof idString !== 'string' || 
+            idString.trim().length === 0 ||
+            idString === 'undefined' ||
+            idString === 'null' ||
+            idString === '') {
+          console.warn('LocationSelector: Location _id is invalid:', location);
           return false;
         }
         
@@ -89,9 +94,9 @@ export const LocationSelector = ({
     }
   });
 
-  // Additional safety check before rendering with even more robust validation
+  // Additional safety check before rendering
   const safeLocations = React.useMemo(() => {
-    if (!locations) return [];
+    if (!locations || !Array.isArray(locations)) return [];
     
     return locations.filter(location => {
       if (!location || !location._id) return false;
@@ -147,8 +152,13 @@ export const LocationSelector = ({
             safeLocations.map((location) => {
               const idString = location._id.toString();
               
-              // Final safety check per item - ensure we never render empty values
-              if (!idString || idString.trim().length === 0 || idString === 'undefined' || idString === 'null' || idString === '') {
+              // Final safety check per item - absolutely ensure we never render empty values
+              if (!idString || 
+                  typeof idString !== 'string' ||
+                  idString.trim().length === 0 || 
+                  idString === 'undefined' || 
+                  idString === 'null' || 
+                  idString === '') {
                 console.error('LocationSelector: Attempting to render invalid location:', location);
                 return null;
               }

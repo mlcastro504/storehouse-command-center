@@ -44,8 +44,13 @@ export const ProductSelector = ({ value, onChange }: ProductSelectorProps) => {
         }
         
         const idString = product._id.toString();
-        if (!idString || idString.trim().length === 0) {
-          console.warn('ProductSelector: Product _id is empty:', product);
+        if (!idString || 
+            typeof idString !== 'string' || 
+            idString.trim().length === 0 ||
+            idString === 'undefined' ||
+            idString === 'null' ||
+            idString === '') {
+          console.warn('ProductSelector: Product _id is invalid:', product);
           return false;
         }
         
@@ -67,9 +72,9 @@ export const ProductSelector = ({ value, onChange }: ProductSelectorProps) => {
     }
   });
 
-  // Additional safety check before rendering with even more robust validation
+  // Additional safety check before rendering
   const safeProducts = React.useMemo(() => {
-    if (!products) return [];
+    if (!products || !Array.isArray(products)) return [];
     
     return products.filter(product => {
       if (!product || !product._id) return false;
@@ -125,8 +130,13 @@ export const ProductSelector = ({ value, onChange }: ProductSelectorProps) => {
             safeProducts.map((product) => {
               const idString = product._id.toString();
               
-              // Final safety check per item - ensure we never render empty values
-              if (!idString || idString.trim().length === 0 || idString === 'undefined' || idString === 'null' || idString === '') {
+              // Final safety check per item - absolutely ensure we never render empty values
+              if (!idString || 
+                  typeof idString !== 'string' ||
+                  idString.trim().length === 0 || 
+                  idString === 'undefined' || 
+                  idString === 'null' || 
+                  idString === '') {
                 console.error('ProductSelector: Attempting to render invalid product:', product);
                 return null;
               }
