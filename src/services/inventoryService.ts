@@ -8,7 +8,8 @@ import {
   StockLevel, 
   StockMovement, 
   CycleCount,
-  InventoryStats
+  InventoryStats,
+  Supplier
 } from '@/types/inventory';
 
 export class InventoryService {
