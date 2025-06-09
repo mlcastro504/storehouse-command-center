@@ -1,181 +1,63 @@
-
 import React from 'react';
-import { Label } from '@/components/ui/label';
+import { useQuery } from '@tanstack/react-query';
+import { connectToDatabase } from '@/lib/mongodb';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useQuery } from '@tanstack/react-query';
-import { connectToDatabase } from '@/lib/mongodb';
+} from "@/components/ui/select";
+import { Location } from '@/types/inventory';
 
 interface LocationSelectorProps {
-  label: string;
-  placeholder: string;
-  value: string;
-  onChange: (value: string) => void;
-  filterTypes: string[];
+  value?: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  warehouseId?: string;
 }
 
-export const LocationSelector = ({ 
-  label, 
-  placeholder, 
+export function LocationSelector({ 
   value, 
-  onChange, 
-  filterTypes 
-}: LocationSelectorProps) => {
-  const { data: locations, isLoading, error } = useQuery({
-    queryKey: ['locations-for-picking', filterTypes],
+  onValueChange, 
+  placeholder = "Seleccionar ubicación...",
+  disabled = false,
+  warehouseId
+}: LocationSelectorProps) {
+  const { data: locations, isLoading } = useQuery({
+    queryKey: ['locations-selector', warehouseId],
     queryFn: async () => {
-      console.log('LocationSelector: Fetching locations from MongoDB for types:', filterTypes);
+      console.log('LocationSelector: Connecting to MongoDB...');
       const db = await connectToDatabase();
-      const collection = db.collection('locations');
       
-      const data = await collection
-        .find({ 
-          is_active: true,
-          type: { $in: filterTypes }
-        })
+      const filter = warehouseId ? { warehouse_id: warehouseId, is_active: true } : { is_active: true };
+      const locationsData = await db.collection('locations')
+        .find(filter)
         .sort({ code: 1 })
         .toArray();
-      
-      console.log('LocationSelector: Raw data received:', data);
-      
-      // Filter valid locations with robust validation
-      const validLocations = (data || []).filter(location => {
-        if (!location) {
-          console.warn('LocationSelector: Found null/undefined location');
-          return false;
-        }
-        
-        if (!location._id) {
-          console.warn('LocationSelector: Location missing _id:', location);
-          return false;
-        }
-        
-        const idString = location._id.toString();
-        if (!idString || 
-            typeof idString !== 'string' || 
-            idString.trim().length === 0 ||
-            idString === 'undefined' ||
-            idString === 'null' ||
-            idString === '') {
-          console.warn('LocationSelector: Location _id is invalid:', location);
-          return false;
-        }
-        
-        if (!location.code || typeof location.code !== 'string' || location.code.trim().length === 0) {
-          console.warn('LocationSelector: Location missing code:', location);
-          return false;
-        }
-        
-        if (!location.name || typeof location.name !== 'string' || location.name.trim().length === 0) {
-          console.warn('LocationSelector: Location missing name:', location);
-          return false;
-        }
-        
-        if (!location.type || typeof location.type !== 'string' || location.type.trim().length === 0) {
-          console.warn('LocationSelector: Location missing type:', location);
-          return false;
-        }
-        
-        if (!filterTypes.includes(location.type)) {
-          console.log('LocationSelector: Location type not in filter:', location.type, 'allowed:', filterTypes);
-          return false;
-        }
-        
-        return true;
-      });
-      
-      console.log('LocationSelector: Filtered valid locations:', validLocations);
-      return validLocations;
+
+      console.log('LocationSelector: Fetched locations from MongoDB:', locationsData.length);
+      return locationsData as Location[];
     }
   });
 
-  // Additional safety check before rendering
-  const safeLocations = React.useMemo(() => {
-    if (!locations || !Array.isArray(locations)) return [];
-    
-    return locations.filter(location => {
-      if (!location || !location._id) return false;
-      
-      const idString = location._id?.toString();
-      const isValid = idString && 
-                     typeof idString === 'string' && 
-                     idString.trim().length > 0 &&
-                     idString !== 'undefined' &&
-                     idString !== 'null' &&
-                     idString !== '';
-      
-      if (!isValid) {
-        console.error('LocationSelector: Invalid location found during render:', location);
-      }
-      
-      return isValid;
-    });
-  }, [locations]);
-
-  if (error) {
-    console.error('LocationSelector: Query error:', error);
-    return (
-      <div className="space-y-2">
-        <Label>{label}</Label>
-        <Select value={value} onValueChange={onChange}>
-          <SelectTrigger>
-            <SelectValue placeholder="Error cargando ubicaciones" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="error-loading-locations" disabled>
-              Error al cargar ubicaciones
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger>
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {isLoading ? (
-            <SelectItem value="loading-locations-state" disabled>
-              Cargando ubicaciones...
+    <Select disabled={disabled} onValueChange={onValueChange} value={value}>
+      <SelectTrigger>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {isLoading ? (
+          <SelectItem value="loading" disabled>Cargando...</SelectItem>
+        ) : (
+          locations?.map((location) => (
+            <SelectItem key={location.id} value={location.id || ''}>
+              {location.code} - {location.name}
             </SelectItem>
-          ) : safeLocations.length > 0 ? (
-            safeLocations.map((location) => {
-              const idString = location._id.toString();
-              
-              // Final safety check per item - absolutely ensure we never render empty values
-              if (!idString || 
-                  typeof idString !== 'string' ||
-                  idString.trim().length === 0 || 
-                  idString === 'undefined' || 
-                  idString === 'null' || 
-                  idString === '') {
-                console.error('LocationSelector: Attempting to render invalid location:', location);
-                return null;
-              }
-              
-              return (
-                <SelectItem key={idString} value={idString}>
-                  {location.code} - {location.name} ({location.type})
-                </SelectItem>
-              );
-            }).filter(Boolean) // Remove any null items
-          ) : (
-            <SelectItem value="no-locations-found" disabled>
-              No hay ubicaciones disponibles
-            </SelectItem>
-          )}
-        </SelectContent>
-      </Select>
-    </div>
+          ))
+        )}
+      </SelectContent>
+    </Select>
   );
-};
+}
