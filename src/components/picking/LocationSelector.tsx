@@ -26,8 +26,8 @@ export const LocationSelector = ({
   onChange, 
   filterTypes 
 }: LocationSelectorProps) => {
-  const { data: locations } = useQuery({
-    queryKey: ['locations-for-picking'],
+  const { data: locations, isLoading } = useQuery({
+    queryKey: ['locations-for-picking', filterTypes],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('locations')
@@ -36,24 +36,25 @@ export const LocationSelector = ({
         .order('code');
       
       if (error) throw error;
-      // Filter out locations with empty, null, or invalid IDs
-      return data?.filter(location => 
-        location.id && 
-        typeof location.id === 'string' && 
-        location.id.trim() !== '' &&
-        location.code &&
-        location.name &&
-        location.type
-      ) || [];
+      
+      // Comprehensive filtering to ensure only valid locations with non-empty IDs
+      return data?.filter(location => {
+        return location && 
+               location.id && 
+               typeof location.id === 'string' && 
+               location.id.trim().length > 0 &&
+               location.code && 
+               location.code.trim().length > 0 &&
+               location.name && 
+               location.name.trim().length > 0 &&
+               location.type && 
+               location.type.trim().length > 0 &&
+               filterTypes.includes(location.type);
+      }) || [];
     }
   });
 
-  const filteredLocations = (locations || []).filter(loc => 
-    loc.id && 
-    typeof loc.id === 'string' && 
-    loc.id.trim() !== '' &&
-    filterTypes.includes(loc.type)
-  );
+  const validLocations = locations || [];
 
   return (
     <div className="space-y-2">
@@ -63,8 +64,12 @@ export const LocationSelector = ({
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
-          {filteredLocations.length > 0 ? (
-            filteredLocations.map((location) => (
+          {isLoading ? (
+            <SelectItem value="loading" disabled>
+              Cargando ubicaciones...
+            </SelectItem>
+          ) : validLocations.length > 0 ? (
+            validLocations.map((location) => (
               <SelectItem key={location.id} value={location.id}>
                 {location.code} - {location.name} ({location.type})
               </SelectItem>

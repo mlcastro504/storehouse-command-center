@@ -17,7 +17,7 @@ interface ProductSelectorProps {
 }
 
 export const ProductSelector = ({ value, onChange }: ProductSelectorProps) => {
-  const { data: products } = useQuery({
+  const { data: products, isLoading } = useQuery({
     queryKey: ['products-for-picking'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -27,22 +27,22 @@ export const ProductSelector = ({ value, onChange }: ProductSelectorProps) => {
         .order('name');
       
       if (error) throw error;
-      // Filter out products with empty, null, or invalid IDs
-      return data?.filter(product => 
-        product.id && 
-        typeof product.id === 'string' && 
-        product.id.trim() !== '' &&
-        product.name &&
-        product.sku
-      ) || [];
+      
+      // Comprehensive filtering to ensure only valid products with non-empty IDs
+      return data?.filter(product => {
+        return product && 
+               product.id && 
+               typeof product.id === 'string' && 
+               product.id.trim().length > 0 &&
+               product.name && 
+               product.name.trim().length > 0 &&
+               product.sku && 
+               product.sku.trim().length > 0;
+      }) || [];
     }
   });
 
-  const validProducts = (products || []).filter(product => 
-    product.id && 
-    typeof product.id === 'string' && 
-    product.id.trim() !== ''
-  );
+  const validProducts = products || [];
 
   return (
     <div className="space-y-2">
@@ -52,7 +52,11 @@ export const ProductSelector = ({ value, onChange }: ProductSelectorProps) => {
           <SelectValue placeholder="Seleccionar producto" />
         </SelectTrigger>
         <SelectContent>
-          {validProducts.length > 0 ? (
+          {isLoading ? (
+            <SelectItem value="loading" disabled>
+              Cargando productos...
+            </SelectItem>
+          ) : validProducts.length > 0 ? (
             validProducts.map((product) => (
               <SelectItem key={product.id} value={product.id}>
                 {product.name} ({product.sku})
