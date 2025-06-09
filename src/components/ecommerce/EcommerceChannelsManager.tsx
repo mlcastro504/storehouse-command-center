@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,7 @@ export const EcommerceChannelsManager = () => {
   const [selectedChannel, setSelectedChannel] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
-    platform_type: undefined as string | undefined,
+    platform_type: '' as string,
     api_endpoint: '',
     api_key: '',
     webhook_url: '',
@@ -62,7 +63,7 @@ export const EcommerceChannelsManager = () => {
       setIsCreateDialogOpen(false);
       setFormData({
         name: '',
-        platform_type: undefined,
+        platform_type: '',
         api_endpoint: '',
         api_key: '',
         webhook_url: '',
