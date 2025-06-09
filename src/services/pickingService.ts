@@ -50,7 +50,7 @@ export class PickingService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as PickingTask[];
   }
 
   // Obtener tareas disponibles para asignar
@@ -69,7 +69,7 @@ export class PickingService {
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as PickingTask[];
   }
 
   // Obtener tareas asignadas a un usuario
@@ -88,7 +88,7 @@ export class PickingService {
       .order('assigned_at', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as PickingTask[];
   }
 
   // Crear nueva tarea de picking
@@ -102,13 +102,14 @@ export class PickingService {
       .insert({
         ...taskData,
         created_by: user.id,
-        user_id: user.id
+        user_id: user.id,
+        task_number: '' // Se generará automáticamente por el trigger
       })
       .select('*')
       .single();
 
     if (error) throw error;
-    return data;
+    return data as PickingTask;
   }
 
   // Actualizar tarea de picking
@@ -145,7 +146,7 @@ export class PickingService {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as PickingTask;
   }
 
   // Asignar tarea a un operario
@@ -218,7 +219,7 @@ export class PickingService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return (data || []) as PickingMetrics[];
   }
 
   // Obtener historial de una tarea
@@ -230,7 +231,7 @@ export class PickingService {
       .order('timestamp', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as PickingHistory[];
   }
 
   // Validar código de ubicación
@@ -253,7 +254,7 @@ export class PickingService {
       .eq('user_id', userId);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as UserPickingZone[];
   }
 
   // Configurar zona de picking para usuario
@@ -269,7 +270,7 @@ export class PickingService {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as UserPickingZone;
   }
 
   // Generar tarea de picking desde orden de e-commerce
