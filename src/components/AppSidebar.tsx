@@ -1,4 +1,3 @@
-
 import { Calendar, Home, Inbox, Search, Settings, LogOut, Moon, Sun } from "lucide-react"
 import * as LucideIcons from "lucide-react"
 import { useTheme } from "next-themes"
@@ -27,7 +26,11 @@ export function AppSidebar() {
   const [companyName, setCompanyName] = useState('WarehouseOS')
   const [companyLogo, setCompanyLogo] = useState('')
   
+  // Asegurar que se muestren todos los módulos disponibles para el usuario
   const userModules = user ? getModulesForUser(user.role.level) : []
+  
+  console.log('User role level:', user?.role.level)
+  console.log('Available modules:', userModules)
 
   // Cargar configuraciones de la empresa
   useEffect(() => {
@@ -74,19 +77,27 @@ export function AppSidebar() {
           <SidebarGroupLabel>Módulos Principales</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {userModules.map((module) => {
-                const IconComponent = getIcon(module.icon)
-                return (
-                  <SidebarMenuItem key={module.id}>
-                    <SidebarMenuButton asChild>
-                      <a href={module.path} className="flex items-center gap-2">
-                        <IconComponent className="w-4 h-4" />
-                        <span>{module.displayName}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
+              {userModules.length > 0 ? (
+                userModules.map((module) => {
+                  const IconComponent = getIcon(module.icon)
+                  return (
+                    <SidebarMenuItem key={module.id}>
+                      <SidebarMenuButton asChild>
+                        <a href={module.path} className="flex items-center gap-2">
+                          <IconComponent className="w-4 h-4" />
+                          <span>{module.displayName}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })
+              ) : (
+                <SidebarMenuItem>
+                  <SidebarMenuButton disabled>
+                    <span className="text-muted-foreground">No hay módulos disponibles</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

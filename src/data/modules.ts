@@ -34,7 +34,7 @@ export const modules = [
     icon: 'Package',
     path: '/inventory',
     isActive: true,
-    requiredRoleLevel: 2
+    requiredRoleLevel: 1
   },
   {
     id: 'locations',
@@ -44,7 +44,7 @@ export const modules = [
     icon: 'MapPin',
     path: '/locations',
     isActive: true,
-    requiredRoleLevel: 2
+    requiredRoleLevel: 1
   },
   {
     id: 'stock-movements',
@@ -54,7 +54,7 @@ export const modules = [
     icon: 'TruckIcon',
     path: '/stock-movements',
     isActive: true,
-    requiredRoleLevel: 2
+    requiredRoleLevel: 1
   },
   {
     id: 'stock-move',
@@ -64,7 +64,7 @@ export const modules = [
     icon: 'ArrowUpDown',
     path: '/stock-move',
     isActive: true,
-    requiredRoleLevel: 2
+    requiredRoleLevel: 1
   },
   {
     id: 'putaway',
@@ -74,7 +74,7 @@ export const modules = [
     icon: 'Archive',
     path: '/putaway',
     isActive: true,
-    requiredRoleLevel: 2
+    requiredRoleLevel: 1
   },
   {
     id: 'scanner',
@@ -84,7 +84,7 @@ export const modules = [
     icon: 'ScanLine',
     path: '/scanner',
     isActive: true,
-    requiredRoleLevel: 2
+    requiredRoleLevel: 1
   },
   {
     id: 'loading',
@@ -94,7 +94,7 @@ export const modules = [
     icon: 'TruckIcon',
     path: '/loading',
     isActive: true,
-    requiredRoleLevel: 2
+    requiredRoleLevel: 1
   },
   {
     id: 'users',
@@ -114,7 +114,7 @@ export const modules = [
     icon: 'UserPlus',
     path: '/customers',
     isActive: true,
-    requiredRoleLevel: 2
+    requiredRoleLevel: 1
   },
   {
     id: 'ecommerce',
@@ -124,7 +124,7 @@ export const modules = [
     icon: 'ShoppingCart',
     path: '/ecommerce',
     isActive: true,
-    requiredRoleLevel: 2
+    requiredRoleLevel: 1
   },
   {
     id: 'accounting',
@@ -134,7 +134,7 @@ export const modules = [
     icon: 'Calculator',
     path: '/accounting',
     isActive: true,
-    requiredRoleLevel: 3
+    requiredRoleLevel: 1
   },
   {
     id: 'chat',
@@ -144,7 +144,7 @@ export const modules = [
     icon: 'MessageSquare',
     path: '/chat',
     isActive: true,
-    requiredRoleLevel: 5
+    requiredRoleLevel: 1
   },
   {
     id: 'settings',
@@ -159,7 +159,10 @@ export const modules = [
 ];
 
 export const getModulesForUser = (userRoleLevel: number) => {
-  return modules.filter(module => 
+  console.log('Filtering modules for role level:', userRoleLevel);
+  const filteredModules = modules.filter(module => 
     module.isActive && userRoleLevel >= module.requiredRoleLevel
   );
+  console.log('Filtered modules:', filteredModules);
+  return filteredModules;
 };
