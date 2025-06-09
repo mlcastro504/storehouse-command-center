@@ -739,13 +739,17 @@ export type Database = {
           barcode: string | null
           capacity: number | null
           code: string
+          confirmation_code: string
           coordinates: Json | null
           created_at: string
           current_occupancy: number
           id: string
           is_active: boolean
+          last_verified_at: string | null
           name: string
+          occupancy_status: string | null
           parent_id: string | null
+          restrictions: Json | null
           type: string
           updated_at: string
           user_id: string
@@ -755,13 +759,17 @@ export type Database = {
           barcode?: string | null
           capacity?: number | null
           code: string
+          confirmation_code: string
           coordinates?: Json | null
           created_at?: string
           current_occupancy?: number
           id?: string
           is_active?: boolean
+          last_verified_at?: string | null
           name: string
+          occupancy_status?: string | null
           parent_id?: string | null
+          restrictions?: Json | null
           type: string
           updated_at?: string
           user_id: string
@@ -771,13 +779,17 @@ export type Database = {
           barcode?: string | null
           capacity?: number | null
           code?: string
+          confirmation_code?: string
           coordinates?: Json | null
           created_at?: string
           current_occupancy?: number
           id?: string
           is_active?: boolean
+          last_verified_at?: string | null
           name?: string
+          occupancy_status?: string | null
           parent_id?: string | null
+          restrictions?: Json | null
           type?: string
           updated_at?: string
           user_id?: string
@@ -981,6 +993,138 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_move_executions: {
+        Row: {
+          completed_at: string
+          executed_by: string
+          execution_notes: string | null
+          execution_status: string
+          id: string
+          quantity_moved: number
+          scan_records: Json | null
+          started_at: string
+          task_id: string
+          validation_code_used: string
+        }
+        Insert: {
+          completed_at?: string
+          executed_by: string
+          execution_notes?: string | null
+          execution_status?: string
+          id?: string
+          quantity_moved: number
+          scan_records?: Json | null
+          started_at?: string
+          task_id: string
+          validation_code_used: string
+        }
+        Update: {
+          completed_at?: string
+          executed_by?: string
+          execution_notes?: string | null
+          execution_status?: string
+          id?: string
+          quantity_moved?: number
+          scan_records?: Json | null
+          started_at?: string
+          task_id?: string
+          validation_code_used?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_move_executions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "stock_move_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_move_tasks: {
+        Row: {
+          assigned_at: string | null
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          destination_location_id: string
+          id: string
+          notes: string | null
+          priority: string
+          product_id: string
+          quantity_needed: number
+          source_location_id: string
+          started_at: string | null
+          status: string
+          task_type: string
+          updated_at: string
+          user_id: string
+          validation_code_required: boolean
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          destination_location_id: string
+          id?: string
+          notes?: string | null
+          priority?: string
+          product_id: string
+          quantity_needed: number
+          source_location_id: string
+          started_at?: string | null
+          status?: string
+          task_type?: string
+          updated_at?: string
+          user_id: string
+          validation_code_required?: boolean
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          destination_location_id?: string
+          id?: string
+          notes?: string | null
+          priority?: string
+          product_id?: string
+          quantity_needed?: number
+          source_location_id?: string
+          started_at?: string | null
+          status?: string
+          task_type?: string
+          updated_at?: string
+          user_id?: string
+          validation_code_required?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_move_tasks_destination_location_id_fkey"
+            columns: ["destination_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_move_tasks_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_move_tasks_source_location_id_fkey"
+            columns: ["source_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
             referencedColumns: ["id"]
           },
         ]
