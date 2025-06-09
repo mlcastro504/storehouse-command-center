@@ -514,11 +514,11 @@ export class ScannerService {
         updated_at: new Date().toISOString()
       };
 
-      await db.collection('scanner_settings').updateOne(
+      await db.collection('scanner_settings').replaceOne(
         { user_id: userId },
         { 
-          $set: updatedSettings,
-          $setOnInsert: { created_at: new Date().toISOString() }
+          ...updatedSettings,
+          created_at: new Date().toISOString()
         },
         { upsert: true }
       );
