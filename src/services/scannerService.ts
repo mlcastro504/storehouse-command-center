@@ -129,13 +129,14 @@ export class ScannerService {
       await db.collection('scan_sessions').insertOne(session);
       
       // Crear evento de inicio de sesión
-      await this.createScanEvent({
+      const eventData = {
         session_id: session.id,
-        event_type: 'scan_start',
+        event_type: 'scan_start' as const,
         event_data: { session_type: session.session_type },
         device_id: session.device_id || '',
         user_id: session.user_id
-      });
+      };
+      await this.createScanEvent(eventData);
 
       return session;
     } catch (error) {
@@ -217,9 +218,9 @@ export class ScannerService {
       await this.updateSessionStats(scan.session_id, scan.validation_status === 'valid');
 
       // Crear evento de escaneo
-      await this.createScanEvent({
+      const eventData = {
         session_id: scan.session_id,
-        event_type: scan.validation_status === 'valid' ? 'scan_success' : 'scan_error',
+        event_type: scan.validation_status === 'valid' ? 'scan_success' as const : 'scan_error' as const,
         event_data: { 
           scanned_value: scan.scanned_value,
           validation_status: scan.validation_status,
@@ -227,7 +228,8 @@ export class ScannerService {
         },
         device_id: scanData.device_id || 'unknown',
         user_id: scan.user_id
-      });
+      };
+      await this.createScanEvent(eventData);
 
       return scan;
     } catch (error) {
@@ -257,14 +259,14 @@ export class ScannerService {
           case 'existence':
             // Verificar si el producto/ubicación existe
             if (scan.product_id) {
-              const product = await db.collection('products').findOne({ id: scan.product_id });
-              if (!product) {
+              const products = await db.collection('products').find({ id: scan.product_id }).toArray();
+              if (products.length === 0) {
                 return { status: 'invalid', message: 'Producto no encontrado en el sistema' };
               }
             }
             if (scan.location_id) {
-              const location = await db.collection('locations').findOne({ id: scan.location_id });
-              if (!location) {
+              const locations = await db.collection('locations').find({ id: scan.location_id }).toArray();
+              if (locations.length === 0) {
                 return { status: 'invalid', message: 'Ubicación no encontrada en el sistema' };
               }
             }
