@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StockMoveService } from '@/services/stockMoveService';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface CreateTaskDialogProps {
@@ -44,13 +43,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
 
   const loadProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, sku')
-        .eq('is_active', true)
-        .order('name');
-      
-      if (error) throw error;
+      const data = await StockMoveService.getProducts();
       setProducts(data || []);
     } catch (error) {
       console.error('Error loading products:', error);
@@ -59,13 +52,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
 
   const loadLocations = async () => {
     try {
-      const { data, error } = await supabase
-        .from('locations')
-        .select('id, name, code, type')
-        .eq('is_active', true)
-        .order('code');
-      
-      if (error) throw error;
+      const data = await StockMoveService.getLocations();
       setLocations(data || []);
     } catch (error) {
       console.error('Error loading locations:', error);

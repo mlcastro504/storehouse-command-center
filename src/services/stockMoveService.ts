@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { BrowserStorage } from '@/lib/browserStorage';
 
 export interface StockMoveTask {
   id: string;
@@ -20,6 +20,9 @@ export interface StockMoveTask {
   created_at: string;
   updated_at: string;
   user_id: string;
+  products?: any;
+  source_location?: any;
+  destination_location?: any;
 }
 
 export interface StockMoveExecution {
@@ -33,26 +36,36 @@ export interface StockMoveExecution {
   execution_notes?: string;
   started_at: string;
   completed_at: string;
+  task?: any;
 }
 
 export class StockMoveService {
   // Obtener tareas pendientes
   static async getPendingTasks(): Promise<StockMoveTask[]> {
     try {
-      const { data, error } = await supabase
-        .from('stock_move_tasks')
-        .select(`
-          *,
-          products:product_id(name, sku),
-          source_location:source_location_id(name, code, type),
-          destination_location:destination_location_id(name, code, type, confirmation_code)
-        `)
-        .in('status', ['pending', 'assigned'])
-        .order('priority', { ascending: false })
-        .order('created_at', { ascending: true });
+      const tasks = await BrowserStorage.find('stock_move_tasks', { 
+        status: { $in: ['pending', 'assigned'] }
+      });
 
-      if (error) throw error;
-      return data || [];
+      // Enriquecer con datos relacionados
+      const enrichedTasks = await Promise.all(tasks.map(async (task) => {
+        const product = await BrowserStorage.findOne('products', { id: task.product_id });
+        const sourceLocation = await BrowserStorage.findOne('locations', { id: task.source_location_id });
+        const destinationLocation = await BrowserStorage.findOne('locations', { id: task.destination_location_id });
+
+        return {
+          ...task,
+          id: task._id || task.id,
+          products: product,
+          source_location: sourceLocation,
+          destination_location: destinationLocation
+        };
+      }));
+
+      return enrichedTasks.sort((a, b) => {
+        const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      });
     } catch (error) {
       console.error('Error fetching pending tasks:', error);
       return [];
@@ -62,20 +75,30 @@ export class StockMoveService {
   // Obtener tareas asignadas a un usuario
   static async getMyTasks(userId: string): Promise<StockMoveTask[]> {
     try {
-      const { data, error } = await supabase
-        .from('stock_move_tasks')
-        .select(`
-          *,
-          products:product_id(name, sku),
-          source_location:source_location_id(name, code, type),
-          destination_location:destination_location_id(name, code, type, confirmation_code)
-        `)
-        .eq('assigned_to', userId)
-        .in('status', ['assigned', 'in_progress'])
-        .order('priority', { ascending: false });
+      const tasks = await BrowserStorage.find('stock_move_tasks', { 
+        assigned_to: userId,
+        status: { $in: ['assigned', 'in_progress'] }
+      });
 
-      if (error) throw error;
-      return data || [];
+      // Enriquecer con datos relacionados
+      const enrichedTasks = await Promise.all(tasks.map(async (task) => {
+        const product = await BrowserStorage.findOne('products', { id: task.product_id });
+        const sourceLocation = await BrowserStorage.findOne('locations', { id: task.source_location_id });
+        const destinationLocation = await BrowserStorage.findOne('locations', { id: task.destination_location_id });
+
+        return {
+          ...task,
+          id: task._id || task.id,
+          products: product,
+          source_location: sourceLocation,
+          destination_location: destinationLocation
+        };
+      }));
+
+      return enrichedTasks.sort((a, b) => {
+        const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      });
     } catch (error) {
       console.error('Error fetching user tasks:', error);
       return [];
@@ -85,19 +108,17 @@ export class StockMoveService {
   // Tomar una tarea
   static async takeTask(taskId: string, userId: string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('stock_move_tasks')
-        .update({
+      const result = await BrowserStorage.updateOne('stock_move_tasks', 
+        { id: taskId, status: 'pending' },
+        {
           assigned_to: userId,
           assigned_at: new Date().toISOString(),
           status: 'assigned',
           updated_at: new Date().toISOString()
-        })
-        .eq('id', taskId)
-        .eq('status', 'pending');
+        }
+      );
 
-      if (error) throw error;
-      return true;
+      return result;
     } catch (error) {
       console.error('Error taking task:', error);
       return false;
@@ -107,18 +128,16 @@ export class StockMoveService {
   // Iniciar una tarea
   static async startTask(taskId: string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('stock_move_tasks')
-        .update({
+      const result = await BrowserStorage.updateOne('stock_move_tasks',
+        { id: taskId, status: 'assigned' },
+        {
           started_at: new Date().toISOString(),
           status: 'in_progress',
           updated_at: new Date().toISOString()
-        })
-        .eq('id', taskId)
-        .eq('status', 'assigned');
+        }
+      );
 
-      if (error) throw error;
-      return true;
+      return result;
     } catch (error) {
       console.error('Error starting task:', error);
       return false;
@@ -134,53 +153,47 @@ export class StockMoveService {
     executionNotes?: string
   ): Promise<{ success: boolean; message: string }> {
     try {
-      // Verificar que el código de validación es correcto
-      const { data: task, error: taskError } = await supabase
-        .from('stock_move_tasks')
-        .select(`
-          *,
-          destination_location:destination_location_id(confirmation_code)
-        `)
-        .eq('id', taskId)
-        .single();
+      // Obtener información de la tarea
+      const task = await BrowserStorage.findOne('stock_move_tasks', { id: taskId });
+      if (!task) {
+        return { success: false, message: 'Tarea no encontrada' };
+      }
 
-      if (taskError) throw taskError;
-
-      if (!task.destination_location?.confirmation_code) {
+      // Obtener ubicación destino
+      const destinationLocation = await BrowserStorage.findOne('locations', { id: task.destination_location_id });
+      
+      // Verificar código de validación
+      if (!destinationLocation?.confirmation_code) {
         return { success: false, message: 'No se pudo verificar el código de validación de la ubicación destino' };
       }
 
-      if (task.destination_location.confirmation_code !== validationCode) {
+      if (destinationLocation.confirmation_code !== validationCode) {
         return { success: false, message: 'Código de validación incorrecto. Verifique la ubicación destino.' };
       }
 
       // Crear registro de ejecución
-      const { error: executionError } = await supabase
-        .from('stock_move_executions')
-        .insert({
-          task_id: taskId,
-          executed_by: userId,
-          quantity_moved: quantityMoved,
-          validation_code_used: validationCode,
-          execution_status: quantityMoved >= task.quantity_needed ? 'completed' : 'partial',
-          execution_notes: executionNotes,
-          scan_records: []
-        });
+      const execution: StockMoveExecution = {
+        id: `exec_${Date.now()}`,
+        task_id: taskId,
+        executed_by: userId,
+        quantity_moved: quantityMoved,
+        validation_code_used: validationCode,
+        execution_status: quantityMoved >= task.quantity_needed ? 'completed' : 'partial',
+        execution_notes: executionNotes,
+        scan_records: [],
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString()
+      };
 
-      if (executionError) throw executionError;
+      await BrowserStorage.insertOne('stock_move_executions', execution);
 
       // Actualizar estado de la tarea
       const newStatus = quantityMoved >= task.quantity_needed ? 'completed' : 'in_progress';
-      const { error: updateError } = await supabase
-        .from('stock_move_tasks')
-        .update({
-          status: newStatus,
-          completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', taskId);
-
-      if (updateError) throw updateError;
+      await BrowserStorage.updateOne('stock_move_tasks', { id: taskId }, {
+        status: newStatus,
+        completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString()
+      });
 
       // Actualizar niveles de stock
       await this.updateStockLevels(task, quantityMoved);
@@ -201,68 +214,66 @@ export class StockMoveService {
   private static async updateStockLevels(task: any, quantityMoved: number): Promise<void> {
     try {
       // Reducir stock en ubicación origen
-      const { error: sourceError } = await supabase
-        .from('stock_levels')
-        .update({
-          quantity_available: supabase.sql`quantity_available - ${quantityMoved}`,
-          last_updated: new Date().toISOString()
-        })
-        .eq('product_id', task.product_id)
-        .eq('location_id', task.source_location_id);
+      const sourceStock = await BrowserStorage.findOne('stock_levels', {
+        product_id: task.product_id,
+        location_id: task.source_location_id
+      });
 
-      if (sourceError) throw sourceError;
+      if (sourceStock) {
+        await BrowserStorage.updateOne('stock_levels', 
+          { product_id: task.product_id, location_id: task.source_location_id },
+          {
+            quantity_available: Math.max(0, sourceStock.quantity_available - quantityMoved),
+            last_updated: new Date().toISOString()
+          }
+        );
+      }
 
       // Aumentar stock en ubicación destino
-      const { data: existingStock } = await supabase
-        .from('stock_levels')
-        .select('*')
-        .eq('product_id', task.product_id)
-        .eq('location_id', task.destination_location_id)
-        .single();
+      const existingStock = await BrowserStorage.findOne('stock_levels', {
+        product_id: task.product_id,
+        location_id: task.destination_location_id
+      });
 
       if (existingStock) {
         // Actualizar stock existente
-        const { error: destError } = await supabase
-          .from('stock_levels')
-          .update({
-            quantity_available: supabase.sql`quantity_available + ${quantityMoved}`,
+        await BrowserStorage.updateOne('stock_levels',
+          { product_id: task.product_id, location_id: task.destination_location_id },
+          {
+            quantity_available: existingStock.quantity_available + quantityMoved,
             last_updated: new Date().toISOString()
-          })
-          .eq('product_id', task.product_id)
-          .eq('location_id', task.destination_location_id);
-
-        if (destError) throw destError;
+          }
+        );
       } else {
         // Crear nuevo registro de stock
-        const { error: insertError } = await supabase
-          .from('stock_levels')
-          .insert({
-            product_id: task.product_id,
-            location_id: task.destination_location_id,
-            quantity_available: quantityMoved,
-            quantity_on_order: 0,
-            quantity_reserved: 0,
-            user_id: task.user_id
-          });
-
-        if (insertError) throw insertError;
+        await BrowserStorage.insertOne('stock_levels', {
+          id: `stock_${Date.now()}`,
+          product_id: task.product_id,
+          location_id: task.destination_location_id,
+          quantity_available: quantityMoved,
+          quantity_on_order: 0,
+          quantity_reserved: 0,
+          user_id: task.user_id,
+          last_updated: new Date().toISOString()
+        });
       }
 
       // Registrar movimiento de stock
-      await supabase
-        .from('stock_movements')
-        .insert({
-          product_id: task.product_id,
-          from_location_id: task.source_location_id,
-          to_location_id: task.destination_location_id,
-          quantity: quantityMoved,
-          movement_type: 'transfer',
-          reason: `Stock Move Task: ${task.task_type}`,
-          performed_by: task.assigned_to,
-          reference_type: 'stock_move_task',
-          reference_id: task.id,
-          user_id: task.user_id
-        });
+      await BrowserStorage.insertOne('stock_movements', {
+        id: `mov_${Date.now()}`,
+        product_id: task.product_id,
+        from_location_id: task.source_location_id,
+        to_location_id: task.destination_location_id,
+        quantity: quantityMoved,
+        movement_type: 'transfer',
+        reason: `Stock Move Task: ${task.task_type}`,
+        performed_by: task.assigned_to,
+        reference_type: 'stock_move_task',
+        reference_id: task.id,
+        user_id: task.user_id,
+        timestamp: new Date(),
+        status: 'completed'
+      });
 
     } catch (error) {
       console.error('Error updating stock levels:', error);
@@ -282,19 +293,18 @@ export class StockMoveService {
     user_id: string;
   }): Promise<StockMoveTask | null> {
     try {
-      const { data, error } = await supabase
-        .from('stock_move_tasks')
-        .insert({
-          ...taskData,
-          status: 'pending',
-          validation_code_required: true,
-          created_by: taskData.user_id
-        })
-        .select()
-        .single();
+      const task: StockMoveTask = {
+        id: `task_${Date.now()}`,
+        ...taskData,
+        status: 'pending',
+        validation_code_required: true,
+        created_by: taskData.user_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
 
-      if (error) throw error;
-      return data;
+      await BrowserStorage.insertOne('stock_move_tasks', task);
+      return task;
     } catch (error) {
       console.error('Error creating manual task:', error);
       return null;
@@ -304,24 +314,32 @@ export class StockMoveService {
   // Obtener historial de ejecuciones
   static async getExecutionHistory(taskId?: string): Promise<StockMoveExecution[]> {
     try {
-      let query = supabase
-        .from('stock_move_executions')
-        .select(`
-          *,
-          task:task_id(
-            product_id,
-            products:product_id(name, sku)
-          )
-        `)
-        .order('completed_at', { ascending: false });
+      const filter = taskId ? { task_id: taskId } : {};
+      const executions = await BrowserStorage.find('stock_move_executions', filter);
 
-      if (taskId) {
-        query = query.eq('task_id', taskId);
-      }
+      // Enriquecer con datos de tarea y producto
+      const enrichedExecutions = await Promise.all(executions.map(async (execution) => {
+        const task = await BrowserStorage.findOne('stock_move_tasks', { id: execution.task_id });
+        let product = null;
+        
+        if (task) {
+          product = await BrowserStorage.findOne('products', { id: task.product_id });
+        }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+        return {
+          ...execution,
+          id: execution._id || execution.id,
+          scan_records: Array.isArray(execution.scan_records) ? execution.scan_records : [],
+          task: task ? {
+            ...task,
+            products: product
+          } : null
+        };
+      }));
+
+      return enrichedExecutions.sort((a, b) => 
+        new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
+      );
     } catch (error) {
       console.error('Error fetching execution history:', error);
       return [];
@@ -338,33 +356,28 @@ export class StockMoveService {
   }> {
     try {
       const today = new Date().toISOString().split('T')[0];
-
-      const { data: tasks, error } = await supabase
-        .from('stock_move_tasks')
-        .select('status, priority, created_at, completed_at');
-
-      if (error) throw error;
+      const tasks = await BrowserStorage.find('stock_move_tasks', {});
 
       const metrics = {
-        totalPendingTasks: tasks?.filter(t => t.status === 'pending').length || 0,
-        totalInProgress: tasks?.filter(t => ['assigned', 'in_progress'].includes(t.status)).length || 0,
-        totalCompletedToday: tasks?.filter(t => 
+        totalPendingTasks: tasks.filter(t => t.status === 'pending').length,
+        totalInProgress: tasks.filter(t => ['assigned', 'in_progress'].includes(t.status)).length,
+        totalCompletedToday: tasks.filter(t => 
           t.status === 'completed' && 
           t.completed_at?.startsWith(today)
-        ).length || 0,
+        ).length,
         averageCompletionTime: 0,
-        urgentTasks: tasks?.filter(t => 
+        urgentTasks: tasks.filter(t => 
           ['pending', 'assigned'].includes(t.status) && 
           t.priority === 'urgent'
-        ).length || 0,
+        ).length,
       };
 
       // Calcular tiempo promedio de completado
-      const completedTasks = tasks?.filter(t => 
+      const completedTasks = tasks.filter(t => 
         t.status === 'completed' && 
         t.created_at && 
         t.completed_at
-      ) || [];
+      );
 
       if (completedTasks.length > 0) {
         const totalTime = completedTasks.reduce((sum, task) => {
@@ -386,6 +399,34 @@ export class StockMoveService {
         averageCompletionTime: 0,
         urgentTasks: 0,
       };
+    }
+  }
+
+  // Obtener productos
+  static async getProducts(): Promise<any[]> {
+    try {
+      const products = await BrowserStorage.find('products', { is_active: true });
+      return products.map(product => ({
+        ...product,
+        id: product._id || product.id
+      }));
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      return [];
+    }
+  }
+
+  // Obtener ubicaciones
+  static async getLocations(): Promise<any[]> {
+    try {
+      const locations = await BrowserStorage.find('locations', { is_active: true });
+      return locations.map(location => ({
+        ...location,
+        id: location._id || location.id
+      }));
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+      return [];
     }
   }
 }
