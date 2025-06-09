@@ -10,7 +10,9 @@ import {
   ScannerSettings,
   DeviceAssignment,
   ScanEvent,
-  CameraScanConfig
+  CameraScanConfig,
+  StockMoveTask,
+  StockMoveExecution
 } from '@/types/scanner';
 
 export class ScannerService {
@@ -517,6 +519,82 @@ export class ScannerService {
     } catch (error) {
       console.error('Error updating scanner settings:', error);
       return null;
+    }
+  }
+
+  // NUEVOS MÉTODOS PARA STOCK MOVE
+  static async createStockMoveTask(taskData: Partial<StockMoveTask>): Promise<StockMoveTask | null> {
+    try {
+      const task: StockMoveTask = {
+        id: `task_${Date.now()}`,
+        product_id: taskData.product_id || '',
+        quantity_needed: taskData.quantity_needed || 0,
+        source_location_id: taskData.source_location_id || '',
+        destination_location_id: taskData.destination_location_id || '',
+        task_type: taskData.task_type || 'replenishment',
+        priority: taskData.priority || 'medium',
+        status: 'pending',
+        validation_code_required: true,
+        created_by: taskData.created_by || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as StockMoveTask;
+
+      const db = await connectToDatabase();
+      await db.collection('stock_move_tasks').insertOne(task);
+      return task;
+    } catch (error) {
+      console.error('Error creating stock move task:', error);
+      return null;
+    }
+  }
+
+  static async executeStockMove(executionData: Partial<StockMoveExecution>): Promise<StockMoveExecution | null> {
+    try {
+      const execution: StockMoveExecution = {
+        id: `exec_${Date.now()}`,
+        task_id: executionData.task_id || '',
+        executed_by: executionData.executed_by || '',
+        quantity_moved: executionData.quantity_moved || 0,
+        validation_code_used: executionData.validation_code_used || '',
+        scan_records: executionData.scan_records || [],
+        execution_status: executionData.execution_status || 'completed',
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString()
+      } as StockMoveExecution;
+
+      const db = await connectToDatabase();
+      await db.collection('stock_move_executions').insertOne(execution);
+      
+      // Actualizar el estado de la tarea
+      await db.collection('stock_move_tasks').updateOne(
+        { id: execution.task_id },
+        { 
+          $set: { 
+            status: execution.execution_status === 'completed' ? 'completed' : 'in_progress',
+            completed_at: execution.execution_status === 'completed' ? new Date().toISOString() : undefined,
+            updated_at: new Date().toISOString()
+          }
+        }
+      );
+
+      return execution;
+    } catch (error) {
+      console.error('Error executing stock move:', error);
+      return null;
+    }
+  }
+
+  static async getPendingStockMoveTasks(): Promise<StockMoveTask[]> {
+    try {
+      const db = await connectToDatabase();
+      const tasks = await db.collection('stock_move_tasks').find({ 
+        status: { $in: ['pending', 'assigned'] }
+      }).sort({ priority: 1, created_at: 1 }).toArray() as StockMoveTask[];
+      return tasks;
+    } catch (error) {
+      console.error('Error fetching pending stock move tasks:', error);
+      return [];
     }
   }
 }
