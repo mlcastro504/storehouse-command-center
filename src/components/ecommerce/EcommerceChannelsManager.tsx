@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,7 +62,7 @@ export const EcommerceChannelsManager = () => {
       setIsCreateDialogOpen(false);
       setFormData({
         name: '',
-        platform_type: '',
+        platform_type: undefined,
         api_endpoint: '',
         api_key: '',
         webhook_url: '',
@@ -173,7 +172,7 @@ export const EcommerceChannelsManager = () => {
               <div className="space-y-2">
                 <Label>Plataforma</Label>
                 <Select 
-                  value={formData.platform_type || ""} 
+                  value={formData.platform_type}
                   onValueChange={(value) => setFormData({...formData, platform_type: value})}
                 >
                   <SelectTrigger>
