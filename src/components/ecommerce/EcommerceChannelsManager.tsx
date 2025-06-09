@@ -27,11 +27,13 @@ import {
   Power,
   AlertCircle,
   CheckCircle,
-  Clock
+  Clock,
+  ShoppingCart
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { EcommerceAdvancedService } from '@/services/ecommerceAdvancedService';
 import { toast } from 'sonner';
+import { EcommerceChannel } from '@/types/ecommerce-advanced';
 
 export const EcommerceChannelsManager = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -71,9 +73,11 @@ export const EcommerceChannelsManager = () => {
   });
 
   const handleCreateChannel = (formData: FormData) => {
-    const channelData = {
+    const platformType = formData.get('platform_type') as string;
+    
+    const channelData: Partial<EcommerceChannel> = {
       name: formData.get('name') as string,
-      platform_type: formData.get('platform_type') as string,
+      platform_type: platformType as EcommerceChannel['platform_type'],
       api_endpoint: formData.get('api_endpoint') as string,
       api_key_encrypted: formData.get('api_key') as string,
       webhook_url: formData.get('webhook_url') as string,
