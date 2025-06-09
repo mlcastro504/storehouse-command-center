@@ -131,7 +131,7 @@ export class StockMoveService {
         }
       );
 
-      return result;
+      return result.modifiedCount > 0;
     } catch (error) {
       console.error('Error taking task:', error);
       return false;
@@ -150,7 +150,7 @@ export class StockMoveService {
         }
       );
 
-      return result;
+      return result.modifiedCount > 0;
     } catch (error) {
       console.error('Error starting task:', error);
       return false;
