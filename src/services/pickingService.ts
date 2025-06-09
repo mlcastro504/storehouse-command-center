@@ -50,7 +50,7 @@ export class PickingService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as PickingTask[];
+    return (data || []) as unknown as PickingTask[];
   }
 
   // Obtener tareas disponibles para asignar
@@ -69,7 +69,7 @@ export class PickingService {
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return (data || []) as PickingTask[];
+    return (data || []) as unknown as PickingTask[];
   }
 
   // Obtener tareas asignadas a un usuario
@@ -88,7 +88,7 @@ export class PickingService {
       .order('assigned_at', { ascending: true });
 
     if (error) throw error;
-    return (data || []) as PickingTask[];
+    return (data || []) as unknown as PickingTask[];
   }
 
   // Crear nueva tarea de picking
@@ -231,7 +231,7 @@ export class PickingService {
       .order('timestamp', { ascending: true });
 
     if (error) throw error;
-    return (data || []) as PickingHistory[];
+    return (data || []) as unknown as PickingHistory[];
   }
 
   // Validar código de ubicación
