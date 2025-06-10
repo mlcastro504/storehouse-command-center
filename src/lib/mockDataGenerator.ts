@@ -1,4 +1,3 @@
-
 import { BrowserStorage } from './browserStorage';
 
 interface MockUser {
@@ -122,13 +121,13 @@ export class MockDataGenerator {
   static async generateAllMockData() {
     console.log('🚀 Generating comprehensive WarehouseOS mock data...');
     
-    // Clear existing data
+    // Clear existing data first
     this.clearAllData();
     
-    // Generate core data
+    // Generate core data in proper order
     const roles = this.generateRoles();
     const users = this.generateUsers(roles);
-    const suppliers = this.generateSuppliers(users[0].id); // Admin user
+    const suppliers = this.generateSuppliers(users[0].id);
     const categories = this.generateCategories(users[0].id);
     const warehouses = this.generateWarehouses(users[0].id);
     const locations = this.generateLocations(users[0].id, warehouses);
@@ -143,45 +142,93 @@ export class MockDataGenerator {
     const ecommerceOrders = this.generateEcommerceOrders(users[0].id, customers, products);
     const pickingTasks = this.generatePickingTasks(users[0].id, ecommerceOrders, products, locations, users);
     
-    // Generate supporting data
+    // Generate support systems
     const scanDevices = this.generateScanDevices(users[0].id);
     const scanSessions = this.generateScanSessions(users[0].id, scanDevices, users);
     const chatChannels = this.generateChatChannels(users[0].id, users);
     const chatMessages = this.generateChatMessages(users[0].id, chatChannels, users);
     
-    // Generate accounting data
+    // Generate accounting and business data
     const accounts = this.generateAccounts(users[0].id);
-    const contacts = this.generateContacts(users[0].id);
+    const contacts = this.generateContacts(users[0].id, customers, suppliers);
     const invoices = this.generateInvoices(users[0].id, contacts, ecommerceOrders);
-    const journalEntries = this.generateJournalEntries(users[0].id, accounts);
+    const journalEntries = this.generateJournalEntries(users[0].id, accounts, invoices);
+    const payments = this.generatePayments(users[0].id, invoices, accounts);
+    
+    // Generate loading/shipping data
+    const loadingDocks = this.generateLoadingDocks(users[0].id, warehouses);
+    const shipments = this.generateShipments(users[0].id, ecommerceOrders, loadingDocks);
+    const loadingAppointments = this.generateLoadingAppointments(users[0].id, shipments, users);
+    
+    // Generate e-commerce connections and sync data
+    const ecommerceConnections = this.generateEcommerceConnections(users[0].id);
+    const syncLogs = this.generateSyncLogs(users[0].id, ecommerceConnections);
     
     // Generate configuration
     const companyConfig = this.generateCompanyConfig();
+    const systemConfig = this.generateSystemConfig();
     
-    // Save all data to localStorage
-    BrowserStorage.set('roles', roles);
-    BrowserStorage.set('users', users);
-    BrowserStorage.set('suppliers', suppliers);
-    BrowserStorage.set('categories', categories);
-    BrowserStorage.set('warehouses', warehouses);
-    BrowserStorage.set('locations', locations);
-    BrowserStorage.set('products', products);
-    BrowserStorage.set('stock_levels', stockLevels);
-    BrowserStorage.set('pallets', pallets);
-    BrowserStorage.set('putaway_tasks', putAwayTasks);
-    BrowserStorage.set('stock_move_tasks', stockMoveTasks);
-    BrowserStorage.set('customers', customers);
-    BrowserStorage.set('ecommerce_orders', ecommerceOrders);
-    BrowserStorage.set('picking_tasks', pickingTasks);
-    BrowserStorage.set('scan_devices', scanDevices);
-    BrowserStorage.set('scan_sessions', scanSessions);
-    BrowserStorage.set('chat_channels', chatChannels);
-    BrowserStorage.set('chat_messages', chatMessages);
-    BrowserStorage.set('accounts', accounts);
-    BrowserStorage.set('contacts', contacts);
-    BrowserStorage.set('invoices', invoices);
-    BrowserStorage.set('journal_entries', journalEntries);
-    BrowserStorage.set('company_config', companyConfig);
+    // Save all data to localStorage with comprehensive collections
+    const dataCollections = {
+      // Core entities
+      roles,
+      users,
+      suppliers,
+      categories,
+      warehouses,
+      locations,
+      products,
+      stock_levels: stockLevels,
+      pallets,
+      
+      // Operational tasks
+      putaway_tasks: putAwayTasks,
+      stock_move_tasks: stockMoveTasks,
+      picking_tasks: pickingTasks,
+      
+      // Customer and order management
+      customers,
+      ecommerce_orders: ecommerceOrders,
+      ecommerce_connections: ecommerceConnections,
+      sync_logs: syncLogs,
+      
+      // Device and session management
+      scan_devices: scanDevices,
+      scan_sessions: scanSessions,
+      
+      // Communication
+      chat_channels: chatChannels,
+      chat_messages: chatMessages,
+      
+      // Accounting and finance
+      accounts,
+      contacts,
+      invoices,
+      journal_entries: journalEntries,
+      payments,
+      
+      // Loading and shipping
+      loading_docks: loadingDocks,
+      shipments,
+      loading_appointments: loadingAppointments,
+      
+      // Configuration
+      company_config: companyConfig,
+      system_config: systemConfig,
+      
+      // Additional operational data
+      stock_movements: this.generateStockMovements(users[0].id, products, locations),
+      inventory_adjustments: this.generateInventoryAdjustments(users[0].id, products, locations, users),
+      task_history: this.generateTaskHistory(users[0].id, users),
+      notification_settings: this.generateNotificationSettings(users),
+      user_sessions: this.generateUserSessions(users),
+      audit_logs: this.generateAuditLogs(users)
+    };
+    
+    // Save each collection
+    Object.entries(dataCollections).forEach(([key, data]) => {
+      BrowserStorage.set(key, data);
+    });
     
     console.log('✅ Mock data generation completed successfully!');
     console.log('📊 Generated data summary:', {
@@ -189,39 +236,69 @@ export class MockDataGenerator {
       products: products.length,
       pallets: pallets.length,
       locations: locations.length,
-      putAwayTasks: putAwayTasks.length,
-      pickingTasks: pickingTasks.length,
-      stockMoveTasks: stockMoveTasks.length,
-      customers: customers.length,
-      ecommerceOrders: ecommerceOrders.length
+      orders: ecommerceOrders.length,
+      tasks: putAwayTasks.length + pickingTasks.length + stockMoveTasks.length,
+      totalCollections: Object.keys(dataCollections).length
     });
     
-    return {
-      users,
-      products,
-      suppliers,
-      pallets,
-      locations,
-      putAwayTasks,
-      pickingTasks,
-      stockMoveTasks,
-      customers,
-      ecommerceOrders
-    };
+    return dataCollections;
   }
   
-  private static clearAllData() {
-    const collections = [
+  static clearAllData() {
+    console.log('🧹 Clearing all mock data from localStorage...');
+    
+    const allCollections = [
+      // Core entities
       'roles', 'users', 'suppliers', 'categories', 'warehouses', 'locations',
-      'products', 'stock_levels', 'pallets', 'putaway_tasks', 'stock_move_tasks',
-      'customers', 'ecommerce_orders', 'picking_tasks', 'scan_devices',
-      'scan_sessions', 'chat_channels', 'chat_messages', 'accounts',
-      'contacts', 'invoices', 'journal_entries', 'company_config'
+      'products', 'stock_levels', 'pallets',
+      
+      // Operational tasks
+      'putaway_tasks', 'stock_move_tasks', 'picking_tasks',
+      
+      // Customer and order management
+      'customers', 'ecommerce_orders', 'ecommerce_connections', 'sync_logs',
+      
+      // Device and session management
+      'scan_devices', 'scan_sessions',
+      
+      // Communication
+      'chat_channels', 'chat_messages',
+      
+      // Accounting and finance
+      'accounts', 'contacts', 'invoices', 'journal_entries', 'payments',
+      
+      // Loading and shipping
+      'loading_docks', 'shipments', 'loading_appointments',
+      
+      // Configuration
+      'company_config', 'system_config',
+      
+      // Additional operational data
+      'stock_movements', 'inventory_adjustments', 'task_history',
+      'notification_settings', 'user_sessions', 'audit_logs',
+      
+      // Legacy collections (in case they exist)
+      'delivery_routes', 'quality_checks', 'maintenance_records',
+      'user_preferences', 'app_settings', 'backup_logs'
     ];
     
-    collections.forEach(collection => {
+    let clearedCount = 0;
+    allCollections.forEach(collection => {
+      const existing = BrowserStorage.get(collection);
+      if (existing && Array.isArray(existing) && existing.length > 0) {
+        clearedCount++;
+      }
       BrowserStorage.set(collection, []);
     });
+    
+    // Also clear any individual config objects
+    BrowserStorage.remove('current_user');
+    BrowserStorage.remove('user_token');
+    BrowserStorage.remove('app_language');
+    BrowserStorage.remove('theme_preference');
+    
+    console.log(`✅ Cleared ${clearedCount} collections and individual settings`);
+    return clearedCount;
   }
   
   private static generateRoles(): MockRole[] {
@@ -1054,59 +1131,211 @@ export class MockDataGenerator {
     ];
   }
   
-  private static generateContacts(userId: string) {
-    return [
-      {
-        id: '1', user_id: userId, contact_number: 'CLI001', name: 'Tech Solutions Ltd',
-        email: 'billing@techsolutions.com', phone: '+44 20 7946 0001',
+  private static generateContacts(userId: string, customers: any[], suppliers: any[]) {
+    const contacts = [];
+    
+    // Add customer contacts
+    customers.forEach(customer => {
+      contacts.push({
+        id: `contact_cust_${customer.id}`, user_id: userId,
+        contact_number: customer.customer_number, name: customer.name,
+        email: customer.email, phone: customer.phone,
         contact_type: 'customer', payment_terms: '30 days', currency: 'GBP',
-        is_active: true, created_at: new Date('2024-01-01').toISOString()
-      },
+        is_active: true, created_at: customer.created_at
+      });
+    });
+    
+    // Add supplier contacts
+    suppliers.forEach(supplier => {
+      contacts.push({
+        id: `contact_supp_${supplier.id}`, user_id: userId,
+        contact_number: supplier.code, name: supplier.name,
+        email: supplier.email, phone: supplier.phone,
+        contact_type: 'supplier', payment_terms: supplier.payment_terms, currency: 'GBP',
+        is_active: true, created_at: supplier.created_at
+      });
+    });
+    
+    return contacts;
+  }
+  
+  private static generatePayments(userId: string, invoices: any[], accounts: any[]) {
+    return invoices.filter(inv => inv.status === 'paid').map((invoice, index) => ({
+      id: `payment_${index + 1}`, user_id: userId, invoice_id: invoice.id,
+      payment_method: 'bank_transfer', amount: invoice.total_amount,
+      account_id: accounts[1]?.id, // Bank account
+      payment_date: invoice.paid_date || new Date().toISOString(),
+      reference: `PAY-${invoice.invoice_number}`,
+      created_at: invoice.paid_date || new Date().toISOString()
+    }));
+  }
+  
+  private static generateJournalEntries(userId: string, accounts: any[], invoices: any[]) {
+    return invoices.filter(inv => inv.status === 'paid').map((invoice, index) => ({
+      id: `je_${index + 1}`, user_id: userId, 
+      entry_number: `JE-2024-${String(index + 1).padStart(3, '0')}`,
+      reference: `Sale ${invoice.invoice_number}`,
+      description: `Sales transaction for ${invoice.invoice_number}`,
+      entry_date: invoice.invoice_date,
+      total_amount: invoice.total_amount, status: 'posted',
+      lines: [
+        { 
+          account_id: accounts[1]?.id, description: 'Sales receipt', 
+          debit_amount: invoice.total_amount, credit_amount: 0 
+        },
+        { 
+          account_id: accounts[4]?.id, description: 'Sales revenue', 
+          debit_amount: 0, credit_amount: invoice.subtotal 
+        },
+        { 
+          account_id: accounts[5]?.id, description: 'Sales tax', 
+          debit_amount: 0, credit_amount: invoice.tax_amount 
+        }
+      ],
+      created_at: invoice.invoice_date
+    }));
+  }
+  
+  private static generateStockMovements(userId: string, products: any[], locations: any[]) {
+    return [
       {
-        id: '2', user_id: userId, contact_number: 'PRV001', name: 'Electronics Supplier Ltd',
-        email: 'accounts@electronicsup.com', phone: '+44 20 7946 0958',
-        contact_type: 'supplier', payment_terms: '30 days', currency: 'GBP',
-        is_active: true, created_at: new Date('2024-01-01').toISOString()
+        id: '1', user_id: userId, product_id: products[0]?.id, 
+        from_location_id: locations[0]?.id, to_location_id: locations[1]?.id,
+        quantity: 10, movement_type: 'transfer', reason: 'Restock picking area',
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        completed_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
       }
     ];
   }
   
-  private static generateInvoices(userId: string, contacts: any[], orders: any[]) {
+  private static generateInventoryAdjustments(userId: string, products: any[], locations: any[], users: any[]) {
     return [
       {
-        id: '1', user_id: userId, invoice_number: 'INV-2024-001', contact_id: contacts[0].id,
-        order_id: orders[0].id, invoice_type: 'sale', status: 'paid',
-        subtotal: 1500, tax_amount: 300, total_amount: 1800, currency: 'GBP',
-        invoice_date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        due_date: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString(),
-        paid_date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '2', user_id: userId, invoice_number: 'INV-2024-002', contact_id: contacts[0].id,
-        order_id: orders[1].id, invoice_type: 'sale', status: 'pending',
-        subtotal: 792, tax_amount: 158, total_amount: 950, currency: 'GBP',
-        invoice_date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        due_date: new Date(Date.now() + 29 * 24 * 60 * 60 * 1000).toISOString(),
-        created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+        id: '1', user_id: userId, product_id: products[0]?.id, location_id: locations[0]?.id,
+        adjustment_quantity: -2, reason: 'Cycle count discrepancy', 
+        adjusted_by: users[1]?.id, created_at: new Date().toISOString()
       }
     ];
   }
   
-  private static generateJournalEntries(userId: string, accounts: any[]) {
+  private static generateTaskHistory(userId: string, users: any[]) {
     return [
       {
-        id: '1', user_id: userId, entry_number: 'JE-2024-001', reference: 'Venta INV-2024-001',
-        description: 'Registro de venta de productos tecnológicos', entry_date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        total_amount: 1800, status: 'posted',
-        lines: [
-          { account_id: accounts[1].id, description: 'Cobro de venta', debit_amount: 1800, credit_amount: 0 },
-          { account_id: accounts[4].id, description: 'Ingresos por venta', debit_amount: 0, credit_amount: 1500 },
-          { account_id: accounts[5].id, description: 'IVA por cobrar', debit_amount: 0, credit_amount: 300 }
-        ],
-        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+        id: '1', user_id: userId, task_type: 'putaway', task_id: '1',
+        operator_id: users[2]?.id, action: 'completed', 
+        timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString()
       }
     ];
+  }
+  
+  private static generateNotificationSettings(users: any[]) {
+    return users.map(user => ({
+      id: `notif_${user.id}`, user_id: user.id,
+      email_notifications: true, push_notifications: false,
+      task_assignments: true, order_updates: true,
+      created_at: new Date('2024-01-01').toISOString()
+    }));
+  }
+  
+  private static generateUserSessions(users: any[]) {
+    return users.slice(0, 3).map((user, index) => ({
+      id: `session_${user.id}`, user_id: user.id,
+      session_token: `token_${user.id}_${Date.now()}`,
+      device_info: `Device ${index + 1}`, 
+      login_time: new Date(Date.now() - (index + 1) * 60 * 60 * 1000).toISOString(),
+      last_activity: new Date(Date.now() - index * 30 * 60 * 1000).toISOString(),
+      is_active: index < 2
+    }));
+  }
+  
+  private static generateAuditLogs(users: any[]) {
+    return [
+      {
+        id: '1', user_id: users[0]?.id, action: 'LOGIN',
+        resource: 'auth', details: 'User logged in successfully',
+        timestamp: new Date().toISOString()
+      },
+      {
+        id: '2', user_id: users[1]?.id, action: 'CREATE',
+        resource: 'putaway_task', details: 'Created new put away task',
+        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString()
+      }
+    ];
+  }
+  
+  private static generateLoadingDocks(userId: string, warehouses: any[]) {
+    return [
+      {
+        id: '1', user_id: userId, warehouse_id: warehouses[0]?.id,
+        dock_code: 'DOCK-01', name: 'Loading Dock 1', 
+        dock_type: 'loading', is_occupied: false, is_active: true,
+        created_at: new Date('2024-01-01').toISOString()
+      }
+    ];
+  }
+  
+  private static generateShipments(userId: string, orders: any[], docks: any[]) {
+    return orders.slice(0, 2).map((order, index) => ({
+      id: `ship_${index + 1}`, user_id: userId, order_id: order.id,
+      shipment_code: `SHIP-2024-${String(index + 1).padStart(3, '0')}`,
+      dock_id: docks[0]?.id, status: index === 0 ? 'loading' : 'ready',
+      carrier: 'DHL Express', tracking_number: `DHL${Date.now()}${index}`,
+      created_at: new Date(Date.now() - (index + 1) * 60 * 60 * 1000).toISOString()
+    }));
+  }
+  
+  private static generateLoadingAppointments(userId: string, shipments: any[], users: any[]) {
+    return shipments.map((shipment, index) => ({
+      id: `appt_${index + 1}`, user_id: userId, shipment_id: shipment.id,
+      appointment_time: new Date(Date.now() + (index + 1) * 60 * 60 * 1000).toISOString(),
+      assigned_to: users[1]?.id, status: 'scheduled',
+      created_at: new Date().toISOString()
+    }));
+  }
+  
+  private static generateEcommerceConnections(userId: string) {
+    return [
+      {
+        id: '1', user_id: userId, connection_name: 'Shopify Main Store',
+        platform: 'shopify', api_key: 'shopify_demo_key', 
+        store_url: 'demo-store.myshopify.com', status: 'active',
+        last_sync: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        created_at: new Date('2024-01-01').toISOString()
+      },
+      {
+        id: '2', user_id: userId, connection_name: 'WooCommerce Store',
+        platform: 'woocommerce', api_key: 'woo_demo_key',
+        store_url: 'demo-store.com', status: 'active',
+        last_sync: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        created_at: new Date('2024-01-01').toISOString()
+      }
+    ];
+  }
+  
+  private static generateSyncLogs(userId: string, connections: any[]) {
+    return [
+      {
+        id: '1', user_id: userId, connection_id: connections[0]?.id,
+        sync_type: 'orders', status: 'success', records_processed: 15,
+        started_at: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+        completed_at: new Date(Date.now() - 15 * 60 * 1000).toISOString()
+      }
+    ];
+  }
+  
+  private static generateSystemConfig() {
+    return {
+      id: '1',
+      app_version: '1.0.0',
+      database_version: '1.0',
+      maintenance_mode: false,
+      max_users: 100,
+      session_timeout_minutes: 480,
+      backup_retention_days: 30,
+      log_level: 'info',
+      created_at: new Date('2024-01-01').toISOString(),
+      updated_at: new Date().toISOString()
+    };
   }
   
   private static generateCompanyConfig() {
