@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +14,24 @@ export function MockDataInitializer() {
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [dataStats, setDataStats] = useState<any>(null);
+  const [isClearing, setIsClearing] = useState(false);
   const { toast } = useToast();
+
+  // Clear all existing mock data when component loads
+  useEffect(() => {
+    const clearExistingData = () => {
+      try {
+        const clearedCount = MockDataGenerator.clearAllData();
+        if (clearedCount > 0) {
+          console.log(`Cleared ${clearedCount} collections from previous sessions`);
+        }
+      } catch (error) {
+        console.error('Error clearing existing data on load:', error);
+      }
+    };
+    
+    clearExistingData();
+  }, []);
 
   const checkExistingData = () => {
     const collections = [
@@ -109,7 +125,8 @@ export function MockDataInitializer() {
     }
   };
 
-  const clearAllData = () => {
+  const clearAllData = async () => {
+    setIsClearing(true);
     try {
       const clearedCount = MockDataGenerator.clearAllData();
       
@@ -117,9 +134,14 @@ export function MockDataInitializer() {
       setIsComplete(false);
       
       toast({
-        title: "All Data Cleared",
+        title: "All Mock Data Cleared",
         description: `Removed ${clearedCount} collections and all related data from localStorage`,
       });
+      
+      // Force refresh the page to ensure all components reload with empty data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
       
     } catch (error) {
       console.error('Error clearing data:', error);
@@ -128,6 +150,8 @@ export function MockDataInitializer() {
         description: "Failed to clear all data. Check console for details.",
         variant: "destructive"
       });
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -191,41 +215,40 @@ export function MockDataInitializer() {
           <div className="flex items-center gap-4">
             <Button 
               onClick={generateMockData} 
-              disabled={isGenerating}
+              disabled={isGenerating || isClearing}
               className="flex items-center gap-2"
             >
               <Play className="w-4 h-4" />
               {isGenerating ? 'Generating Complete Dataset...' : 'Generate All Mock Data'}
             </Button>
             
-            {existingDataCheck.hasData && (
-              <>
-                <Button 
-                  onClick={clearAllData} 
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Clear All Data
-                </Button>
-                
-                <Button 
-                  onClick={() => window.location.reload()} 
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  Refresh App
-                </Button>
-              </>
-            )}
+            <Button 
+              onClick={clearAllData} 
+              variant="destructive"
+              disabled={isGenerating || isClearing}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              {isClearing ? 'Clearing All Data...' : 'Clear All Mock Data'}
+            </Button>
+            
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+              disabled={isGenerating || isClearing}
+              className="flex items-center gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Refresh App
+            </Button>
           </div>
           
-          {isGenerating && (
+          {(isGenerating || isClearing) && (
             <div className="space-y-2">
-              <Progress value={progress} className="w-full" />
+              <Progress value={isClearing ? 100 : progress} className="w-full" />
               <p className="text-sm text-muted-foreground">
-                {progress < 10 ? 'Preparing data structures...' :
+                {isClearing ? 'Clearing all mock data...' :
+                 progress < 10 ? 'Preparing data structures...' :
                  progress < 30 ? 'Setting up core entities...' :
                  progress < 50 ? 'Creating inventory and warehouse data...' :
                  progress < 70 ? 'Generating operational workflows...' :
