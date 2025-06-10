@@ -1,0 +1,36 @@
+
+{
+  "health": {
+    "title": "System Health Check",
+    "description": "Comprehensive validation of WarehouseOS components and functionality",
+    "runCheck": "Run Health Check",
+    "running": "Running...",
+    "progress": "Progress",
+    "summary": "Summary",
+    "successful": "Successful",
+    "warnings": "Warnings",
+    "errors": "Errors",
+    "allOperational": "All systems operational",
+    "issuesFound": "issues found"
+  },
+  "deployment": {
+    "title": "Deployment Validation",
+    "description": "Validate WarehouseOS for production deployment readiness",
+    "runValidation": "Run Deployment Validation",
+    "validating": "Validating...",
+    "readyForDeployment": "System is ready for deployment",
+    "deployableWithRecommendations": "System is deployable with some recommendations",
+    "criticalIssues": "System has critical issues that need attention",
+    "recommendations": "Deployment Recommendations"
+  },
+  "relationships": {
+    "title": "Model Relationship Validation",
+    "description": "Validate data integrity and relationships between models",
+    "validate": "Validate Model Relationships",
+    "validating": "Validating Relationships...",
+    "results": "Relationship Validation Results",
+    "sampleData": "View sample data",
+    "valid": "Valid",
+    "invalid": "Invalid"
+  }
+}

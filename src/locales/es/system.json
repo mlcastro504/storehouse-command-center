@@ -1,0 +1,36 @@
+
+{
+  "health": {
+    "title": "Verificación de Estado del Sistema",
+    "description": "Validación integral de componentes y funcionalidad de WarehouseOS",
+    "runCheck": "Ejecutar Verificación",
+    "running": "Ejecutando...",
+    "progress": "Progreso",
+    "summary": "Resumen",
+    "successful": "Exitosos",
+    "warnings": "Advertencias",
+    "errors": "Errores",
+    "allOperational": "Todos los sistemas operativos",
+    "issuesFound": "problemas encontrados"
+  },
+  "deployment": {
+    "title": "Validación de Despliegue",
+    "description": "Validar WarehouseOS para la preparación de despliegue en producción",
+    "runValidation": "Ejecutar Validación de Despliegue",
+    "validating": "Validando...",
+    "readyForDeployment": "El sistema está listo para el despliegue",
+    "deployableWithRecommendations": "El sistema es desplegable con algunas recomendaciones",
+    "criticalIssues": "El sistema tiene problemas críticos que necesitan atención",
+    "recommendations": "Recomendaciones de Despliegue"
+  },
+  "relationships": {
+    "title": "Validación de Relaciones de Modelos",
+    "description": "Validar la integridad de datos y relaciones entre modelos",
+    "validate": "Validar Relaciones de Modelos",
+    "validating": "Validando Relaciones...",
+    "results": "Resultados de Validación de Relaciones",
+    "sampleData": "Ver datos de muestra",
+    "valid": "Válido",
+    "invalid": "Inválido"
+  }
+}
