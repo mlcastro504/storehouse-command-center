@@ -151,8 +151,9 @@ export function DatabaseOptimizer() {
           const sampleDocs = await collection.find({}).limit(100).toArray();
           const docCount = sampleDocs.length;
           
-          // Get existing indexes
-          const existingIndexes = await collection.listIndexes().toArray();
+          // Get existing indexes - fix the async call
+          const indexesResult = await collection.listIndexes();
+          const existingIndexes = await indexesResult.toArray();
           
           // Calculate missing indexes
           const expected = expectedIndexes[collectionName as keyof typeof expectedIndexes] || [];
