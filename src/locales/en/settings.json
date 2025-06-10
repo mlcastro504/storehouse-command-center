@@ -38,6 +38,7 @@
     "current": "Current Language",
     "available": "Available Languages",
     "detectBrowser": "Detect browser language",
-    "defaultSystem": "System default language"
+    "defaultSystem": "System default language",
+    "settingsSaved": "Language settings saved successfully"
   }
 }

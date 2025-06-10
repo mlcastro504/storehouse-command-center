@@ -8,24 +8,28 @@ import commonEN from '../locales/en/common.json';
 import authEN from '../locales/en/auth.json';
 import dashboardEN from '../locales/en/dashboard.json';
 import settingsEN from '../locales/en/settings.json';
+import systemEN from '../locales/en/system.json';
 
 import commonES from '../locales/es/common.json';
 import authES from '../locales/es/auth.json';
 import dashboardES from '../locales/es/dashboard.json';
 import settingsES from '../locales/es/settings.json';
+import systemES from '../locales/es/system.json';
 
 const resources = {
   en: {
     common: commonEN,
     auth: authEN,
     dashboard: dashboardEN,
-    settings: settingsEN
+    settings: settingsEN,
+    system: systemEN
   },
   es: {
     common: commonES,
     auth: authES,
     dashboard: dashboardES,
-    settings: settingsES
+    settings: settingsES,
+    system: systemES
   }
 };
 

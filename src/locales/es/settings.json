@@ -38,6 +38,7 @@
     "current": "Idioma Actual",
     "available": "Idiomas Disponibles",
     "detectBrowser": "Detectar idioma del navegador",
-    "defaultSystem": "Idioma por defecto del sistema"
+    "defaultSystem": "Idioma por defecto del sistema",
+    "settingsSaved": "Configuración de idioma guardada exitosamente"
   }
 }
