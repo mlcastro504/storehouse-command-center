@@ -17,7 +17,7 @@ export function AccountsList() {
       const db = await connectToDatabase();
       
       const accountsData = await db.collection('accounts')
-        .find({})
+        .find()
         .sort({ code: 1 })
         .toArray();
 

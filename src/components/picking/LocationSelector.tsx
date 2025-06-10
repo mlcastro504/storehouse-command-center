@@ -38,14 +38,25 @@ export function LocationSelector({
       console.log('LocationSelector: Connecting to MongoDB...');
       const db = await connectToDatabase();
       
-      const filter = warehouseId ? { warehouse_id: warehouseId, is_active: true } : { is_active: true };
       const locationsData = await db.collection('locations')
-        .find(filter)
+        .find()
         .sort({ code: 1 })
         .toArray();
 
       console.log('LocationSelector: Fetched locations from MongoDB:', locationsData.length);
-      return locationsData as Location[];
+      
+      // Apply filtering after fetching
+      let filteredData = locationsData as Location[];
+      
+      if (warehouseId) {
+        filteredData = filteredData.filter(location => 
+          location.warehouse_id === warehouseId && location.is_active
+        );
+      } else {
+        filteredData = filteredData.filter(location => location.is_active);
+      }
+      
+      return filteredData;
     }
   });
 

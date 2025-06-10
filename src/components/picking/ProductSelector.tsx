@@ -33,12 +33,16 @@ export function ProductSelector({
       const db = await connectToDatabase();
       
       const productsData = await db.collection('products')
-        .find({ is_active: true })
+        .find()
         .sort({ name: 1 })
         .toArray();
 
       console.log('ProductSelector: Fetched products from MongoDB:', productsData.length);
-      return productsData as Product[];
+      
+      // Apply filtering after fetching
+      const filteredData = (productsData as Product[]).filter(product => product.is_active);
+      
+      return filteredData;
     }
   });
 
