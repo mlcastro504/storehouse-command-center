@@ -231,10 +231,225 @@ export class BrowserStorage {
     if (!this.get('suppliers')) {
       this.set('suppliers', []);
     }
+    
+    // Initialize accounting collections
+    if (!this.get('accounts')) {
+      const sampleAccounts = [
+        {
+          _id: '1',
+          code: '1100',
+          name: 'Caja',
+          account_type: 'asset',
+          account_nature: 'debit',
+          is_active: true,
+          level: 2,
+          description: 'Dinero en efectivo',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: 'system'
+        },
+        {
+          _id: '2',
+          code: '1200',
+          name: 'Bancos',
+          account_type: 'asset',
+          account_nature: 'debit',
+          is_active: true,
+          level: 2,
+          description: 'Cuentas bancarias',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: 'system'
+        },
+        {
+          _id: '3',
+          code: '1300',
+          name: 'Cuentas por Cobrar',
+          account_type: 'asset',
+          account_nature: 'debit',
+          is_active: true,
+          level: 2,
+          description: 'Deudas de clientes',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: 'system'
+        },
+        {
+          _id: '4',
+          code: '2100',
+          name: 'Cuentas por Pagar',
+          account_type: 'liability',
+          account_nature: 'credit',
+          is_active: true,
+          level: 2,
+          description: 'Deudas con proveedores',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: 'system'
+        },
+        {
+          _id: '5',
+          code: '3100',
+          name: 'Capital Social',
+          account_type: 'equity',
+          account_nature: 'credit',
+          is_active: true,
+          level: 2,
+          description: 'Capital aportado por socios',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: 'system'
+        },
+        {
+          _id: '6',
+          code: '4100',
+          name: 'Ingresos por Ventas',
+          account_type: 'revenue',
+          account_nature: 'credit',
+          is_active: true,
+          level: 2,
+          description: 'Ingresos por venta de productos',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: 'system'
+        },
+        {
+          _id: '7',
+          code: '5100',
+          name: 'Costo de Ventas',
+          account_type: 'expense',
+          account_nature: 'debit',
+          is_active: true,
+          level: 2,
+          description: 'Costo de productos vendidos',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: 'system'
+        },
+        {
+          _id: '8',
+          code: '5200',
+          name: 'Gastos Operativos',
+          account_type: 'expense',
+          account_nature: 'debit',
+          is_active: true,
+          level: 2,
+          description: 'Gastos de operación',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: 'system'
+        }
+      ];
+      this.set('accounts', sampleAccounts);
+    }
+    
+    if (!this.get('journal_entries')) {
+      this.set('journal_entries', []);
+    }
+    
+    if (!this.get('journal_entry_lines')) {
+      this.set('journal_entry_lines', []);
+    }
+    
+    if (!this.get('contacts')) {
+      const sampleContacts = [
+        {
+          _id: '1',
+          contact_number: 'CLI001',
+          name: 'Empresa ABC S.L.',
+          email: 'ventas@empresaabc.com',
+          phone: '+34 912 345 678',
+          contact_type: 'customer',
+          payment_terms: '30 días',
+          currency: 'EUR',
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        },
+        {
+          _id: '2',
+          contact_number: 'PRV001',
+          name: 'Proveedor XYZ S.A.',
+          email: 'compras@proveedorxyz.com',
+          phone: '+34 913 456 789',
+          contact_type: 'supplier',
+          payment_terms: '60 días',
+          currency: 'EUR',
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ];
+      this.set('contacts', sampleContacts);
+    }
+    
+    if (!this.get('invoices')) {
+      this.set('invoices', []);
+    }
+    
+    if (!this.get('invoice_lines')) {
+      this.set('invoice_lines', []);
+    }
+    
+    if (!this.get('payments')) {
+      this.set('payments', []);
+    }
+    
+    if (!this.get('payment_invoices')) {
+      this.set('payment_invoices', []);
+    }
+    
+    if (!this.get('tax_types')) {
+      const sampleTaxTypes = [
+        {
+          _id: '1',
+          name: 'IVA General',
+          code: 'IVA21',
+          rate: 21,
+          tax_type: 'sales',
+          account_id: '9', // Cuenta de IVA
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        },
+        {
+          _id: '2',
+          name: 'IVA Reducido',
+          code: 'IVA10',
+          rate: 10,
+          tax_type: 'sales',
+          account_id: '9',
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ];
+      this.set('tax_types', sampleTaxTypes);
+    }
+    
+    if (!this.get('accounting_periods')) {
+      const currentYear = new Date().getFullYear();
+      const samplePeriods = [
+        {
+          _id: '1',
+          period_name: `Período ${currentYear}`,
+          start_date: `${currentYear}-01-01`,
+          end_date: `${currentYear}-12-31`,
+          status: 'open',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ];
+      this.set('accounting_periods', samplePeriods);
+    }
   }
 
   static async getStats() {
-    const collections = ['products', 'categories', 'warehouses', 'locations', 'stock_levels', 'stock_movements', 'suppliers'];
+    const collections = [
+      'products', 'categories', 'warehouses', 'locations', 'stock_levels', 'stock_movements', 'suppliers',
+      'accounts', 'journal_entries', 'journal_entry_lines', 'contacts', 'invoices', 'invoice_lines',
+      'payments', 'payment_invoices', 'tax_types', 'accounting_periods'
+    ];
     let totalSize = 0;
     
     collections.forEach(collection => {
