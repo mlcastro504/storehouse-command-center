@@ -47,6 +47,11 @@ export function ProductSelector({
     if (onChange) onChange(newValue);
   };
 
+  // Filter out products with invalid IDs (null, undefined, or empty string)
+  const validProducts = products?.filter(product => 
+    product.id && product.id.trim() !== ''
+  );
+
   return (
     <Select onValueChange={handleValueChange} defaultValue={value} disabled={disabled}>
       <SelectTrigger>
@@ -57,7 +62,7 @@ export function ProductSelector({
           <SelectItem value="loading" disabled>
             Cargando...
           </SelectItem>
-        ) : products?.map((product) => (
+        ) : validProducts?.map((product) => (
           <SelectItem key={product.id} value={product.id}>
             {product.name} ({product.sku})
           </SelectItem>

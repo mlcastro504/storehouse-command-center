@@ -59,6 +59,11 @@ export function LocationSelector({
     ? locations?.filter(location => filterTypes.includes(location.type || ''))
     : locations;
 
+  // Filter out locations with invalid IDs (null, undefined, or empty string)
+  const validLocations = filteredLocations?.filter(location => 
+    location.id && location.id.trim() !== ''
+  );
+
   return (
     <div className="space-y-2">
       {label && <label className="text-sm font-medium">{label}</label>}
@@ -70,8 +75,8 @@ export function LocationSelector({
           {isLoading ? (
             <SelectItem value="loading" disabled>Cargando...</SelectItem>
           ) : (
-            filteredLocations?.map((location) => (
-              <SelectItem key={location.id} value={location.id || ''}>
+            validLocations?.map((location) => (
+              <SelectItem key={location.id} value={location.id}>
                 {location.code} - {location.name}
               </SelectItem>
             ))
