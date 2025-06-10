@@ -1,4 +1,3 @@
-
 import { BrowserStorage } from './browserStorage';
 
 // Browser compatibility check
@@ -52,6 +51,7 @@ export async function connectToDatabase() {
           return BrowserStorage.updateOne(name, filter, updateData);
         },
         deleteOne: (filter: any) => BrowserStorage.deleteOne(name, filter),
+        listIndexes: () => BrowserStorage.collection(name).listIndexes(),
         aggregate: (pipeline: any[]) => ({
           toArray: () => {
             // Simple aggregation simulation for browser storage
