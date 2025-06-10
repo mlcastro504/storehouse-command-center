@@ -169,7 +169,7 @@ export function MockDataInitializer() {
           {existingDataCheck.hasData && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {Object.entries(existingDataCheck.stats)
-                .filter(([, count]) => count > 0)
+                .filter(([, count]) => (count as number) > 0)
                 .slice(0, 12)
                 .map(([collection, count]) => (
                 <div key={collection} className="flex items-center justify-between p-2 bg-muted rounded">
@@ -177,9 +177,9 @@ export function MockDataInitializer() {
                   <Badge variant="outline">{count as number}</Badge>
                 </div>
               ))}
-              {Object.keys(existingDataCheck.stats).filter(key => existingDataCheck.stats[key] > 0).length > 12 && (
+              {Object.keys(existingDataCheck.stats).filter(key => (existingDataCheck.stats[key] as number) > 0).length > 12 && (
                 <div className="flex items-center justify-center p-2 bg-muted rounded text-sm text-muted-foreground">
-                  +{Object.keys(existingDataCheck.stats).filter(key => existingDataCheck.stats[key] > 0).length - 12} more...
+                  +{Object.keys(existingDataCheck.stats).filter(key => (existingDataCheck.stats[key] as number) > 0).length - 12} more...
                 </div>
               )}
             </div>

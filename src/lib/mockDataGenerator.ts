@@ -1159,6 +1159,26 @@ export class MockDataGenerator {
     return contacts;
   }
   
+  private static generateInvoices(userId: string, contacts: any[], orders: any[]) {
+    return orders.map((order, index) => ({
+      id: `inv_${index + 1}`,
+      user_id: userId,
+      invoice_number: `INV-2024-${String(index + 1).padStart(3, '0')}`,
+      contact_id: `contact_cust_${order.customer_id}`,
+      order_id: order.id,
+      invoice_date: order.order_date,
+      due_date: new Date(Date.parse(order.order_date) + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      subtotal: order.total_amount * 0.8,
+      tax_amount: order.total_amount * 0.2,
+      total_amount: order.total_amount,
+      status: index === 0 ? 'paid' : index === 1 ? 'pending' : 'paid',
+      paid_date: index !== 1 ? new Date().toISOString() : null,
+      notes: `Invoice for order ${order.order_number}`,
+      currency: order.currency,
+      created_at: order.order_date
+    }));
+  }
+  
   private static generatePayments(userId: string, invoices: any[], accounts: any[]) {
     return invoices.filter(inv => inv.status === 'paid').map((invoice, index) => ({
       id: `payment_${index + 1}`, user_id: userId, invoice_id: invoice.id,
