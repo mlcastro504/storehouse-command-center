@@ -1,184 +1,202 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Clock, User, CheckCircle2 } from "lucide-react"
-import { Task } from '@/types/warehouse'
-import { useAuth } from '@/hooks/useAuth'
-
-// Mock tasks basadas en rol
-const getTasksForRole = (roleName: string, userId: string): Task[] => {
-  const managerTasks: Task[] = [
-    {
-      id: '1',
-      title: 'Revisar inventario semanal',
-      description: 'Verificar niveles de stock y generar reporte',
-      assignedTo: userId,
-      assignedBy: 'admin-1',
-      module: 'inventory',
-      priority: 'high',
-      status: 'pending',
-      dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      createdAt: new Date()
-    },
-    {
-      id: '2',
-      title: 'Asignar turnos de carga',
-      description: 'Organizar equipos para descarga de camiones',
-      assignedTo: userId,
-      assignedBy: 'admin-1',
-      module: 'loading',
-      priority: 'medium',
-      status: 'in_progress',
-      dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-      createdAt: new Date()
-    }
-  ]
-
-  const driverTasks: Task[] = [
-    {
-      id: '3',
-      title: 'Entrega Ruta Norte',
-      description: 'Completar entregas en zona norte de la ciudad',
-      assignedTo: userId,
-      assignedBy: 'manager-1',
-      module: 'loading',
-      priority: 'urgent',
-      status: 'in_progress',
-      dueDate: new Date(Date.now() + 4 * 60 * 60 * 1000),
-      createdAt: new Date()
-    },
-    {
-      id: '4',
-      title: 'Verificar documentación',
-      description: 'Revisar y completar documentos de entrega',
-      assignedTo: userId,
-      assignedBy: 'manager-1',
-      module: 'loading',
-      priority: 'medium',
-      status: 'pending',
-      dueDate: new Date(Date.now() + 2 * 60 * 60 * 1000),
-      createdAt: new Date()
-    }
-  ]
-
-  if (roleName === 'driver') {
-    return driverTasks
-  }
-
-  return managerTasks
-}
+import { Clock, Package, Users, ArrowRight } from 'lucide-react'
+import { BrowserStorage } from '@/lib/browserStorage'
+import { useMemo } from 'react'
 
 export function TaskList() {
-  const { user } = useAuth()
-  
-  if (!user) return null
+  const taskData = useMemo(() => {
+    // Get data from mock storage
+    const putawayTasks = BrowserStorage.get('putaway_tasks') || [];
+    const pickingTasks = BrowserStorage.get('picking_tasks') || [];
+    const stockMoveTasks = BrowserStorage.get('stock_move_tasks') || [];
+    const users = BrowserStorage.get('users') || [];
+    const products = BrowserStorage.get('products') || [];
+    const pallets = BrowserStorage.get('pallets') || [];
+    const ecommerceOrders = BrowserStorage.get('ecommerce_orders') || [];
+    const locations = BrowserStorage.get('locations') || [];
 
-  const tasks = getTasksForRole(user.role.name, user.id)
+    // Combine all tasks with enriched information
+    const allTasks = [
+      ...putawayTasks.map((task: any) => {
+        const pallet = pallets.find((p: any) => p.id === task.pallet_id);
+        const product = pallet ? products.find((p: any) => p.id === pallet.product_id) : null;
+        const assignedUser = task.assigned_to ? users.find((u: any) => u.id === task.assigned_to) : null;
+        const location = task.suggested_location_id ? locations.find((l: any) => l.id === task.suggested_location_id) : null;
+        
+        return {
+          id: task.id,
+          type: 'Put Away',
+          title: `Palet ${pallet?.pallet_number || task.pallet_id}`,
+          description: product ? `${product.name} (${pallet?.quantity || 0} unidades)` : 'Producto no encontrado',
+          status: task.status,
+          priority: task.priority,
+          assignedTo: assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : 'Sin asignar',
+          location: location ? location.location_code : 'Sin ubicación',
+          createdAt: task.created_at
+        };
+      }),
+      ...pickingTasks.map((task: any) => {
+        const product = products.find((p: any) => p.id === task.product_id);
+        const order = ecommerceOrders.find((o: any) => o.id === task.order_id);
+        const assignedUser = task.assigned_to ? users.find((u: any) => u.id === task.assigned_to) : null;
+        const location = task.location_id ? locations.find((l: any) => l.id === task.location_id) : null;
+        
+        return {
+          id: task.id,
+          type: 'Picking',
+          title: `Pedido ${order?.order_number || task.order_id}`,
+          description: product ? `${product.name} (${task.quantity_requested} unidades)` : 'Producto no encontrado',
+          status: task.status,
+          priority: task.priority,
+          assignedTo: assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : 'Sin asignar',
+          location: location ? location.location_code : 'Sin ubicación',
+          createdAt: task.created_at
+        };
+      }),
+      ...stockMoveTasks.map((task: any) => {
+        const product = products.find((p: any) => p.id === task.product_id);
+        const assignedUser = task.assigned_to ? users.find((u: any) => u.id === task.assigned_to) : null;
+        const fromLocation = task.from_location_id ? locations.find((l: any) => l.id === task.from_location_id) : null;
+        const toLocation = task.to_location_id ? locations.find((l: any) => l.id === task.to_location_id) : null;
+        
+        return {
+          id: task.id,
+          type: 'Stock Move',
+          title: `${task.task_type === 'replenishment' ? 'Reposición' : 'Consolidación'}`,
+          description: product ? `${product.name} (${task.quantity} unidades)` : 'Producto no encontrado',
+          status: task.status,
+          priority: task.priority,
+          assignedTo: assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : 'Sin asignar',
+          location: fromLocation && toLocation ? `${fromLocation.location_code} → ${toLocation.location_code}` : 'Ubicaciones no definidas',
+          createdAt: task.created_at
+        };
+      })
+    ];
 
-  const getPriorityColor = (priority: Task['priority']) => {
+    // Sort by created date (most recent first) and take top 8
+    return allTasks
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 8);
+  }, []);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-500';
+      case 'in_progress':
+        return 'bg-blue-500';
+      case 'completed':
+        return 'bg-green-500';
+      case 'cancelled':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent':
-        return 'destructive'
       case 'high':
-        return 'default'
-      case 'medium':
-        return 'secondary'
+        return 'text-red-600';
+      case 'normal':
+        return 'text-yellow-600';
       case 'low':
-        return 'outline'
+        return 'text-green-600';
       default:
-        return 'secondary'
+        return 'text-gray-600';
     }
-  }
+  };
 
-  const getStatusColor = (status: Task['status']) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'text-green-600'
+      case 'pending':
+        return 'Pendiente';
       case 'in_progress':
-        return 'text-blue-600'
+        return 'En Progreso';
+      case 'completed':
+        return 'Completada';
       case 'cancelled':
-        return 'text-red-600'
+        return 'Cancelada';
       default:
-        return 'text-gray-600'
+        return status;
     }
-  }
+  };
 
-  const formatTimeUntilDue = (dueDate: Date) => {
-    const now = new Date()
-    const diffMs = dueDate.getTime() - now.getTime()
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-    const diffDays = Math.floor(diffHours / 24)
-
-    if (diffDays > 0) {
-      return `${diffDays} día${diffDays > 1 ? 's' : ''}`
-    } else if (diffHours > 0) {
-      return `${diffHours} hora${diffHours > 1 ? 's' : ''}`
-    } else {
-      return 'Vencida'
-    }
+  if (taskData.length === 0) {
+    return (
+      <Card className="warehouse-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Tareas Recientes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">
+              No hay tareas disponibles. Genera datos mock para ver tareas activas.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <Card className="warehouse-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5" />
-          Mis Tareas Pendientes
+          <Package className="h-5 w-5" />
+          Tareas Recientes
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {tasks.map((task) => (
-          <div key={task.id} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
-            <div className="flex items-start justify-between mb-2">
-              <h4 className="font-medium">{task.title}</h4>
-              <Badge variant={getPriorityColor(task.priority)}>
-                {task.priority}
-              </Badge>
-            </div>
-            
-            <p className="text-sm text-muted-foreground mb-3">
-              {task.description}
-            </p>
-            
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                <span>Vence en {formatTimeUntilDue(task.dueDate!)}</span>
+      <CardContent>
+        <div className="space-y-4">
+          {taskData.map((task) => (
+            <div key={`${task.type}-${task.id}`} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {task.type}
+                  </Badge>
+                  <span className="font-medium">{task.title}</span>
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs ${getStatusColor(task.status)} text-white border-none`}
+                  >
+                    {getStatusLabel(task.status)}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">{task.description}</p>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    {task.assignedTo}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <ArrowRight className="h-3 w-3" />
+                    {task.location}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <User className="w-3 h-3" />
-                <span className={getStatusColor(task.status)}>
-                  {task.status.replace('_', ' ')}
+              <div className="text-right">
+                <span className={`text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                  {task.priority === 'high' ? 'Alta' : 
+                   task.priority === 'urgent' ? 'Urgente' :
+                   task.priority === 'low' ? 'Baja' : 'Normal'}
                 </span>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(task.createdAt).toLocaleDateString('es-ES')}
+                </p>
               </div>
             </div>
-            
-            <div className="flex gap-2 mt-3">
-              <Button size="sm" variant="outline">
-                Ver Detalles
-              </Button>
-              {task.status === 'pending' && (
-                <Button size="sm" className="warehouse-btn-primary">
-                  Iniciar
-                </Button>
-              )}
-              {task.status === 'in_progress' && (
-                <Button size="sm" variant="default">
-                  Completar
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
-        
-        {tasks.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            <CheckCircle2 className="w-8 h-8 mx-auto mb-2" />
-            <p>No tienes tareas pendientes</p>
-          </div>
-        )}
+          ))}
+        </div>
       </CardContent>
     </Card>
-  )
+  );
 }

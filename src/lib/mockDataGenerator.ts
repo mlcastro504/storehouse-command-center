@@ -1,1382 +1,1533 @@
+
 import { BrowserStorage } from './browserStorage';
 
-interface MockUser {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role_id: string;
-  team_id?: string;
-  is_active: boolean;
-  created_at: string;
-  last_login_at: string;
-  phone?: string;
-  employee_id: string;
-}
-
-interface MockRole {
-  id: string;
-  name: string;
-  display_name: string;
-  level: number;
-  permissions: Array<{ action: string; resource: string }>;
-  module_access: Array<{ module_id: string; can_access: boolean; permissions: string[] }>;
-  created_at: string;
-}
-
-interface MockProduct {
-  id: string;
-  user_id: string;
-  sku: string;
-  name: string;
-  description: string;
-  barcode: string;
-  weight_kg: number;
-  dimensions: {
-    length_cm: number;
-    width_cm: number;
-    height_cm: number;
-  };
-  category_id: string;
-  supplier_id: string;
-  unit_cost: number;
-  sale_price: number;
-  reorder_point: number;
-  max_stock: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface MockSupplier {
-  id: string;
-  user_id: string;
-  code: string;
-  name: string;
-  contact_person: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  country: string;
-  payment_terms: string;
-  lead_time_days: number;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface MockWarehouse {
-  id: string;
-  user_id: string;
-  code: string;
-  name: string;
-  address: string;
-  city: string;
-  country: string;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface MockLocation {
-  id: string;
-  user_id: string;
-  warehouse_id: string;
-  code: string;
-  name: string;
-  type: 'receiving' | 'storage' | 'picking' | 'shipping' | 'returns' | 'quarantine';
-  aisle?: string;
-  rack?: string;
-  shelf?: string;
-  bin?: string;
-  confirmation_code: string;
-  max_weight_kg?: number;
-  is_occupied: boolean;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface MockPallet {
-  id: string;
-  user_id: string;
-  pallet_code: string;
-  status: 'received' | 'assigned' | 'in_progress' | 'completed';
-  location_id: string;
-  received_at: string;
-  assigned_to?: string;
-  created_at: string;
-}
-
-interface MockStockLevel {
-  id: string;
-  user_id: string;
-  product_id: string;
-  location_id: string;
-  quantity_available: number;
-  quantity_reserved: number;
-  last_counted_at: string;
-  created_at: string;
-}
-
 export class MockDataGenerator {
-  static async generateAllMockData() {
-    console.log('🚀 Generating comprehensive WarehouseOS mock data...');
-    
-    // Clear existing data first
-    this.clearAllData();
-    
-    // Generate core data in proper order
-    const roles = this.generateRoles();
-    const users = this.generateUsers(roles);
-    const suppliers = this.generateSuppliers(users[0].id);
-    const categories = this.generateCategories(users[0].id);
-    const warehouses = this.generateWarehouses(users[0].id);
-    const locations = this.generateLocations(users[0].id, warehouses);
-    const products = this.generateProducts(users[0].id, categories, suppliers);
-    const stockLevels = this.generateStockLevels(users[0].id, products, locations);
-    const pallets = this.generatePallets(users[0].id, locations, users);
-    
-    // Generate operational data
-    const putAwayTasks = this.generatePutAwayTasks(users[0].id, pallets, users, locations);
-    const stockMoveTasks = this.generateStockMoveTasks(users[0].id, products, locations, users);
-    const customers = this.generateCustomers(users[0].id);
-    const ecommerceOrders = this.generateEcommerceOrders(users[0].id, customers, products);
-    const pickingTasks = this.generatePickingTasks(users[0].id, ecommerceOrders, products, locations, users);
-    
-    // Generate support systems
-    const scanDevices = this.generateScanDevices(users[0].id);
-    const scanSessions = this.generateScanSessions(users[0].id, scanDevices, users);
-    const chatChannels = this.generateChatChannels(users[0].id, users);
-    const chatMessages = this.generateChatMessages(users[0].id, chatChannels, users);
-    
-    // Generate accounting and business data
-    const accounts = this.generateAccounts(users[0].id);
-    const contacts = this.generateContacts(users[0].id, customers, suppliers);
-    const invoices = this.generateInvoices(users[0].id, contacts, ecommerceOrders);
-    const journalEntries = this.generateJournalEntries(users[0].id, accounts, invoices);
-    const payments = this.generatePayments(users[0].id, invoices, accounts);
-    
-    // Generate loading/shipping data
-    const loadingDocks = this.generateLoadingDocks(users[0].id, warehouses);
-    const shipments = this.generateShipments(users[0].id, ecommerceOrders, loadingDocks);
-    const loadingAppointments = this.generateLoadingAppointments(users[0].id, shipments, users);
-    
-    // Generate e-commerce connections and sync data
-    const ecommerceConnections = this.generateEcommerceConnections(users[0].id);
-    const syncLogs = this.generateSyncLogs(users[0].id, ecommerceConnections);
-    
-    // Generate configuration
-    const companyConfig = this.generateCompanyConfig();
-    const systemConfig = this.generateSystemConfig();
-    
-    // Save all data to localStorage with comprehensive collections
-    const dataCollections = {
-      // Core entities
-      roles,
-      users,
-      suppliers,
-      categories,
-      warehouses,
-      locations,
-      products,
-      stock_levels: stockLevels,
-      pallets,
-      
-      // Operational tasks
-      putaway_tasks: putAwayTasks,
-      stock_move_tasks: stockMoveTasks,
-      picking_tasks: pickingTasks,
-      
-      // Customer and order management
-      customers,
-      ecommerce_orders: ecommerceOrders,
-      ecommerce_connections: ecommerceConnections,
-      sync_logs: syncLogs,
-      
-      // Device and session management
-      scan_devices: scanDevices,
-      scan_sessions: scanSessions,
-      
-      // Communication
-      chat_channels: chatChannels,
-      chat_messages: chatMessages,
-      
-      // Accounting and finance
-      accounts,
-      contacts,
-      invoices,
-      journal_entries: journalEntries,
-      payments,
-      
-      // Loading and shipping
-      loading_docks: loadingDocks,
-      shipments,
-      loading_appointments: loadingAppointments,
-      
-      // Configuration
-      company_config: companyConfig,
-      system_config: systemConfig,
-      
-      // Additional operational data
-      stock_movements: this.generateStockMovements(users[0].id, products, locations),
-      inventory_adjustments: this.generateInventoryAdjustments(users[0].id, products, locations, users),
-      task_history: this.generateTaskHistory(users[0].id, users),
-      notification_settings: this.generateNotificationSettings(users),
-      user_sessions: this.generateUserSessions(users),
-      audit_logs: this.generateAuditLogs(users)
-    };
-    
-    // Save each collection
-    Object.entries(dataCollections).forEach(([key, data]) => {
-      BrowserStorage.set(key, data);
-    });
-    
-    console.log('✅ Mock data generation completed successfully!');
-    console.log('📊 Generated data summary:', {
-      users: users.length,
-      products: products.length,
-      pallets: pallets.length,
-      locations: locations.length,
-      orders: ecommerceOrders.length,
-      tasks: putAwayTasks.length + pickingTasks.length + stockMoveTasks.length,
-      totalCollections: Object.keys(dataCollections).length
-    });
-    
-    return dataCollections;
-  }
   
-  static clearAllData() {
-    console.log('🧹 Clearing all mock data from localStorage...');
-    
-    const allCollections = [
+  static clearAllData(): number {
+    const collections = [
       // Core entities
-      'roles', 'users', 'suppliers', 'categories', 'warehouses', 'locations',
-      'products', 'stock_levels', 'pallets',
+      'roles', 'users', 'products', 'suppliers', 'categories', 'warehouses', 'locations', 
+      'pallets', 'stock_levels',
       
       // Operational tasks
-      'putaway_tasks', 'stock_move_tasks', 'picking_tasks',
+      'putaway_tasks', 'picking_tasks', 'stock_move_tasks', 
       
-      // Customer and order management
-      'customers', 'ecommerce_orders', 'ecommerce_connections', 'sync_logs',
+      // Customer and business
+      'customers', 'ecommerce_orders', 'ecommerce_connections',
       
-      // Device and session management
-      'scan_devices', 'scan_sessions',
+      // Communication and devices
+      'chat_channels', 'chat_messages', 'scan_devices', 'scan_sessions',
       
-      // Communication
-      'chat_channels', 'chat_messages',
-      
-      // Accounting and finance
+      // Accounting
       'accounts', 'contacts', 'invoices', 'journal_entries', 'payments',
       
-      // Loading and shipping
+      // Shipping and loading
       'loading_docks', 'shipments', 'loading_appointments',
       
-      // Configuration
-      'company_config', 'system_config',
-      
-      // Additional operational data
-      'stock_movements', 'inventory_adjustments', 'task_history',
-      'notification_settings', 'user_sessions', 'audit_logs',
-      
-      // Legacy collections (in case they exist)
-      'delivery_routes', 'quality_checks', 'maintenance_records',
-      'user_preferences', 'app_settings', 'backup_logs'
+      // Additional systems
+      'stock_movements', 'sync_logs', 'audit_logs'
     ];
     
     let clearedCount = 0;
-    allCollections.forEach(collection => {
+    collections.forEach(collection => {
       const existing = BrowserStorage.get(collection);
       if (existing && Array.isArray(existing) && existing.length > 0) {
+        BrowserStorage.remove(collection);
         clearedCount++;
       }
-      BrowserStorage.set(collection, []);
     });
     
-    // Also clear any individual config objects
-    BrowserStorage.remove('current_user');
-    BrowserStorage.remove('user_token');
-    BrowserStorage.remove('app_language');
-    BrowserStorage.remove('theme_preference');
-    
-    console.log(`✅ Cleared ${clearedCount} collections and individual settings`);
     return clearedCount;
   }
-  
-  private static generateRoles(): MockRole[] {
-    return [
+
+  static async generateAllMockData() {
+    // Clear existing data first
+    this.clearAllData();
+    
+    // Generate data in the correct order to maintain relationships
+    const roles = this.generateRoles();
+    const users = this.generateUsers(roles);
+    const categories = this.generateCategories();
+    const suppliers = this.generateSuppliers();
+    const warehouses = this.generateWarehouses();
+    const locations = this.generateLocations(warehouses);
+    const products = this.generateProducts(categories, suppliers);
+    const accounts = this.generateAccounts();
+    const contacts = this.generateContacts();
+    const invoices = this.generateInvoices(contacts, accounts);
+    const journal_entries = this.generateJournalEntries(accounts);
+    const payments = this.generatePayments(invoices, accounts);
+    const customers = this.generateCustomers();
+    const ecommerce_connections = this.generateEcommerceConnections();
+    const ecommerce_orders = this.generateEcommerceOrders(ecommerce_connections, customers, products);
+    const pallets = this.generatePallets(products, locations);
+    const stock_levels = this.generateStockLevels(products, locations);
+    const putaway_tasks = this.generatePutAwayTasks(pallets, locations, users);
+    const picking_tasks = this.generatePickingTasks(ecommerce_orders, products, locations, users);
+    const stock_move_tasks = this.generateStockMoveTasks(products, locations, users);
+    const stock_movements = this.generateStockMovements(products, locations, users);
+    const chat_channels = this.generateChatChannels(users);
+    const chat_messages = this.generateChatMessages(chat_channels, users);
+    const scan_devices = this.generateScanDevices();
+    const scan_sessions = this.generateScanSessions(scan_devices, users);
+    const loading_docks = this.generateLoadingDocks(warehouses);
+    const shipments = this.generateShipments(ecommerce_orders, loading_docks);
+    const loading_appointments = this.generateLoadingAppointments(loading_docks, shipments);
+    const sync_logs = this.generateSyncLogs();
+    const audit_logs = this.generateAuditLogs(users);
+
+    return {
+      roles,
+      users,
+      categories,
+      suppliers,
+      warehouses,
+      locations,
+      products,
+      accounts,
+      contacts,
+      invoices,
+      journal_entries,
+      payments,
+      customers,
+      ecommerce_connections,
+      ecommerce_orders,
+      pallets,
+      stock_levels,
+      putaway_tasks,
+      picking_tasks,
+      stock_move_tasks,
+      stock_movements,
+      chat_channels,
+      chat_messages,
+      scan_devices,
+      scan_sessions,
+      loading_docks,
+      shipments,
+      loading_appointments,
+      sync_logs,
+      audit_logs
+    };
+  }
+
+  static generateRoles() {
+    const roles = [
       {
         id: '1',
-        name: 'admin',
-        display_name: 'Administrador',
-        level: 1,
-        permissions: [{ action: 'manage', resource: '*' }],
-        module_access: [
-          { module_id: '*', can_access: true, permissions: ['*'] }
-        ],
-        created_at: new Date('2024-01-01').toISOString()
+        name: 'administrator',
+        displayName: 'Administrator',
+        description: 'Full system access and management',
+        permissions: ['all'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: '2',
         name: 'team_leader',
-        display_name: 'Team Leader',
-        level: 3,
-        permissions: [
-          { action: 'read', resource: 'dashboard' },
-          { action: 'manage', resource: 'inventory' },
-          { action: 'assign', resource: 'tasks' },
-          { action: 'read', resource: 'reports' }
-        ],
-        module_access: [
-          { module_id: 'dashboard', can_access: true, permissions: ['read'] },
-          { module_id: 'inventory', can_access: true, permissions: ['manage'] },
-          { module_id: 'putaway', can_access: true, permissions: ['manage'] },
-          { module_id: 'picking', can_access: true, permissions: ['manage'] },
-          { module_id: 'stockmove', can_access: true, permissions: ['manage'] }
-        ],
-        created_at: new Date('2024-01-01').toISOString()
+        displayName: 'Team Leader',
+        description: 'Team management and operations oversight',
+        permissions: ['operations', 'reports', 'team_management'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: '3',
         name: 'putaway_operator',
-        display_name: 'Operador Put Away',
-        level: 5,
-        permissions: [
-          { action: 'read', resource: 'dashboard' },
-          { action: 'execute', resource: 'putaway_tasks' }
-        ],
-        module_access: [
-          { module_id: 'dashboard', can_access: true, permissions: ['read'] },
-          { module_id: 'putaway', can_access: true, permissions: ['read', 'execute'] },
-          { module_id: 'scanner', can_access: true, permissions: ['read', 'execute'] }
-        ],
-        created_at: new Date('2024-01-01').toISOString()
+        displayName: 'Put Away Operator',
+        description: 'Receiving and storage operations',
+        permissions: ['putaway', 'inventory_view'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: '4',
         name: 'picker',
-        display_name: 'Picker',
-        level: 6,
-        permissions: [
-          { action: 'read', resource: 'dashboard' },
-          { action: 'execute', resource: 'picking_tasks' }
-        ],
-        module_access: [
-          { module_id: 'dashboard', can_access: true, permissions: ['read'] },
-          { module_id: 'picking', can_access: true, permissions: ['read', 'execute'] },
-          { module_id: 'scanner', can_access: true, permissions: ['read', 'execute'] }
-        ],
-        created_at: new Date('2024-01-01').toISOString()
+        displayName: 'Picker',
+        description: 'Order fulfillment and picking',
+        permissions: ['picking', 'inventory_view'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: '5',
         name: 'accountant',
-        display_name: 'Contabilidad',
-        level: 4,
-        permissions: [
-          { action: 'read', resource: 'dashboard' },
-          { action: 'manage', resource: 'accounting' },
-          { action: 'read', resource: 'reports' }
-        ],
-        module_access: [
-          { module_id: 'dashboard', can_access: true, permissions: ['read'] },
-          { module_id: 'accounting', can_access: true, permissions: ['manage'] },
-          { module_id: 'customers', can_access: true, permissions: ['read'] }
-        ],
-        created_at: new Date('2024-01-01').toISOString()
+        displayName: 'Accountant',
+        description: 'Financial management and accounting',
+        permissions: ['accounting', 'reports', 'financial'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
+
+    BrowserStorage.set('roles', roles);
+    return roles;
   }
-  
-  private static generateUsers(roles: MockRole[]): MockUser[] {
-    return [
+
+  static generateUsers(roles: any[]) {
+    const users = [
       {
         id: '1',
         email: 'admin@warehouseos.com',
-        firstName: 'Carlos',
-        lastName: 'Rodriguez',
-        role_id: '1',
-        is_active: true,
-        created_at: new Date('2024-01-01').toISOString(),
-        last_login_at: new Date().toISOString(),
-        phone: '+34 612 345 678',
-        employee_id: 'EMP001'
+        firstName: 'Admin',
+        lastName: 'User',
+        role: roles[0],
+        isActive: true,
+        lastLoginAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: '2',
         email: 'teamleader@warehouseos.com',
-        firstName: 'Maria',
-        lastName: 'Gonzalez',
-        role_id: '2',
-        team_id: 'team-warehouse',
-        is_active: true,
-        created_at: new Date('2024-01-15').toISOString(),
-        last_login_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        phone: '+34 612 345 679',
-        employee_id: 'EMP002'
+        firstName: 'Team',
+        lastName: 'Leader',
+        role: roles[1],
+        isActive: true,
+        lastLoginAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: '3',
         email: 'putaway@warehouseos.com',
-        firstName: 'Jose',
-        lastName: 'Martinez',
-        role_id: '3',
-        team_id: 'team-warehouse',
-        is_active: true,
-        created_at: new Date('2024-02-01').toISOString(),
-        last_login_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        phone: '+34 612 345 680',
-        employee_id: 'EMP003'
+        firstName: 'Put Away',
+        lastName: 'Operator',
+        role: roles[2],
+        isActive: true,
+        lastLoginAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: '4',
         email: 'picker@warehouseos.com',
-        firstName: 'Ana',
-        lastName: 'Lopez',
-        role_id: '4',
-        team_id: 'team-warehouse',
-        is_active: true,
-        created_at: new Date('2024-02-01').toISOString(),
-        last_login_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-        phone: '+34 612 345 681',
-        employee_id: 'EMP004'
+        firstName: 'Picker',
+        lastName: 'User',
+        role: roles[3],
+        isActive: true,
+        lastLoginAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: '5',
         email: 'accountant@warehouseos.com',
-        firstName: 'Laura',
-        lastName: 'Fernandez',
-        role_id: '5',
-        team_id: 'team-office',
-        is_active: true,
-        created_at: new Date('2024-01-20').toISOString(),
-        last_login_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-        phone: '+34 612 345 682',
-        employee_id: 'EMP005'
+        firstName: 'Account',
+        lastName: 'Manager',
+        role: roles[4],
+        isActive: true,
+        lastLoginAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
+
+    BrowserStorage.set('users', users);
+    return users;
   }
-  
-  private static generateSuppliers(userId: string) {
-    return [
+
+  static generateCategories() {
+    const categories = [
       {
         id: '1',
-        user_id: userId,
-        code: 'SUP001',
-        name: 'Electronics Supplier Ltd',
-        contact_person: 'John Smith',
-        email: 'orders@electronicsup.com',
-        phone: '+44 20 7946 0958',
-        address: '123 Tech Street',
-        city: 'London',
-        country: 'United Kingdom',
-        payment_terms: '30 days',
-        lead_time_days: 7,
+        name: 'Electronics',
+        description: 'Electronic devices and components',
+        parent_id: null,
         is_active: true,
-        created_at: new Date('2024-01-01').toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: '2',
-        user_id: userId,
-        code: 'SUP002',
-        name: 'Home & Garden Supplies',
-        contact_person: 'Emma Wilson',
-        email: 'procurement@homegardens.com',
-        phone: '+44 20 7946 0959',
-        address: '456 Garden Avenue',
-        city: 'Manchester',
-        country: 'United Kingdom',
-        payment_terms: '45 days',
-        lead_time_days: 10,
+        name: 'Clothing',
+        description: 'Apparel and accessories',
+        parent_id: null,
         is_active: true,
-        created_at: new Date('2024-01-01').toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: '3',
-        user_id: userId,
-        code: 'SUP003',
-        name: 'Office Equipment Co.',
-        contact_person: 'Michael Brown',
-        email: 'sales@officeequip.co.uk',
-        phone: '+44 20 7946 0960',
-        address: '789 Business Park',
-        city: 'Birmingham',
-        country: 'United Kingdom',
-        payment_terms: '60 days',
-        lead_time_days: 5,
+        name: 'Books',
+        description: 'Books and publications',
+        parent_id: null,
         is_active: true,
-        created_at: new Date('2024-01-01').toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
+
+    BrowserStorage.set('categories', categories);
+    return categories;
   }
-  
-  private static generateCategories(userId: string) {
-    return [
-      { id: '1', user_id: userId, name: 'Electronics', description: 'Electronic devices and accessories', is_active: true, created_at: new Date('2024-01-01').toISOString() },
-      { id: '2', user_id: userId, name: 'Home & Garden', description: 'Home improvement and garden products', is_active: true, created_at: new Date('2024-01-01').toISOString() },
-      { id: '3', user_id: userId, name: 'Office Supplies', description: 'Office equipment and supplies', is_active: true, created_at: new Date('2024-01-01').toISOString() },
-      { id: '4', user_id: userId, name: 'Sports & Outdoors', description: 'Sports equipment and outdoor gear', is_active: true, created_at: new Date('2024-01-01').toISOString() }
-    ];
-  }
-  
-  private static generateWarehouses(userId: string): MockWarehouse[] {
-    return [
+
+  static generateSuppliers() {
+    const suppliers = [
       {
         id: '1',
-        user_id: userId,
-        code: 'MAIN',
-        name: 'Main Warehouse',
-        address: '123 Industrial Estate',
-        city: 'London',
-        country: 'United Kingdom',
+        code: 'SUP001',
+        name: 'TechCorp Electronics',
+        contact_person: 'John Smith',
+        email: 'john@techcorp.com',
+        phone: '+1-555-0123',
+        address: '123 Tech Street',
+        city: 'San Francisco',
+        state: 'CA',
+        postal_code: '94105',
+        country: 'USA',
+        tax_id: 'TC123456789',
+        payment_terms: 'Net 30',
+        lead_time_days: 14,
         is_active: true,
-        created_at: new Date('2024-01-01').toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: '2',
-        user_id: userId,
-        code: 'OVERFLOW',
-        name: 'Overflow Warehouse',
-        address: '456 Storage Complex',
-        city: 'Manchester',
-        country: 'United Kingdom',
+        code: 'SUP002',
+        name: 'Fashion Forward Inc',
+        contact_person: 'Sarah Johnson',
+        email: 'sarah@fashionforward.com',
+        phone: '+1-555-0456',
+        address: '456 Fashion Ave',
+        city: 'New York',
+        state: 'NY',
+        postal_code: '10001',
+        country: 'USA',
+        tax_id: 'FF987654321',
+        payment_terms: 'Net 30',
+        lead_time_days: 21,
         is_active: true,
-        created_at: new Date('2024-01-01').toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '3',
+        code: 'SUP003',
+        name: 'BookWorld Publishers',
+        contact_person: 'Michael Brown',
+        email: 'michael@bookworld.com',
+        phone: '+1-555-0789',
+        address: '789 Book Lane',
+        city: 'Chicago',
+        state: 'IL',
+        postal_code: '60601',
+        country: 'USA',
+        tax_id: 'BW456789123',
+        payment_terms: 'Net 45',
+        lead_time_days: 10,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
+
+    BrowserStorage.set('suppliers', suppliers);
+    return suppliers;
   }
-  
-  private static generateLocations(userId: string, warehouses: MockWarehouse[]): MockLocation[] {
-    const locations: MockLocation[] = [];
+
+  static generateWarehouses() {
+    const warehouses = [
+      {
+        id: '1',
+        code: 'WH001',
+        name: 'Main Warehouse',
+        address: '100 Industrial Blvd',
+        city: 'Los Angeles',
+        state: 'CA',
+        postal_code: '90210',
+        country: 'USA',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        code: 'WH002',
+        name: 'Secondary Storage',
+        address: '200 Storage Way',
+        city: 'Los Angeles',
+        state: 'CA',
+        postal_code: '90211',
+        country: 'USA',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('warehouses', warehouses);
+    return warehouses;
+  }
+
+  static generateLocations(warehouses: any[]) {
+    const locations = [];
     
-    // Receiving locations
-    locations.push(
-      { id: '1', user_id: userId, warehouse_id: '1', code: 'REC-01', name: 'Receiving Dock 1', type: 'receiving', confirmation_code: 'REC01', is_occupied: false, is_active: true, created_at: new Date('2024-01-01').toISOString() },
-      { id: '2', user_id: userId, warehouse_id: '1', code: 'REC-02', name: 'Receiving Dock 2', type: 'receiving', confirmation_code: 'REC02', is_occupied: true, is_active: true, created_at: new Date('2024-01-01').toISOString() }
-    );
-    
-    // Storage locations
-    for (let aisle = 1; aisle <= 3; aisle++) {
-      for (let rack = 1; rack <= 4; rack++) {
-        for (let shelf = 1; shelf <= 3; shelf++) {
-          const id = `${10 + locations.length}`;
-          locations.push({
-            id,
-            user_id: userId,
-            warehouse_id: '1',
-            code: `A${aisle}R${rack}S${shelf}`,
-            name: `Aisle ${aisle} Rack ${rack} Shelf ${shelf}`,
-            type: 'storage',
-            aisle: `A${aisle}`,
-            rack: `R${rack}`,
-            shelf: `S${shelf}`,
-            confirmation_code: `A${aisle}R${rack}S${shelf}`,
-            max_weight_kg: 1000,
-            is_occupied: Math.random() > 0.6,
-            is_active: true,
-            created_at: new Date('2024-01-01').toISOString()
-          });
+    // Generate locations for each warehouse
+    warehouses.forEach((warehouse, warehouseIndex) => {
+      // Generate aisles A-F
+      for (let aisle = 0; aisle < 6; aisle++) {
+        const aisleLetter = String.fromCharCode(65 + aisle); // A, B, C, D, E, F
+        
+        // Generate 3 racks per aisle
+        for (let rack = 1; rack <= 3; rack++) {
+          // Generate 2 shelves per rack
+          for (let shelf = 1; shelf <= 2; shelf++) {
+            locations.push({
+              id: `${warehouse.id}-${aisleLetter}${rack}${shelf}`,
+              warehouse_id: warehouse.id,
+              aisle: aisleLetter,
+              rack: rack.toString(),
+              shelf: shelf.toString(),
+              location_code: `${aisleLetter}${rack}${shelf}`,
+              location_type: 'storage',
+              is_available: true,
+              max_weight: 1000,
+              max_volume: 2.5,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          }
         }
       }
-    }
-    
-    // Picking locations
-    for (let i = 1; i <= 8; i++) {
-      const id = `${200 + i}`;
-      locations.push({
-        id,
-        user_id: userId,
-        warehouse_id: '1',
-        code: `PICK-${i.toString().padStart(2, '0')}`,
-        name: `Picking Location ${i}`,
-        type: 'picking',
-        confirmation_code: `PICK${i.toString().padStart(2, '0')}`,
-        is_occupied: Math.random() > 0.4,
-        is_active: true,
-        created_at: new Date('2024-01-01').toISOString()
-      });
-    }
-    
-    // Shipping locations
-    locations.push(
-      { id: '301', user_id: userId, warehouse_id: '1', code: 'SHIP-01', name: 'Shipping Dock 1', type: 'shipping', confirmation_code: 'SHIP01', is_occupied: false, is_active: true, created_at: new Date('2024-01-01').toISOString() },
-      { id: '302', user_id: userId, warehouse_id: '1', code: 'SHIP-02', name: 'Shipping Dock 2', type: 'shipping', confirmation_code: 'SHIP02', is_occupied: true, is_active: true, created_at: new Date('2024-01-01').toISOString() }
-    );
-    
+    });
+
+    BrowserStorage.set('locations', locations);
     return locations;
   }
-  
-  private static generateProducts(userId: string, categories: any[], suppliers: any[]): MockProduct[] {
-    return [
+
+  static generateProducts(categories: any[], suppliers: any[]) {
+    const products = [
       {
-        id: '1', user_id: userId, sku: 'LAPTOP001', name: 'Gaming Laptop Pro 15"', description: 'High-performance gaming laptop with RTX graphics',
-        barcode: '1234567890123', weight_kg: 2.5, dimensions: { length_cm: 35, width_cm: 25, height_cm: 3 },
-        category_id: '1', supplier_id: '1', unit_cost: 800, sale_price: 1200, reorder_point: 5, max_stock: 50,
-        is_active: true, created_at: new Date('2024-01-01').toISOString(), updated_at: new Date('2024-01-01').toISOString()
+        id: '1',
+        sku: 'ELEC-001',
+        name: 'Wireless Bluetooth Headphones',
+        description: 'High-quality wireless headphones with noise cancellation',
+        category_id: categories[0].id,
+        supplier_id: suppliers[0].id,
+        unit_price: 99.99,
+        cost_price: 60.00,
+        weight: 0.3,
+        dimensions: '20x15x8',
+        barcode: '1234567890123',
+        is_active: true,
+        reorder_point: 10,
+        max_stock: 100,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '2', user_id: userId, sku: 'PHONE001', name: 'Smartphone Pro Max', description: 'Latest smartphone with advanced camera system',
-        barcode: '1234567890124', weight_kg: 0.2, dimensions: { length_cm: 16, width_cm: 8, height_cm: 1 },
-        category_id: '1', supplier_id: '1', unit_cost: 600, sale_price: 900, reorder_point: 10, max_stock: 100,
-        is_active: true, created_at: new Date('2024-01-01').toISOString(), updated_at: new Date('2024-01-01').toISOString()
+        id: '2',
+        sku: 'ELEC-002',
+        name: 'Smartphone Case',
+        description: 'Protective case for smartphones',
+        category_id: categories[0].id,
+        supplier_id: suppliers[0].id,
+        unit_price: 24.99,
+        cost_price: 12.00,
+        weight: 0.1,
+        dimensions: '15x8x2',
+        barcode: '2345678901234',
+        is_active: true,
+        reorder_point: 20,
+        max_stock: 200,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '3', user_id: userId, sku: 'TABLET001', name: 'Professional Tablet 12"', description: '12-inch tablet for professional use',
-        barcode: '1234567890125', weight_kg: 0.6, dimensions: { length_cm: 28, width_cm: 20, height_cm: 1 },
-        category_id: '1', supplier_id: '1', unit_cost: 400, sale_price: 650, reorder_point: 8, max_stock: 75,
-        is_active: true, created_at: new Date('2024-01-01').toISOString(), updated_at: new Date('2024-01-01').toISOString()
+        id: '3',
+        sku: 'CLOTH-001',
+        name: 'Cotton T-Shirt',
+        description: 'Comfortable cotton t-shirt in various sizes',
+        category_id: categories[1].id,
+        supplier_id: suppliers[1].id,
+        unit_price: 19.99,
+        cost_price: 8.00,
+        weight: 0.2,
+        dimensions: '30x25x2',
+        barcode: '3456789012345',
+        is_active: true,
+        reorder_point: 30,
+        max_stock: 300,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '4', user_id: userId, sku: 'CHAIR001', name: 'Ergonomic Office Chair', description: 'Comfortable ergonomic chair for office use',
-        barcode: '1234567890126', weight_kg: 15, dimensions: { length_cm: 60, width_cm: 60, height_cm: 110 },
-        category_id: '3', supplier_id: '3', unit_cost: 150, sale_price: 300, reorder_point: 3, max_stock: 25,
-        is_active: true, created_at: new Date('2024-01-01').toISOString(), updated_at: new Date('2024-01-01').toISOString()
+        id: '4',
+        sku: 'CLOTH-002',
+        name: 'Denim Jeans',
+        description: 'Classic denim jeans in multiple sizes',
+        category_id: categories[1].id,
+        supplier_id: suppliers[1].id,
+        unit_price: 49.99,
+        cost_price: 25.00,
+        weight: 0.6,
+        dimensions: '35x30x5',
+        barcode: '4567890123456',
+        is_active: true,
+        reorder_point: 15,
+        max_stock: 150,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '5', user_id: userId, sku: 'DESK001', name: 'Standing Desk Adjustable', description: 'Height-adjustable standing desk',
-        barcode: '1234567890127', weight_kg: 25, dimensions: { length_cm: 120, width_cm: 60, height_cm: 5 },
-        category_id: '3', supplier_id: '3', unit_cost: 200, sale_price: 400, reorder_point: 2, max_stock: 15,
-        is_active: true, created_at: new Date('2024-01-01').toISOString(), updated_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '6', user_id: userId, sku: 'TOOL001', name: 'Cordless Drill Set', description: 'Professional cordless drill with accessories',
-        barcode: '1234567890128', weight_kg: 2, dimensions: { length_cm: 30, width_cm: 25, height_cm: 10 },
-        category_id: '2', supplier_id: '2', unit_cost: 80, sale_price: 150, reorder_point: 6, max_stock: 40,
-        is_active: true, created_at: new Date('2024-01-01').toISOString(), updated_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '7', user_id: userId, sku: 'GARDEN001', name: 'Garden Hose 25m', description: 'Heavy-duty garden hose 25 meters',
-        barcode: '1234567890129', weight_kg: 3, dimensions: { length_cm: 40, width_cm: 40, height_cm: 15 },
-        category_id: '2', supplier_id: '2', unit_cost: 25, sale_price: 50, reorder_point: 12, max_stock: 80,
-        is_active: true, created_at: new Date('2024-01-01').toISOString(), updated_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '8', user_id: userId, sku: 'MONITOR001', name: '4K Monitor 27"', description: '27-inch 4K professional monitor',
-        barcode: '1234567890130', weight_kg: 6, dimensions: { length_cm: 65, width_cm: 45, height_cm: 8 },
-        category_id: '1', supplier_id: '1', unit_cost: 300, sale_price: 500, reorder_point: 4, max_stock: 30,
-        is_active: true, created_at: new Date('2024-01-01').toISOString(), updated_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '9', user_id: userId, sku: 'PRINTER001', name: 'Laser Printer Color', description: 'Color laser printer for office use',
-        barcode: '1234567890131', weight_kg: 20, dimensions: { length_cm: 50, width_cm: 40, height_cm: 30 },
-        category_id: '3', supplier_id: '3', unit_cost: 250, sale_price: 450, reorder_point: 2, max_stock: 20,
-        is_active: true, created_at: new Date('2024-01-01').toISOString(), updated_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '10', user_id: userId, sku: 'HEADSET001', name: 'Wireless Gaming Headset', description: 'Premium wireless gaming headset with noise cancellation',
-        barcode: '1234567890132', weight_kg: 0.4, dimensions: { length_cm: 20, width_cm: 18, height_cm: 10 },
-        category_id: '1', supplier_id: '1', unit_cost: 80, sale_price: 150, reorder_point: 15, max_stock: 60,
-        is_active: true, created_at: new Date('2024-01-01').toISOString(), updated_at: new Date('2024-01-01').toISOString()
+        id: '5',
+        sku: 'BOOK-001',
+        name: 'Programming Guide',
+        description: 'Comprehensive programming guide for beginners',
+        category_id: categories[2].id,
+        supplier_id: suppliers[2].id,
+        unit_price: 39.99,
+        cost_price: 20.00,
+        weight: 0.8,
+        dimensions: '25x20x3',
+        barcode: '5678901234567',
+        is_active: true,
+        reorder_point: 5,
+        max_stock: 50,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
+
+    BrowserStorage.set('products', products);
+    return products;
   }
-  
-  private static generateStockLevels(userId: string, products: MockProduct[], locations: MockLocation[]): MockStockLevel[] {
-    const stockLevels: MockStockLevel[] = [];
-    const storageLocations = locations.filter(l => l.type === 'storage' && l.is_occupied);
-    const pickingLocations = locations.filter(l => l.type === 'picking' && l.is_occupied);
-    
-    products.forEach(product => {
-      // Storage stock
-      const storageLocation = storageLocations[Math.floor(Math.random() * storageLocations.length)];
-      if (storageLocation) {
-        stockLevels.push({
-          id: `stock_${product.id}_${storageLocation.id}`,
-          user_id: userId,
-          product_id: product.id,
-          location_id: storageLocation.id,
-          quantity_available: Math.floor(Math.random() * 50) + 10,
-          quantity_reserved: Math.floor(Math.random() * 5),
-          last_counted_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-          created_at: new Date('2024-01-01').toISOString()
-        });
-      }
-      
-      // Picking stock (some products)
-      if (Math.random() > 0.5) {
-        const pickingLocation = pickingLocations[Math.floor(Math.random() * pickingLocations.length)];
-        if (pickingLocation) {
-          stockLevels.push({
-            id: `stock_${product.id}_${pickingLocation.id}`,
-            user_id: userId,
-            product_id: product.id,
-            location_id: pickingLocation.id,
-            quantity_available: Math.floor(Math.random() * 20) + 5,
-            quantity_reserved: Math.floor(Math.random() * 3),
-            last_counted_at: new Date(Date.now() - Math.random() * 3 * 24 * 60 * 60 * 1000).toISOString(),
-            created_at: new Date('2024-01-01').toISOString()
-          });
-        }
-      }
-    });
-    
-    return stockLevels;
-  }
-  
-  private static generatePallets(userId: string, locations: MockLocation[], users: MockUser[]): MockPallet[] {
-    const receivingLocations = locations.filter(l => l.type === 'receiving');
-    const putAwayOperators = users.filter(u => u.role_id === '3');
-    
-    return [
+
+  static generateAccounts() {
+    const accounts = [
       {
-        id: '1', user_id: userId, pallet_code: 'PLT-2024-001', status: 'received',
-        location_id: receivingLocations[0]?.id || '1', received_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+        id: '1',
+        code: '1000',
+        name: 'Cash',
+        account_type: 'asset',
+        parent_id: null,
+        is_active: true,
+        balance: 50000.00,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '2', user_id: userId, pallet_code: 'PLT-2024-002', status: 'received',
-        location_id: receivingLocations[1]?.id || '2', received_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
+        id: '2',
+        code: '1200',
+        name: 'Accounts Receivable',
+        account_type: 'asset',
+        parent_id: null,
+        is_active: true,
+        balance: 25840.00,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '3', user_id: userId, pallet_code: 'PLT-2024-003', status: 'assigned',
-        location_id: receivingLocations[0]?.id || '1', assigned_to: putAwayOperators[0]?.id,
-        received_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-        created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+        id: '3',
+        code: '1300',
+        name: 'Inventory',
+        account_type: 'asset',
+        parent_id: null,
+        is_active: true,
+        balance: 75000.00,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '4', user_id: userId, pallet_code: 'PLT-2024-004', status: 'in_progress',
-        location_id: receivingLocations[1]?.id || '2', assigned_to: putAwayOperators[0]?.id,
-        received_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-        created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
+        id: '4',
+        code: '2000',
+        name: 'Accounts Payable',
+        account_type: 'liability',
+        parent_id: null,
+        is_active: true,
+        balance: 18530.00,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '5', user_id: userId, pallet_code: 'PLT-2024-005', status: 'completed',
-        location_id: receivingLocations[0]?.id || '1', assigned_to: putAwayOperators[0]?.id,
-        received_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        id: '5',
+        code: '3000',
+        name: 'Owner Equity',
+        account_type: 'equity',
+        parent_id: null,
+        is_active: true,
+        balance: 100000.00,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '6', user_id: userId, pallet_code: 'PLT-2024-006', status: 'received',
-        location_id: receivingLocations[0]?.id || '1', received_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-        created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
+        id: '6',
+        code: '4000',
+        name: 'Sales Revenue',
+        account_type: 'revenue',
+        parent_id: null,
+        is_active: true,
+        balance: 0.00,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '7',
+        code: '5000',
+        name: 'Cost of Goods Sold',
+        account_type: 'expense',
+        parent_id: null,
+        is_active: true,
+        balance: 0.00,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
+
+    BrowserStorage.set('accounts', accounts);
+    return accounts;
   }
-  
-  private static generatePutAwayTasks(userId: string, pallets: MockPallet[], users: MockUser[], locations: MockLocation[]) {
-    const storageLocations = locations.filter(l => l.type === 'storage' && !l.is_occupied);
-    const putAwayOperators = users.filter(u => u.role_id === '3');
-    
-    return [
+
+  static generateContacts() {
+    const contacts = [
       {
-        id: '1', user_id: userId, task_number: 'PUT-001', pallet_id: '3', product_id: '1',
-        from_location_id: '1', to_location_id: storageLocations[0]?.id || '11',
-        assigned_to: putAwayOperators[0]?.id, status: 'assigned', priority: 'high',
-        quantity: 10, estimated_duration_minutes: 15,
-        created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-        assigned_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
+        id: '1',
+        name: 'ACME Corporation',
+        type: 'customer',
+        email: 'billing@acme.com',
+        phone: '+1-555-1111',
+        address: '123 Business St',
+        city: 'Business City',
+        state: 'BC',
+        postal_code: '12345',
+        country: 'USA',
+        tax_id: 'ACME123456',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '2', user_id: userId, task_number: 'PUT-002', pallet_id: '4', product_id: '2',
-        from_location_id: '2', to_location_id: storageLocations[1]?.id || '12',
-        assigned_to: putAwayOperators[0]?.id, status: 'in_progress', priority: 'medium',
-        quantity: 20, estimated_duration_minutes: 20,
-        created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-        assigned_at: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
-        started_at: new Date(Date.now() - 30 * 60 * 1000).toISOString()
+        id: '2',
+        name: 'Global Retail Inc',
+        type: 'customer',
+        email: 'orders@globalretail.com',
+        phone: '+1-555-2222',
+        address: '456 Commerce Ave',
+        city: 'Trade City',
+        state: 'TC',
+        postal_code: '67890',
+        country: 'USA',
+        tax_id: 'GRI789012',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '3', user_id: userId, task_number: 'PUT-003', pallet_id: '1', product_id: '3',
-        from_location_id: '1', to_location_id: storageLocations[2]?.id || '13',
-        status: 'pending', priority: 'medium', quantity: 15, estimated_duration_minutes: 12,
-        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '4', user_id: userId, task_number: 'PUT-004', pallet_id: '2', product_id: '4',
-        from_location_id: '2', to_location_id: storageLocations[3]?.id || '14',
-        status: 'pending', priority: 'low', quantity: 5, estimated_duration_minutes: 10,
-        created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
+        id: '3',
+        name: 'TechCorp Electronics',
+        type: 'supplier',
+        email: 'billing@techcorp.com',
+        phone: '+1-555-0123',
+        address: '123 Tech Street',
+        city: 'San Francisco',
+        state: 'CA',
+        postal_code: '94105',
+        country: 'USA',
+        tax_id: 'TC123456789',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
-  }
-  
-  private static generateStockMoveTasks(userId: string, products: MockProduct[], locations: MockLocation[], users: MockUser[]) {
-    const storageLocations = locations.filter(l => l.type === 'storage');
-    const pickingLocations = locations.filter(l => l.type === 'picking');
-    const teamLeader = users.find(u => u.role_id === '2');
-    
-    return [
-      {
-        id: '1', user_id: userId, task_number: 'MOV-001', product_id: products[0].id,
-        from_location_id: storageLocations[0]?.id || '11',
-        to_location_id: pickingLocations[0]?.id || '201',
-        quantity: 15, reason: 'Restock picking area', status: 'pending', priority: 'high',
-        created_by: teamLeader?.id, created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '2', user_id: userId, task_number: 'MOV-002', product_id: products[1].id,
-        from_location_id: storageLocations[1]?.id || '12',
-        to_location_id: pickingLocations[1]?.id || '202',
-        quantity: 25, reason: 'Low stock in picking', status: 'pending', priority: 'medium',
-        created_by: teamLeader?.id, created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-      }
-    ];
-  }
-  
-  private static generateCustomers(userId: string) {
-    return [
-      {
-        id: '1', user_id: userId, customer_number: 'CUST001', name: 'Tech Solutions Ltd',
-        email: 'orders@techsolutions.com', phone: '+44 20 7946 0001',
-        address: '123 Business Street', city: 'London', postal_code: 'SW1A 1AA', country: 'UK',
-        customer_type: 'business', is_active: true,
-        created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '2', user_id: userId, customer_number: 'CUST002', name: 'Home Office Pro',
-        email: 'purchasing@homeofficepro.com', phone: '+44 20 7946 0002',
-        address: '456 Commerce Road', city: 'Manchester', postal_code: 'M1 1AA', country: 'UK',
-        customer_type: 'business', is_active: true,
-        created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '3', user_id: userId, customer_number: 'CUST003', name: 'Digital Workspace',
-        email: 'admin@digitalworkspace.co.uk', phone: '+44 20 7946 0003',
-        address: '789 Innovation Hub', city: 'Birmingham', postal_code: 'B1 1AA', country: 'UK',
-        customer_type: 'business', is_active: true,
-        created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '4', user_id: userId, customer_number: 'CUST004', name: 'Garden Paradise Ltd',
-        email: 'sales@gardenparadise.com', phone: '+44 20 7946 0004',
-        address: '321 Green Street', city: 'Bristol', postal_code: 'BS1 1AA', country: 'UK',
-        customer_type: 'business', is_active: true,
-        created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '5', user_id: userId, customer_number: 'CUST005', name: 'Creative Studios Inc',
-        email: 'procurement@creativestudios.com', phone: '+44 20 7946 0005',
-        address: '654 Design Avenue', city: 'Edinburgh', postal_code: 'EH1 1AA', country: 'UK',
-        customer_type: 'business', is_active: true,
-        created_at: new Date('2024-01-01').toISOString()
-      }
-    ];
-  }
-  
-  private static generateEcommerceOrders(userId: string, customers: any[], products: MockProduct[]) {
-    return [
-      {
-        id: '1', user_id: userId, order_number: 'ORD-2024-001', customer_id: customers[0].id,
-        connection_id: 'shopify_main', channel_name: 'Shopify Store', order_status: 'confirmed',
-        picking_status: 'pending', total_amount: 1800, currency: 'GBP',
-        line_items: [
-          { product_id: products[0].id, sku: products[0].sku, quantity: 1, unit_price: 1200 },
-          { product_id: products[7].id, sku: products[7].sku, quantity: 1, unit_price: 500 },
-          { product_id: products[9].id, sku: products[9].sku, quantity: 1, unit_price: 150 }
-        ],
-        shipping_address: {
-          name: customers[0].name, address: customers[0].address,
-          city: customers[0].city, postal_code: customers[0].postal_code, country: customers[0].country
-        },
-        created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-        order_date: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '2', user_id: userId, order_number: 'ORD-2024-002', customer_id: customers[1].id,
-        connection_id: 'woocommerce_main', channel_name: 'WooCommerce Store', order_status: 'confirmed',
-        picking_status: 'in_progress', total_amount: 950, currency: 'GBP',
-        line_items: [
-          { product_id: products[1].id, sku: products[1].sku, quantity: 1, unit_price: 900 },
-          { product_id: products[6].id, sku: products[6].sku, quantity: 1, unit_price: 50 }
-        ],
-        shipping_address: {
-          name: customers[1].name, address: customers[1].address,
-          city: customers[1].city, postal_code: customers[1].postal_code, country: customers[1].country
-        },
-        created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        order_date: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '3', user_id: userId, order_number: 'ORD-2024-003', customer_id: customers[2].id,
-        connection_id: 'shopify_main', channel_name: 'Shopify Store', order_status: 'confirmed',
-        picking_status: 'pending', total_amount: 1100, currency: 'GBP',
-        line_items: [
-          { product_id: products[2].id, sku: products[2].sku, quantity: 1, unit_price: 650 },
-          { product_id: products[3].id, sku: products[3].sku, quantity: 1, unit_price: 300 },
-          { product_id: products[9].id, sku: products[9].sku, quantity: 1, unit_price: 150 }
-        ],
-        shipping_address: {
-          name: customers[2].name, address: customers[2].address,
-          city: customers[2].city, postal_code: customers[2].postal_code, country: customers[2].country
-        },
-        created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-        order_date: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-      }
-    ];
-  }
-  
-  private static generatePickingTasks(userId: string, orders: any[], products: MockProduct[], locations: MockLocation[], users: MockUser[]) {
-    const pickingLocations = locations.filter(l => l.type === 'picking');
-    const shippingLocations = locations.filter(l => l.type === 'shipping');
-    const pickers = users.filter(u => u.role_id === '4');
-    
-    const tasks = [];
-    
-    // Tasks for order 1
-    tasks.push(
-      {
-        id: '1', user_id: userId, task_number: 'PICK-001', order_id: orders[0].id,
-        product_id: products[0].id, quantity_requested: 1, quantity_picked: 0,
-        source_location_id: pickingLocations[0]?.id || '201',
-        destination_location_id: shippingLocations[0]?.id || '301',
-        status: 'pending', priority: 'high', task_type: 'sale',
-        created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '2', user_id: userId, task_number: 'PICK-002', order_id: orders[0].id,
-        product_id: products[7].id, quantity_requested: 1, quantity_picked: 0,
-        source_location_id: pickingLocations[1]?.id || '202',
-        destination_location_id: shippingLocations[0]?.id || '301',
-        status: 'pending', priority: 'high', task_type: 'sale',
-        created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
-      }
-    );
-    
-    // Tasks for order 2 (in progress)
-    tasks.push(
-      {
-        id: '3', user_id: userId, task_number: 'PICK-003', order_id: orders[1].id,
-        product_id: products[1].id, quantity_requested: 1, quantity_picked: 1,
-        source_location_id: pickingLocations[2]?.id || '203',
-        destination_location_id: shippingLocations[1]?.id || '302',
-        assigned_to: pickers[0]?.id, status: 'completed', priority: 'medium', task_type: 'sale',
-        created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        assigned_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        started_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-        completed_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '4', user_id: userId, task_number: 'PICK-004', order_id: orders[1].id,
-        product_id: products[6].id, quantity_requested: 1, quantity_picked: 0,
-        source_location_id: pickingLocations[3]?.id || '204',
-        destination_location_id: shippingLocations[1]?.id || '302',
-        assigned_to: pickers[0]?.id, status: 'in_progress', priority: 'medium', task_type: 'sale',
-        created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        assigned_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        started_at: new Date(Date.now() - 30 * 60 * 1000).toISOString()
-      }
-    );
-    
-    // Tasks for order 3
-    tasks.push(
-      {
-        id: '5', user_id: userId, task_number: 'PICK-005', order_id: orders[2].id,
-        product_id: products[2].id, quantity_requested: 1, quantity_picked: 0,
-        source_location_id: pickingLocations[4]?.id || '205',
-        destination_location_id: shippingLocations[0]?.id || '301',
-        status: 'pending', priority: 'medium', task_type: 'sale',
-        created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-      }
-    );
-    
-    return tasks;
-  }
-  
-  private static generateScanDevices(userId: string) {
-    return [
-      {
-        id: '1', user_id: userId, device_name: 'Zebra TC27 #001', device_type: 'handheld',
-        serial_number: 'ZBR-TC27-001', manufacturer: 'Zebra', model: 'TC27',
-        status: 'active', battery_level: 85, last_seen: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-        is_active: true, created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '2', user_id: userId, device_name: 'Android Tablet #001', device_type: 'tablet',
-        serial_number: 'AND-TAB-001', manufacturer: 'Samsung', model: 'Galaxy Tab A8',
-        status: 'active', battery_level: 92, last_seen: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-        is_active: true, created_at: new Date('2024-01-01').toISOString()
-      }
-    ];
-  }
-  
-  private static generateScanSessions(userId: string, devices: any[], users: MockUser[]) {
-    return [
-      {
-        id: '1', user_id: userId, session_name: 'Put Away Session', operator_id: users[2].id,
-        device_id: devices[0].id, session_type: 'putaway', status: 'active',
-        started_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        scans_count: 15, created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '2', user_id: userId, session_name: 'Picking Session', operator_id: users[3].id,
-        device_id: devices[1].id, session_type: 'picking', status: 'active',
-        started_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-        scans_count: 8, created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-      }
-    ];
-  }
-  
-  private static generateChatChannels(userId: string, users: MockUser[]) {
-    return [
-      {
-        id: '1', user_id: userId, name: 'Warehouse Operations', description: 'General warehouse coordination',
-        channel_type: 'team', is_private: false, created_by: users[1].id,
-        members: [users[0].id, users[1].id, users[2].id, users[3].id],
-        created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '2', user_id: userId, name: 'Put Away Team', description: 'Put away coordination',
-        channel_type: 'team', is_private: false, created_by: users[1].id,
-        members: [users[1].id, users[2].id],
-        created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '3', user_id: userId, name: 'Picking Team', description: 'Picking coordination',
-        channel_type: 'team', is_private: false, created_by: users[1].id,
-        members: [users[1].id, users[3].id],
-        created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '4', user_id: userId, name: 'Admin Support', description: 'Direct line to administration',
-        channel_type: 'support', is_private: true, created_by: users[0].id,
-        members: [users[0].id, users[1].id],
-        created_at: new Date('2024-01-01').toISOString()
-      }
-    ];
-  }
-  
-  private static generateChatMessages(userId: string, channels: any[], users: MockUser[]) {
-    return [
-      // Warehouse Operations messages
-      {
-        id: '1', user_id: userId, channel_id: '1', sender_id: users[1].id,
-        content: 'Buenos días equipo. Tenemos 6 palets nuevos en recepción para procesar hoy.',
-        message_type: 'text', created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '2', user_id: userId, channel_id: '1', sender_id: users[2].id,
-        content: 'Recibido, ya estoy trabajando en el PLT-2024-003. ¿Cuál es la prioridad para los demás?',
-        message_type: 'text', created_at: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '3', user_id: userId, channel_id: '1', sender_id: users[3].id,
-        content: 'Necesito ayuda con la orden ORD-2024-002, no encuentro el producto en PICK-04',
-        message_type: 'text', created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '4', user_id: userId, channel_id: '1', sender_id: users[1].id,
-        content: 'Ana, revisa si necesitas hacer un stock move desde almacén. Te mando la tarea MOV-002.',
-        message_type: 'text', created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString()
-      },
-      
-      // Put Away Team messages
-      {
-        id: '5', user_id: userId, channel_id: '2', sender_id: users[1].id,
-        content: 'Jose, por favor prioriza el palet PLT-2024-001, es material urgente.',
-        message_type: 'text', created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '6', user_id: userId, channel_id: '2', sender_id: users[2].id,
-        content: 'Perfecto, en cuanto termine el actual me pongo con ese.',
-        message_type: 'text', created_at: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString()
-      },
-      
-      // Picking Team messages
-      {
-        id: '7', user_id: userId, channel_id: '3', sender_id: users[1].id,
-        content: 'Ana, tienes 3 órdenes pendientes de Shopify. ¿Necesitas apoyo?',
-        message_type: 'text', created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '8', user_id: userId, channel_id: '3', sender_id: users[3].id,
-        content: 'Voy bien, ya completé una. Solo necesito el restock que mencioné en el canal general.',
-        message_type: 'text', created_at: new Date(Date.now() - 3.5 * 60 * 60 * 1000).toISOString()
-      },
-      
-      // Admin Support messages
-      {
-        id: '9', user_id: userId, channel_id: '4', sender_id: users[1].id,
-        content: 'Carlos, necesito autorización para contratar un operario temporal, estamos al límite de capacidad.',
-        message_type: 'text', created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '10', user_id: userId, channel_id: '4', sender_id: users[0].id,
-        content: 'Aprobado. Coordina con RRHH para el proceso. También vamos a revisar optimización de rutas la próxima semana.',
-        message_type: 'text', created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
-      }
-    ];
-  }
-  
-  private static generateAccounts(userId: string) {
-    return [
-      {
-        id: '1', user_id: userId, code: '1100', name: 'Caja', account_type: 'asset',
-        account_nature: 'debit', parent_id: null, level: 1, balance: 5000,
-        is_active: true, created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '2', user_id: userId, code: '1200', name: 'Banco Santander', account_type: 'asset',
-        account_nature: 'debit', parent_id: null, level: 1, balance: 25000,
-        is_active: true, created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '3', user_id: userId, code: '1300', name: 'Cuentas por Cobrar', account_type: 'asset',
-        account_nature: 'debit', parent_id: null, level: 1, balance: 15000,
-        is_active: true, created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '4', user_id: userId, code: '2100', name: 'Cuentas por Pagar', account_type: 'liability',
-        account_nature: 'credit', parent_id: null, level: 1, balance: 8000,
-        is_active: true, created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '5', user_id: userId, code: '4100', name: 'Ingresos por Ventas', account_type: 'revenue',
-        account_nature: 'credit', parent_id: null, level: 1, balance: 50000,
-        is_active: true, created_at: new Date('2024-01-01').toISOString()
-      },
-      {
-        id: '6', user_id: userId, code: '5100', name: 'Costo de Ventas', account_type: 'expense',
-        account_nature: 'debit', parent_id: null, level: 1, balance: 30000,
-        is_active: true, created_at: new Date('2024-01-01').toISOString()
-      }
-    ];
-  }
-  
-  private static generateContacts(userId: string, customers: any[], suppliers: any[]) {
-    const contacts = [];
-    
-    // Add customer contacts
-    customers.forEach(customer => {
-      contacts.push({
-        id: `contact_cust_${customer.id}`, user_id: userId,
-        contact_number: customer.customer_number, name: customer.name,
-        email: customer.email, phone: customer.phone,
-        contact_type: 'customer', payment_terms: '30 days', currency: 'GBP',
-        is_active: true, created_at: customer.created_at
-      });
-    });
-    
-    // Add supplier contacts
-    suppliers.forEach(supplier => {
-      contacts.push({
-        id: `contact_supp_${supplier.id}`, user_id: userId,
-        contact_number: supplier.code, name: supplier.name,
-        email: supplier.email, phone: supplier.phone,
-        contact_type: 'supplier', payment_terms: supplier.payment_terms, currency: 'GBP',
-        is_active: true, created_at: supplier.created_at
-      });
-    });
-    
+
+    BrowserStorage.set('contacts', contacts);
     return contacts;
   }
-  
-  private static generateInvoices(userId: string, contacts: any[], orders: any[]) {
-    return orders.map((order, index) => ({
-      id: `inv_${index + 1}`,
-      user_id: userId,
-      invoice_number: `INV-2024-${String(index + 1).padStart(3, '0')}`,
-      contact_id: `contact_cust_${order.customer_id}`,
-      order_id: order.id,
-      invoice_date: order.order_date,
-      due_date: new Date(Date.parse(order.order_date) + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      subtotal: order.total_amount * 0.8,
-      tax_amount: order.total_amount * 0.2,
-      total_amount: order.total_amount,
-      status: index === 0 ? 'paid' : index === 1 ? 'pending' : 'paid',
-      paid_date: index !== 1 ? new Date().toISOString() : null,
-      notes: `Invoice for order ${order.order_number}`,
-      currency: order.currency,
-      created_at: order.order_date
-    }));
-  }
-  
-  private static generatePayments(userId: string, invoices: any[], accounts: any[]) {
-    return invoices.filter(inv => inv.status === 'paid').map((invoice, index) => ({
-      id: `payment_${index + 1}`, user_id: userId, invoice_id: invoice.id,
-      payment_method: 'bank_transfer', amount: invoice.total_amount,
-      account_id: accounts[1]?.id, // Bank account
-      payment_date: invoice.paid_date || new Date().toISOString(),
-      reference: `PAY-${invoice.invoice_number}`,
-      created_at: invoice.paid_date || new Date().toISOString()
-    }));
-  }
-  
-  private static generateJournalEntries(userId: string, accounts: any[], invoices: any[]) {
-    return invoices.filter(inv => inv.status === 'paid').map((invoice, index) => ({
-      id: `je_${index + 1}`, user_id: userId, 
-      entry_number: `JE-2024-${String(index + 1).padStart(3, '0')}`,
-      reference: `Sale ${invoice.invoice_number}`,
-      description: `Sales transaction for ${invoice.invoice_number}`,
-      entry_date: invoice.invoice_date,
-      total_amount: invoice.total_amount, status: 'posted',
-      lines: [
-        { 
-          account_id: accounts[1]?.id, description: 'Sales receipt', 
-          debit_amount: invoice.total_amount, credit_amount: 0 
-        },
-        { 
-          account_id: accounts[4]?.id, description: 'Sales revenue', 
-          debit_amount: 0, credit_amount: invoice.subtotal 
-        },
-        { 
-          account_id: accounts[5]?.id, description: 'Sales tax', 
-          debit_amount: 0, credit_amount: invoice.tax_amount 
-        }
-      ],
-      created_at: invoice.invoice_date
-    }));
-  }
-  
-  private static generateStockMovements(userId: string, products: any[], locations: any[]) {
-    return [
+
+  static generateInvoices(contacts: any[], accounts: any[]) {
+    const invoices = [
       {
-        id: '1', user_id: userId, product_id: products[0]?.id, 
-        from_location_id: locations[0]?.id, to_location_id: locations[1]?.id,
-        quantity: 10, movement_type: 'transfer', reason: 'Restock picking area',
-        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        completed_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-      }
-    ];
-  }
-  
-  private static generateInventoryAdjustments(userId: string, products: any[], locations: any[], users: any[]) {
-    return [
-      {
-        id: '1', user_id: userId, product_id: products[0]?.id, location_id: locations[0]?.id,
-        adjustment_quantity: -2, reason: 'Cycle count discrepancy', 
-        adjusted_by: users[1]?.id, created_at: new Date().toISOString()
-      }
-    ];
-  }
-  
-  private static generateTaskHistory(userId: string, users: any[]) {
-    return [
-      {
-        id: '1', user_id: userId, task_type: 'putaway', task_id: '1',
-        operator_id: users[2]?.id, action: 'completed', 
-        timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString()
-      }
-    ];
-  }
-  
-  private static generateNotificationSettings(users: any[]) {
-    return users.map(user => ({
-      id: `notif_${user.id}`, user_id: user.id,
-      email_notifications: true, push_notifications: false,
-      task_assignments: true, order_updates: true,
-      created_at: new Date('2024-01-01').toISOString()
-    }));
-  }
-  
-  private static generateUserSessions(users: any[]) {
-    return users.slice(0, 3).map((user, index) => ({
-      id: `session_${user.id}`, user_id: user.id,
-      session_token: `token_${user.id}_${Date.now()}`,
-      device_info: `Device ${index + 1}`, 
-      login_time: new Date(Date.now() - (index + 1) * 60 * 60 * 1000).toISOString(),
-      last_activity: new Date(Date.now() - index * 30 * 60 * 1000).toISOString(),
-      is_active: index < 2
-    }));
-  }
-  
-  private static generateAuditLogs(users: any[]) {
-    return [
-      {
-        id: '1', user_id: users[0]?.id, action: 'LOGIN',
-        resource: 'auth', details: 'User logged in successfully',
-        timestamp: new Date().toISOString()
+        id: '1',
+        invoice_number: 'INV-2024-001',
+        contact_id: contacts[0].id,
+        invoice_date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        due_date: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+        subtotal: 1200.00,
+        tax_amount: 96.00,
+        total_amount: 1296.00,
+        status: 'sent',
+        currency: 'USD',
+        line_items: [
+          {
+            id: '1',
+            description: 'Wireless Bluetooth Headphones',
+            quantity: 10,
+            unit_price: 99.99,
+            total: 999.90
+          },
+          {
+            id: '2',
+            description: 'Smartphone Case',
+            quantity: 8,
+            unit_price: 24.99,
+            total: 199.92
+          }
+        ],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '2', user_id: users[1]?.id, action: 'CREATE',
-        resource: 'putaway_task', details: 'Created new put away task',
-        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString()
+        id: '2',
+        invoice_number: 'INV-2024-002',
+        contact_id: contacts[1].id,
+        invoice_date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+        due_date: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
+        subtotal: 800.00,
+        tax_amount: 64.00,
+        total_amount: 864.00,
+        status: 'paid',
+        currency: 'USD',
+        line_items: [
+          {
+            id: '1',
+            description: 'Cotton T-Shirt',
+            quantity: 40,
+            unit_price: 19.99,
+            total: 799.60
+          }
+        ],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
+
+    BrowserStorage.set('invoices', invoices);
+    return invoices;
   }
-  
-  private static generateLoadingDocks(userId: string, warehouses: any[]) {
-    return [
+
+  static generateJournalEntries(accounts: any[]) {
+    const journal_entries = [
       {
-        id: '1', user_id: userId, warehouse_id: warehouses[0]?.id,
-        dock_code: 'DOCK-01', name: 'Loading Dock 1', 
-        dock_type: 'loading', is_occupied: false, is_active: true,
-        created_at: new Date('2024-01-01').toISOString()
+        id: '1',
+        entry_number: 'JE-2024-001',
+        date: new Date().toISOString(),
+        description: 'Cash sale transaction',
+        reference: 'SALE-001',
+        total_debit: 1296.00,
+        total_credit: 1296.00,
+        line_items: [
+          {
+            id: '1',
+            account_id: accounts[0].id, // Cash
+            debit: 1296.00,
+            credit: 0,
+            description: 'Cash received from sale'
+          },
+          {
+            id: '2',
+            account_id: accounts[5].id, // Sales Revenue
+            debit: 0,
+            credit: 1200.00,
+            description: 'Sales revenue'
+          },
+          {
+            id: '3',
+            account_id: accounts[3].id, // Tax Payable
+            debit: 0,
+            credit: 96.00,
+            description: 'Sales tax collected'
+          }
+        ],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
+
+    BrowserStorage.set('journal_entries', journal_entries);
+    return journal_entries;
   }
-  
-  private static generateShipments(userId: string, orders: any[], docks: any[]) {
-    return orders.slice(0, 2).map((order, index) => ({
-      id: `ship_${index + 1}`, user_id: userId, order_id: order.id,
-      shipment_code: `SHIP-2024-${String(index + 1).padStart(3, '0')}`,
-      dock_id: docks[0]?.id, status: index === 0 ? 'loading' : 'ready',
-      carrier: 'DHL Express', tracking_number: `DHL${Date.now()}${index}`,
-      created_at: new Date(Date.now() - (index + 1) * 60 * 60 * 1000).toISOString()
-    }));
-  }
-  
-  private static generateLoadingAppointments(userId: string, shipments: any[], users: any[]) {
-    return shipments.map((shipment, index) => ({
-      id: `appt_${index + 1}`, user_id: userId, shipment_id: shipment.id,
-      appointment_time: new Date(Date.now() + (index + 1) * 60 * 60 * 1000).toISOString(),
-      assigned_to: users[1]?.id, status: 'scheduled',
-      created_at: new Date().toISOString()
-    }));
-  }
-  
-  private static generateEcommerceConnections(userId: string) {
-    return [
+
+  static generatePayments(invoices: any[], accounts: any[]) {
+    const payments = [
       {
-        id: '1', user_id: userId, connection_name: 'Shopify Main Store',
-        platform: 'shopify', api_key: 'shopify_demo_key', 
-        store_url: 'demo-store.myshopify.com', status: 'active',
-        last_sync: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-        created_at: new Date('2024-01-01').toISOString()
+        id: '1',
+        payment_number: 'PAY-2024-001',
+        invoice_id: invoices[1].id,
+        amount: 864.00,
+        payment_date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        payment_method: 'bank_transfer',
+        reference: 'TXN-123456',
+        notes: 'Payment received via bank transfer',
+        account_id: accounts[0].id, // Cash account
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('payments', payments);
+    return payments;
+  }
+
+  static generateCustomers() {
+    const customers = [
+      {
+        id: '1',
+        code: 'CUST001',
+        name: 'ACME Corporation',
+        email: 'orders@acme.com',
+        phone: '+1-555-1111',
+        address: '123 Business St',
+        city: 'Business City',
+        state: 'BC',
+        postal_code: '12345',
+        country: 'USA',
+        tax_id: 'ACME123456',
+        credit_limit: 10000.00,
+        payment_terms: 'Net 30',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
-        id: '2', user_id: userId, connection_name: 'WooCommerce Store',
-        platform: 'woocommerce', api_key: 'woo_demo_key',
-        store_url: 'demo-store.com', status: 'active',
-        last_sync: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        created_at: new Date('2024-01-01').toISOString()
+        id: '2',
+        code: 'CUST002',
+        name: 'Global Retail Inc',
+        email: 'purchasing@globalretail.com',
+        phone: '+1-555-2222',
+        address: '456 Commerce Ave',
+        city: 'Trade City',
+        state: 'TC',
+        postal_code: '67890',
+        country: 'USA',
+        tax_id: 'GRI789012',
+        credit_limit: 15000.00,
+        payment_terms: 'Net 15',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
+
+    BrowserStorage.set('customers', customers);
+    return customers;
   }
-  
-  private static generateSyncLogs(userId: string, connections: any[]) {
-    return [
+
+  static generateEcommerceConnections() {
+    const connections = [
       {
-        id: '1', user_id: userId, connection_id: connections[0]?.id,
-        sync_type: 'orders', status: 'success', records_processed: 15,
+        id: '1',
+        platform_id: '1',
+        store_name: 'Main Store - Shopify',
+        store_url: 'https://mainstore.myshopify.com',
+        sync_enabled: true,
+        last_sync_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        is_active: true,
+        settings: {
+          auto_sync: true,
+          sync_interval: 15,
+          import_orders: true,
+          export_inventory: true
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        platform_id: '2',
+        store_name: 'Amazon Store',
+        store_url: 'https://amazon.com/seller/profile',
+        sync_enabled: true,
+        last_sync_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        is_active: true,
+        settings: {
+          auto_sync: true,
+          sync_interval: 30,
+          import_orders: true,
+          export_inventory: false
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('ecommerce_connections', connections);
+    return connections;
+  }
+
+  static generateEcommerceOrders(connections: any[], customers: any[], products: any[]) {
+    const orders = [
+      {
+        id: '1',
+        connection_id: connections[0].id,
+        external_order_id: 'SHOP-001',
+        order_number: 'ORD-2024-001',
+        customer_email: customers[0].email,
+        customer_name: customers[0].name,
+        financial_status: 'paid',
+        fulfillment_status: 'pending',
+        total_amount: 149.98,
+        currency: 'USD',
+        order_date: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        shipping_address: {
+          address1: '123 Business St',
+          city: 'Business City',
+          state: 'BC',
+          postal_code: '12345',
+          country: 'USA'
+        },
+        line_items: [
+          {
+            id: '1',
+            product_id: products[0].id,
+            sku: products[0].sku,
+            title: products[0].name,
+            quantity: 1,
+            price: 99.99
+          },
+          {
+            id: '2',
+            product_id: products[1].id,
+            sku: products[1].sku,
+            title: products[1].name,
+            quantity: 2,
+            price: 24.99
+          }
+        ],
+        sync_status: 'synced',
+        warehouse_status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        connection_id: connections[1].id,
+        external_order_id: 'AMZ-002',
+        order_number: 'ORD-2024-002',
+        customer_email: customers[1].email,
+        customer_name: customers[1].name,
+        financial_status: 'paid',
+        fulfillment_status: 'pending',
+        total_amount: 69.97,
+        currency: 'USD',
+        order_date: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+        shipping_address: {
+          address1: '456 Commerce Ave',
+          city: 'Trade City',
+          state: 'TC',
+          postal_code: '67890',
+          country: 'USA'
+        },
+        line_items: [
+          {
+            id: '1',
+            product_id: products[2].id,
+            sku: products[2].sku,
+            title: products[2].name,
+            quantity: 2,
+            price: 19.99
+          },
+          {
+            id: '2',
+            product_id: products[4].id,
+            sku: products[4].sku,
+            title: products[4].name,
+            quantity: 1,
+            price: 39.99
+          }
+        ],
+        sync_status: 'synced',
+        warehouse_status: 'processing',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('ecommerce_orders', orders);
+    return orders;
+  }
+
+  static generatePallets(products: any[], locations: any[]) {
+    const pallets = [
+      {
+        id: '1',
+        pallet_number: 'PLT-001',
+        status: 'pending',
+        product_id: products[0].id,
+        quantity: 50,
+        received_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        location_id: null,
+        putaway_task_id: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        pallet_number: 'PLT-002',
+        status: 'in_progress',
+        product_id: products[1].id,
+        quantity: 100,
+        received_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        location_id: null,
+        putaway_task_id: '1',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '3',
+        pallet_number: 'PLT-003',
+        status: 'stored',
+        product_id: products[2].id,
+        quantity: 200,
+        received_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        location_id: locations[0].id,
+        putaway_task_id: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('pallets', pallets);
+    return pallets;
+  }
+
+  static generateStockLevels(products: any[], locations: any[]) {
+    const stock_levels = [];
+    
+    // Generate stock levels for each product in various locations
+    products.forEach((product, index) => {
+      // Each product will have stock in 2-4 different locations
+      const numLocations = Math.floor(Math.random() * 3) + 2;
+      
+      for (let i = 0; i < numLocations; i++) {
+        const location = locations[Math.floor(Math.random() * locations.length)];
+        stock_levels.push({
+          id: `${product.id}-${location.id}`,
+          product_id: product.id,
+          location_id: location.id,
+          quantity_on_hand: Math.floor(Math.random() * 100) + 10,
+          quantity_available: Math.floor(Math.random() * 80) + 5,
+          quantity_allocated: Math.floor(Math.random() * 20),
+          reorder_point: product.reorder_point || 10,
+          max_quantity: product.max_stock || 100,
+          last_counted_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      }
+    });
+
+    BrowserStorage.set('stock_levels', stock_levels);
+    return stock_levels;
+  }
+
+  static generatePutAwayTasks(pallets: any[], locations: any[], users: any[]) {
+    const tasks = [
+      {
+        id: '1',
+        pallet_id: pallets[1].id,
+        assigned_to: users[2].id,
+        suggested_location_id: locations[5].id,
+        actual_location_id: null,
+        status: 'in_progress',
+        priority: 'normal',
+        started_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        completed_at: null,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        pallet_id: pallets[0].id,
+        assigned_to: null,
+        suggested_location_id: locations[8].id,
+        actual_location_id: null,
+        status: 'pending',
+        priority: 'high',
+        started_at: null,
+        completed_at: null,
+        notes: 'Fragile items - handle with care',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('putaway_tasks', tasks);
+    return tasks;
+  }
+
+  static generatePickingTasks(orders: any[], products: any[], locations: any[], users: any[]) {
+    const tasks = [];
+    
+    orders.forEach((order, index) => {
+      order.line_items.forEach((item: any, itemIndex: number) => {
+        tasks.push({
+          id: `${order.id}-${itemIndex + 1}`,
+          order_id: order.id,
+          product_id: item.product_id,
+          quantity_requested: item.quantity,
+          quantity_picked: 0,
+          location_id: locations[Math.floor(Math.random() * locations.length)].id,
+          assigned_to: index === 0 ? users[3].id : null,
+          status: index === 0 ? 'in_progress' : 'pending',
+          priority: order.fulfillment_status === 'pending' ? 'high' : 'normal',
+          started_at: index === 0 ? new Date(Date.now() - 45 * 60 * 1000).toISOString() : null,
+          completed_at: null,
+          notes: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      });
+    });
+
+    BrowserStorage.set('picking_tasks', tasks);
+    return tasks;
+  }
+
+  static generateStockMoveTasks(products: any[], locations: any[], users: any[]) {
+    const tasks = [
+      {
+        id: '1',
+        task_type: 'replenishment',
+        product_id: products[0].id,
+        from_location_id: locations[0].id,
+        to_location_id: locations[15].id,
+        quantity: 25,
+        assigned_to: users[2].id,
+        status: 'in_progress',
+        priority: 'normal',
+        reason: 'Replenish picking location',
         started_at: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
-        completed_at: new Date(Date.now() - 15 * 60 * 1000).toISOString()
+        completed_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        task_type: 'consolidation',
+        product_id: products[1].id,
+        from_location_id: locations[3].id,
+        to_location_id: locations[7].id,
+        quantity: 15,
+        assigned_to: null,
+        status: 'pending',
+        priority: 'low',
+        reason: 'Consolidate scattered inventory',
+        started_at: null,
+        completed_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
+
+    BrowserStorage.set('stock_move_tasks', tasks);
+    return tasks;
   }
-  
-  private static generateSystemConfig() {
-    return {
-      id: '1',
-      app_version: '1.0.0',
-      database_version: '1.0',
-      maintenance_mode: false,
-      max_users: 100,
-      session_timeout_minutes: 480,
-      backup_retention_days: 30,
-      log_level: 'info',
-      created_at: new Date('2024-01-01').toISOString(),
-      updated_at: new Date().toISOString()
-    };
+
+  static generateStockMovements(products: any[], locations: any[], users: any[]) {
+    const movements = [];
+    
+    // Generate some historical movements
+    for (let i = 0; i < 15; i++) {
+      const product = products[Math.floor(Math.random() * products.length)];
+      const fromLocation = locations[Math.floor(Math.random() * locations.length)];
+      const toLocation = locations[Math.floor(Math.random() * locations.length)];
+      const user = users[Math.floor(Math.random() * users.length)];
+      
+      movements.push({
+        id: `${i + 1}`,
+        product_id: product.id,
+        from_location_id: fromLocation.id,
+        to_location_id: toLocation.id,
+        quantity: Math.floor(Math.random() * 50) + 1,
+        movement_type: ['receipt', 'shipment', 'transfer', 'adjustment'][Math.floor(Math.random() * 4)],
+        reference: `MOV-${String(i + 1).padStart(3, '0')}`,
+        notes: `Movement ${i + 1}`,
+        performed_by: user.id,
+        performed_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    }
+
+    BrowserStorage.set('stock_movements', movements);
+    return movements;
   }
-  
-  private static generateCompanyConfig() {
-    return {
-      id: '1',
-      company_name: 'WarehouseOS Demo Ltd',
-      company_email: 'demo@warehouseos.com',
-      company_phone: '+44 20 7946 0999',
-      company_address: '100 Demo Street, London, UK',
-      company_logo: '/placeholder.svg',
-      default_language: 'en',
-      supported_languages: ['en', 'es'],
-      default_currency: 'GBP',
-      default_timezone: 'Europe/London',
-      backup_enabled: true,
-      backup_frequency: 'daily',
-      backup_retention_days: 30,
-      email_notifications: true,
-      sms_notifications: false,
-      created_at: new Date('2024-01-01').toISOString(),
-      updated_at: new Date().toISOString()
-    };
+
+  static generateChatChannels(users: any[]) {
+    const channels = [
+      {
+        id: '1',
+        name: 'General',
+        description: 'General warehouse discussion',
+        type: 'public',
+        created_by: users[0].id,
+        is_active: true,
+        member_count: users.length,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        name: 'Operations',
+        description: 'Operations team coordination',
+        type: 'public',
+        created_by: users[1].id,
+        is_active: true,
+        member_count: 4,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '3',
+        name: 'Urgent Issues',
+        description: 'For urgent operational issues',
+        type: 'public',
+        created_by: users[1].id,
+        is_active: true,
+        member_count: users.length,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '4',
+        name: 'Management',
+        description: 'Management discussions',
+        type: 'private',
+        created_by: users[0].id,
+        is_active: true,
+        member_count: 2,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('chat_channels', channels);
+    return channels;
+  }
+
+  static generateChatMessages(channels: any[], users: any[]) {
+    const messages = [
+      {
+        id: '1',
+        channel_id: channels[0].id,
+        user_id: users[1].id,
+        content: '¡Buenos días equipo! Recordatorio: tenemos inventario físico programado para la próxima semana.',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: '2',
+        channel_id: channels[1].id,
+        user_id: users[2].id,
+        content: 'Palet PLT-002 completado en ubicación A15. Próximo: PLT-001.',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: '3',
+        channel_id: channels[1].id,
+        user_id: users[3].id,
+        content: 'Picking en progreso para pedido ORD-2024-001. ETA: 30 minutos.',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: '4',
+        channel_id: channels[2].id,
+        user_id: users[1].id,
+        content: 'URGENTE: Verificar stock de ELEC-001 en ubicación A11. Posible discrepancia.',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: '5',
+        channel_id: channels[0].id,
+        user_id: users[4].id,
+        content: 'Facturas del día procesadas. Total: $2,160. Pendientes por cobrar: $25,840.',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 30 * 60 * 1000).toISOString()
+      }
+    ];
+
+    BrowserStorage.set('chat_messages', messages);
+    return messages;
+  }
+
+  static generateScanDevices() {
+    const devices = [
+      {
+        id: '1',
+        device_name: 'Scanner-01',
+        device_type: 'handheld',
+        serial_number: 'SC001234',
+        mac_address: '00:11:22:33:44:55',
+        is_active: true,
+        battery_level: 85,
+        last_seen_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        assigned_to: null,
+        location: 'Warehouse Floor',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        device_name: 'Scanner-02',
+        device_type: 'handheld',
+        serial_number: 'SC001235',
+        mac_address: '00:11:22:33:44:56',
+        is_active: true,
+        battery_level: 92,
+        last_seen_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        assigned_to: null,
+        location: 'Receiving Area',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '3',
+        device_name: 'Scanner-03',
+        device_type: 'fixed',
+        serial_number: 'SC001236',
+        mac_address: '00:11:22:33:44:57',
+        is_active: true,
+        battery_level: null,
+        last_seen_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+        assigned_to: null,
+        location: 'Shipping Dock',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('scan_devices', devices);
+    return devices;
+  }
+
+  static generateScanSessions(devices: any[], users: any[]) {
+    const sessions = [
+      {
+        id: '1',
+        device_id: devices[0].id,
+        user_id: users[2].id,
+        session_type: 'putaway',
+        status: 'active',
+        started_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+        ended_at: null,
+        scans_count: 15,
+        valid_scans: 14,
+        invalid_scans: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        device_id: devices[1].id,
+        user_id: users[3].id,
+        session_type: 'picking',
+        status: 'active',
+        started_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        ended_at: null,
+        scans_count: 8,
+        valid_scans: 8,
+        invalid_scans: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '3',
+        device_id: devices[0].id,
+        user_id: users[2].id,
+        session_type: 'inventory',
+        status: 'completed',
+        started_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        ended_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+        scans_count: 45,
+        valid_scans: 43,
+        invalid_scans: 2,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('scan_sessions', sessions);
+    return sessions;
+  }
+
+  static generateLoadingDocks(warehouses: any[]) {
+    const docks = [
+      {
+        id: '1',
+        warehouse_id: warehouses[0].id,
+        dock_number: 'D001',
+        dock_type: 'shipping',
+        status: 'occupied',
+        max_weight: 40000,
+        is_active: true,
+        equipment: ['forklift', 'dock_leveler'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        warehouse_id: warehouses[0].id,
+        dock_number: 'D002',
+        dock_type: 'receiving',
+        status: 'available',
+        max_weight: 40000,
+        is_active: true,
+        equipment: ['forklift', 'dock_leveler', 'scale'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '3',
+        warehouse_id: warehouses[1].id,
+        dock_number: 'D003',
+        dock_type: 'shipping',
+        status: 'available',
+        max_weight: 35000,
+        is_active: true,
+        equipment: ['forklift'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('loading_docks', docks);
+    return docks;
+  }
+
+  static generateShipments(orders: any[], docks: any[]) {
+    const shipments = [
+      {
+        id: '1',
+        shipment_number: 'SHIP-2024-001',
+        order_id: orders[0].id,
+        dock_id: docks[0].id,
+        carrier: 'FedEx',
+        tracking_number: 'FX123456789',
+        status: 'preparing',
+        scheduled_pickup: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+        actual_pickup: null,
+        weight: 2.5,
+        dimensions: '30x25x15',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        shipment_number: 'SHIP-2024-002',
+        order_id: orders[1].id,
+        dock_id: null,
+        carrier: 'UPS',
+        tracking_number: 'UP987654321',
+        status: 'pending',
+        scheduled_pickup: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        actual_pickup: null,
+        weight: 1.8,
+        dimensions: '25x20x10',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('shipments', shipments);
+    return shipments;
+  }
+
+  static generateLoadingAppointments(docks: any[], shipments: any[]) {
+    const appointments = [
+      {
+        id: '1',
+        dock_id: docks[0].id,
+        shipment_id: shipments[0].id,
+        appointment_type: 'pickup',
+        scheduled_start: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+        scheduled_end: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
+        actual_start: null,
+        actual_end: null,
+        status: 'scheduled',
+        driver_name: 'John Driver',
+        truck_license: 'TRK-123',
+        notes: 'Standard pickup appointment',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('loading_appointments', appointments);
+    return appointments;
+  }
+
+  static generateSyncLogs() {
+    const logs = [
+      {
+        id: '1',
+        sync_type: 'ecommerce_orders',
+        status: 'completed',
+        records_processed: 15,
+        records_success: 14,
+        records_failed: 1,
+        started_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        completed_at: new Date(Date.now() - 2 * 60 * 60 * 1000 + 5 * 60 * 1000).toISOString(),
+        duration_seconds: 300,
+        error_message: null,
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        sync_type: 'inventory_levels',
+        status: 'completed',
+        records_processed: 50,
+        records_success: 50,
+        records_failed: 0,
+        started_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        completed_at: new Date(Date.now() - 4 * 60 * 60 * 1000 + 2 * 60 * 1000).toISOString(),
+        duration_seconds: 120,
+        error_message: null,
+        created_at: new Date().toISOString()
+      }
+    ];
+
+    BrowserStorage.set('sync_logs', logs);
+    return logs;
+  }
+
+  static generateAuditLogs(users: any[]) {
+    const logs = [
+      {
+        id: '1',
+        user_id: users[0].id,
+        action: 'user_login',
+        resource_type: 'authentication',
+        resource_id: users[0].id,
+        changes: null,
+        ip_address: '192.168.1.100',
+        user_agent: 'Mozilla/5.0...',
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: '2',
+        user_id: users[2].id,
+        action: 'task_completed',
+        resource_type: 'putaway_task',
+        resource_id: '1',
+        changes: { status: { from: 'in_progress', to: 'completed' } },
+        ip_address: '192.168.1.101',
+        user_agent: 'Scanner App v1.0',
+        created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: '3',
+        user_id: users[4].id,
+        action: 'invoice_created',
+        resource_type: 'invoice',
+        resource_id: '1',
+        changes: { amount: 1296.00, status: 'sent' },
+        ip_address: '192.168.1.102',
+        user_agent: 'Mozilla/5.0...',
+        created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
+      }
+    ];
+
+    BrowserStorage.set('audit_logs', logs);
+    return logs;
   }
 }
