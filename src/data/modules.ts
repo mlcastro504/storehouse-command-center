@@ -13,7 +13,8 @@ import {
   ShoppingCart,
   Archive,
   ArrowUpDown,
-  ClipboardList
+  ClipboardList,
+  Truck
 } from 'lucide-react';
 
 export const modules = [
@@ -44,6 +45,16 @@ export const modules = [
     description: 'Gestión de almacenes, zonas y ubicaciones físicas',
     icon: 'MapPin',
     path: '/locations',
+    isActive: true,
+    requiredRoleLevel: 1
+  },
+  {
+    id: 'suppliers',
+    name: 'Suppliers',
+    displayName: 'Proveedores',
+    description: 'Gestión de proveedores y relaciones comerciales',
+    icon: 'Truck',
+    path: '/suppliers',
     isActive: true,
     requiredRoleLevel: 1
   },

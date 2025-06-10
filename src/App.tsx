@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import Locations from "./pages/Locations";
+import Suppliers from "./pages/Suppliers";
 import Picking from "./pages/Picking";
 import StockMovements from "./pages/StockMovements";
 import StockMove from "./pages/StockMove";
@@ -38,6 +39,7 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/locations" element={<Locations />} />
+                <Route path="/suppliers" element={<Suppliers />} />
                 <Route path="/picking" element={<Picking />} />
                 <Route path="/stock-movements" element={<StockMovements />} />
                 <Route path="/stock-move" element={<StockMove />} />
