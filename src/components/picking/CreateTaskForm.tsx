@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,7 +79,7 @@ export const CreateTaskForm = ({ onSuccess }: CreateTaskFormProps) => {
     <form onSubmit={handleSubmit} className="space-y-4">
       <ProductSelector
         value={formData.product_id}
-        onChange={(value) => setFormData({...formData, product_id: value})}
+        onValueChange={(value) => setFormData({...formData, product_id: value})}
       />
 
       <div className="space-y-2">
@@ -99,7 +98,7 @@ export const CreateTaskForm = ({ onSuccess }: CreateTaskFormProps) => {
         label="Ubicación Origen *"
         placeholder="Seleccionar origen"
         value={formData.source_location_id}
-        onChange={(value) => setFormData({...formData, source_location_id: value})}
+        onValueChange={(value) => setFormData({...formData, source_location_id: value})}
         filterTypes={['rack', 'shelf', 'bin']}
       />
 
@@ -107,7 +106,7 @@ export const CreateTaskForm = ({ onSuccess }: CreateTaskFormProps) => {
         label="Ubicación Destino *"
         placeholder="Seleccionar destino"
         value={formData.destination_location_id}
-        onChange={(value) => setFormData({...formData, destination_location_id: value})}
+        onValueChange={(value) => setFormData({...formData, destination_location_id: value})}
         filterTypes={['packing', 'shipping', 'bin', 'buffer']}
       />
 

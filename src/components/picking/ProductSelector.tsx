@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -12,14 +13,16 @@ import { Product } from '@/types/inventory';
 
 interface ProductSelectorProps {
   value?: string;
-  onValueChange: (value: string) => void;
+  onValueChange?: (value: string) => void;
+  onChange?: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
 }
 
 export function ProductSelector({ 
   value, 
-  onValueChange, 
+  onValueChange,
+  onChange,
   placeholder = "Seleccionar producto...",
   disabled = false 
 }: ProductSelectorProps) {
@@ -39,8 +42,13 @@ export function ProductSelector({
     }
   });
 
+  const handleValueChange = (newValue: string) => {
+    if (onValueChange) onValueChange(newValue);
+    if (onChange) onChange(newValue);
+  };
+
   return (
-    <Select onValueChange={onValueChange} defaultValue={value} disabled={disabled}>
+    <Select onValueChange={handleValueChange} defaultValue={value} disabled={disabled}>
       <SelectTrigger>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>

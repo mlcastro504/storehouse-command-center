@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -12,18 +13,24 @@ import { Location } from '@/types/inventory';
 
 interface LocationSelectorProps {
   value?: string;
-  onValueChange: (value: string) => void;
+  onValueChange?: (value: string) => void;
+  onChange?: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
   warehouseId?: string;
+  label?: string;
+  filterTypes?: string[];
 }
 
 export function LocationSelector({ 
   value, 
-  onValueChange, 
+  onValueChange,
+  onChange,
   placeholder = "Seleccionar ubicación...",
   disabled = false,
-  warehouseId
+  warehouseId,
+  label,
+  filterTypes
 }: LocationSelectorProps) {
   const { data: locations, isLoading } = useQuery({
     queryKey: ['locations-selector', warehouseId],
@@ -42,22 +49,35 @@ export function LocationSelector({
     }
   });
 
+  const handleValueChange = (newValue: string) => {
+    if (onValueChange) onValueChange(newValue);
+    if (onChange) onChange(newValue);
+  };
+
+  // Filter locations by type if filterTypes is provided
+  const filteredLocations = filterTypes 
+    ? locations?.filter(location => filterTypes.includes(location.type || ''))
+    : locations;
+
   return (
-    <Select disabled={disabled} onValueChange={onValueChange} value={value}>
-      <SelectTrigger>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {isLoading ? (
-          <SelectItem value="loading" disabled>Cargando...</SelectItem>
-        ) : (
-          locations?.map((location) => (
-            <SelectItem key={location.id} value={location.id || ''}>
-              {location.code} - {location.name}
-            </SelectItem>
-          ))
-        )}
-      </SelectContent>
-    </Select>
+    <div className="space-y-2">
+      {label && <label className="text-sm font-medium">{label}</label>}
+      <Select disabled={disabled} onValueChange={handleValueChange} value={value}>
+        <SelectTrigger>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {isLoading ? (
+            <SelectItem value="loading" disabled>Cargando...</SelectItem>
+          ) : (
+            filteredLocations?.map((location) => (
+              <SelectItem key={location.id} value={location.id || ''}>
+                {location.code} - {location.name}
+              </SelectItem>
+            ))
+          )}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
