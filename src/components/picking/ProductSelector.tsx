@@ -34,13 +34,16 @@ export function ProductSelector({
       
       const productsData = await db.collection('products')
         .find()
-        .sort({ name: 1 })
+        .sort()
         .toArray();
 
       console.log('ProductSelector: Fetched products from MongoDB:', productsData.length);
       
       // Apply filtering after fetching
       const filteredData = (productsData as Product[]).filter(product => product.is_active);
+      
+      // Sort by name in JavaScript
+      filteredData.sort((a, b) => a.name.localeCompare(b.name));
       
       return filteredData;
     }

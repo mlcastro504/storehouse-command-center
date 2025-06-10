@@ -40,7 +40,7 @@ export function LocationSelector({
       
       const locationsData = await db.collection('locations')
         .find()
-        .sort({ code: 1 })
+        .sort()
         .toArray();
 
       console.log('LocationSelector: Fetched locations from MongoDB:', locationsData.length);
@@ -55,6 +55,9 @@ export function LocationSelector({
       } else {
         filteredData = filteredData.filter(location => location.is_active);
       }
+      
+      // Sort by code in JavaScript
+      filteredData.sort((a, b) => a.code.localeCompare(b.code));
       
       return filteredData;
     }

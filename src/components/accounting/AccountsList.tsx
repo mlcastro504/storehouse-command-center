@@ -18,11 +18,14 @@ export function AccountsList() {
       
       const accountsData = await db.collection('accounts')
         .find()
-        .sort({ code: 1 })
+        .sort()
         .toArray();
 
       console.log('AccountsList: Fetched accounts from MongoDB:', accountsData.length);
-      return accountsData as Account[];
+      
+      // Sort by code in JavaScript
+      const sortedData = (accountsData as Account[]).sort((a, b) => a.code.localeCompare(b.code));
+      return sortedData;
     }
   });
 
