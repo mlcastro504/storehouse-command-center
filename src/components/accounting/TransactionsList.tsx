@@ -70,8 +70,16 @@ export function TransactionsList() {
   const getTransactionBalance = (transaction: Transaction) => {
     if (!transaction.journal_entries) return true;
     
-    const totalDebits = transaction.journal_entries.reduce((sum, entry) => sum + (entry.debit_amount || 0), 0);
-    const totalCredits = transaction.journal_entries.reduce((sum, entry) => sum + (entry.credit_amount || 0), 0);
+    // Calculate balance from journal entries, not individual lines
+    let totalDebits = 0;
+    let totalCredits = 0;
+    
+    for (const entry of transaction.journal_entries) {
+      if (entry.entry_lines) {
+        totalDebits += entry.entry_lines.reduce((sum, line) => sum + (line.debit_amount || 0), 0);
+        totalCredits += entry.entry_lines.reduce((sum, line) => sum + (line.credit_amount || 0), 0);
+      }
+    }
     
     return Math.abs(totalDebits - totalCredits) < 0.01; // Consider floating point precision
   };
