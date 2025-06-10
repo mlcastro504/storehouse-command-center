@@ -1,3 +1,4 @@
+
 // Mock collection for browser storage
 class MockCollection {
   private collectionName: string;
@@ -227,10 +228,13 @@ export class BrowserStorage {
     if (!this.get('stock_movements')) {
       this.set('stock_movements', []);
     }
+    if (!this.get('suppliers')) {
+      this.set('suppliers', []);
+    }
   }
 
   static async getStats() {
-    const collections = ['products', 'categories', 'warehouses', 'locations', 'stock_levels', 'stock_movements'];
+    const collections = ['products', 'categories', 'warehouses', 'locations', 'stock_levels', 'stock_movements', 'suppliers'];
     let totalSize = 0;
     
     collections.forEach(collection => {
