@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -111,17 +110,19 @@ export function CreateJournalEntryDialog({ open, onOpenChange, onSuccess }: Crea
       
       const entryResult = await db.collection('journal_entries').insertOne(journalEntry);
       
-      // Crear líneas de asiento
-      const entryLines = data.entry_lines.map(line => ({
-        journal_entry_id: entryResult.insertedId,
-        account_id: line.account_id,
-        debit_amount: line.debit_amount,
-        credit_amount: line.credit_amount,
-        description: line.description,
-        created_at: new Date().toISOString()
-      }));
-      
-      await db.collection('journal_entry_lines').insertMany(entryLines);
+      // Crear líneas de asiento una por una
+      for (const line of data.entry_lines) {
+        const entryLine = {
+          journal_entry_id: entryResult.insertedId,
+          account_id: line.account_id,
+          debit_amount: line.debit_amount,
+          credit_amount: line.credit_amount,
+          description: line.description,
+          created_at: new Date().toISOString()
+        };
+        
+        await db.collection('journal_entry_lines').insertOne(entryLine);
+      }
       
       return entryResult;
     },

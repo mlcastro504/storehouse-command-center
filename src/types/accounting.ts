@@ -1,4 +1,3 @@
-
 // Tipos para el módulo de contabilidad completo
 
 export interface Account {
@@ -250,4 +249,18 @@ export interface CreatePaymentData {
     invoice_id: string;
     amount_applied: number;
   }[];
+}
+
+export interface Transaction {
+  id: string;
+  transaction_number: string;
+  description: string;
+  transaction_date: string;
+  reference?: string;
+  total_amount: number;
+  status: 'draft' | 'posted' | 'cancelled';
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  journal_entries?: JournalEntry[];
 }
