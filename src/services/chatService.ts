@@ -64,19 +64,20 @@ export class ChatService {
       const messages = await db.collection('chat_messages')
         .find({ channel_id: channelId, deleted_at: null })
         .sort({ sent_at: -1 })
-        .skip(offset)
-        .limit(limit)
         .toArray();
 
+      // Take only the required slice for pagination simulation
+      const paginatedMessages = messages.slice(offset, offset + limit);
+
       // Populate sender information
-      for (const message of messages) {
+      for (const message of paginatedMessages) {
         const sender = await db.collection('users').findOne({ id: message.sender_id });
         if (sender) {
           message.sender = sender;
         }
       }
 
-      return messages.reverse() as ChatMessage[];
+      return paginatedMessages.reverse() as ChatMessage[];
     } catch (error) {
       console.error('Error fetching messages:', error);
       throw error;
@@ -111,7 +112,7 @@ export class ChatService {
         }
       );
 
-      // Process mentions and create notifications
+      // Process mentions if they exist
       if (message.mentions && message.mentions.length > 0) {
         await this.processMentions(message as ChatMessage);
       }
@@ -130,33 +131,18 @@ export class ChatService {
       for (const mention of message.mentions || []) {
         let userIds: string[] = [];
         
-        if (mention.startsWith('@')) {
-          const mentionTarget = mention.substring(1);
-          
-          if (mentionTarget === 'all' || mentionTarget === 'todos') {
-            // Get all channel members
-            const channel = await db.collection('chat_channels').findOne({ id: message.channel_id });
-            userIds = channel?.members?.map((m: any) => m.user_id) || [];
-          } else {
-            // Check if it's a role mention
-            const role = await db.collection('roles').findOne({ name: mentionTarget });
-            if (role) {
-              const users = await db.collection('users').find({ 'role.name': mentionTarget }).toArray();
-              userIds = users.map(u => u.id);
-            } else {
-              // Individual user mention
-              const user = await db.collection('users').findOne({ 
-                $or: [
-                  { firstName: { $regex: mentionTarget, $options: 'i' } },
-                  { lastName: { $regex: mentionTarget, $options: 'i' } },
-                  { email: { $regex: mentionTarget, $options: 'i' } }
-                ]
-              });
-              if (user) {
-                userIds = [user.id];
-              }
-            }
-          }
+        // Check if mention has mention_type property and handle accordingly
+        if (mention.mention_type === 'all') {
+          // Get all channel members
+          const channel = await db.collection('chat_channels').findOne({ id: message.channel_id });
+          userIds = channel?.members?.map((m: any) => m.user_id) || [];
+        } else if (mention.mention_type === 'role' && mention.role_name) {
+          // Role mention
+          const users = await db.collection('users').find({ 'role.name': mention.role_name }).toArray();
+          userIds = users.map(u => u.id);
+        } else if (mention.mention_type === 'user' && mention.user_id) {
+          // Individual user mention
+          userIds = [mention.user_id];
         }
 
         // Create notifications
@@ -166,7 +152,7 @@ export class ChatService {
               user_id: userId,
               channel_id: message.channel_id,
               message_id: message.id,
-              type: mention.includes('@all') ? 'role_mention' : 'mention',
+              type: mention.mention_type === 'all' ? 'role_mention' : 'mention',
               read: false,
               delivered: false,
               push_sent: false,
@@ -209,8 +195,7 @@ export class ChatService {
 
       await db.collection('user_chat_status').updateOne(
         { user_id: userId },
-        { $set: statusData },
-        { upsert: true }
+        { $set: statusData }
       );
     } catch (error) {
       console.error('Error updating user status:', error);
@@ -264,7 +249,7 @@ export class ChatService {
       
       let filter: any = {
         deleted_at: null,
-        $text: { $search: query }
+        content: { $regex: query, $options: 'i' } // Simple text search simulation
       };
 
       if (channelId) {
@@ -278,10 +263,10 @@ export class ChatService {
       const messages = await db.collection('chat_messages')
         .find(filter)
         .sort({ sent_at: -1 })
-        .limit(50)
         .toArray();
 
-      return messages as ChatMessage[];
+      // Take only first 50 results
+      return messages.slice(0, 50) as ChatMessage[];
     } catch (error) {
       console.error('Error searching messages:', error);
       return [];
@@ -304,11 +289,11 @@ export class ChatService {
       }
 
       // Create new contextual chat
-      const channelData = {
+      const channelData: Partial<ChatChannel> = {
         name: `${contextType} #${contextId}`,
         description: `Chat contextual para ${contextType} ${contextId}`,
-        type: 'contextual',
-        context_type: contextType,
+        type: 'contextual' as const,
+        context_type: contextType as any,
         context_id: contextId,
         created_by: 'system',
         members: []
@@ -325,7 +310,7 @@ export class ChatService {
           id: new Date().getTime().toString(),
           channel_id: '',
           user_id: user.id,
-          role: 'member',
+          role: 'member' as const,
           joined_at: new Date().toISOString(),
           notifications_enabled: true,
           can_upload_files: true,
@@ -345,31 +330,37 @@ export class ChatService {
       const db = await connectToDatabase();
       
       for (const messageId of messageIds) {
-        await db.collection('chat_messages').updateOne(
-          { id: messageId },
-          {
-            $addToSet: {
-              read_by: {
-                user_id: userId,
-                read_at: new Date().toISOString()
-              }
-            }
-          }
-        );
+        // Simulate adding to read_by array
+        const message = await db.collection('chat_messages').findOne({ id: messageId });
+        if (message) {
+          const readBy = message.read_by || [];
+          readBy.push({
+            user_id: userId,
+            read_at: new Date().toISOString()
+          });
+          
+          await db.collection('chat_messages').updateOne(
+            { id: messageId },
+            { $set: { read_by: readBy } }
+          );
+        }
       }
 
       // Update member's last read timestamp
-      await db.collection('chat_channels').updateOne(
-        { 
-          id: channelId,
-          'members.user_id': userId 
-        },
-        {
-          $set: {
-            'members.$.last_read_at': new Date().toISOString()
+      const channel = await db.collection('chat_channels').findOne({ id: channelId });
+      if (channel && channel.members) {
+        const updatedMembers = channel.members.map((member: any) => {
+          if (member.user_id === userId) {
+            return { ...member, last_read_at: new Date().toISOString() };
           }
-        }
-      );
+          return member;
+        });
+        
+        await db.collection('chat_channels').updateOne(
+          { id: channelId },
+          { $set: { members: updatedMembers } }
+        );
+      }
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }

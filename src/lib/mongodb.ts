@@ -17,14 +17,37 @@ export async function connectToDatabase() {
     return {
       collection: (name: string) => ({
         find: (filter: any = {}) => ({
-          sort: () => ({
+          sort: (sortOptions?: any) => ({
+            skip: (skipCount: number) => ({
+              limit: (limitCount: number) => ({
+                toArray: () => BrowserStorage.find(name, filter)
+              }),
+              toArray: () => BrowserStorage.find(name, filter)
+            }),
+            limit: (limitCount: number) => ({
+              toArray: () => BrowserStorage.find(name, filter)
+            }),
+            toArray: () => BrowserStorage.find(name, filter)
+          }),
+          skip: (skipCount: number) => ({
+            limit: (limitCount: number) => ({
+              toArray: () => BrowserStorage.find(name, filter)
+            }),
+            toArray: () => BrowserStorage.find(name, filter)
+          }),
+          limit: (limitCount: number) => ({
             toArray: () => BrowserStorage.find(name, filter)
           }),
           toArray: () => BrowserStorage.find(name, filter)
         }),
         findOne: (filter: any) => BrowserStorage.findOne(name, filter),
         insertOne: (doc: any) => BrowserStorage.insertOne(name, doc),
-        updateOne: (filter: any, update: any) => {
+        insertMany: (docs: any[]) => {
+          // Simulate insertMany by calling insertOne for each document
+          const results = docs.map(doc => BrowserStorage.insertOne(name, doc));
+          return Promise.resolve({ insertedIds: results.map((_, i) => i.toString()) });
+        },
+        updateOne: (filter: any, update: any, options?: any) => {
           const updateData = update.$set || update;
           return BrowserStorage.updateOne(name, filter, updateData);
         },
@@ -41,7 +64,9 @@ export async function connectToDatabase() {
         toArray: () => Promise.resolve([
           { name: 'products' }, { name: 'categories' }, { name: 'warehouses' },
           { name: 'locations' }, { name: 'stock_levels' }, { name: 'stock_movements' },
-          { name: 'accounts' }, { name: 'transactions' }, { name: 'invoices' }, { name: 'contacts' }
+          { name: 'accounts' }, { name: 'transactions' }, { name: 'invoices' }, { name: 'contacts' },
+          { name: 'chat_channels' }, { name: 'chat_messages' }, { name: 'chat_notifications' },
+          { name: 'user_chat_status' }, { name: 'quick_responses' }
         ])
       }),
       stats: () => BrowserStorage.getStats()

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -83,7 +82,6 @@ export function CreateJournalEntryDialog({ open, onOpenChange, onSuccess }: Crea
       const lastEntry = await db.collection('journal_entries')
         .find({})
         .sort({ created_at: -1 })
-        .limit(1)
         .toArray();
       
       const nextNumber = lastEntry.length > 0 ? 
@@ -117,7 +115,10 @@ export function CreateJournalEntryDialog({ open, onOpenChange, onSuccess }: Crea
         created_at: new Date().toISOString()
       }));
       
-      await db.collection('journal_entry_lines').insertMany(lines);
+      // Insert lines one by one since insertMany is now properly supported
+      for (const line of lines) {
+        await db.collection('journal_entry_lines').insertOne(line);
+      }
       
       return entryResult;
     },
