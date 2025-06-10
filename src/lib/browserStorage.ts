@@ -1,4 +1,3 @@
-
 // Mock collection for browser storage
 class MockCollection {
   private collectionName: string;
@@ -103,6 +102,39 @@ class MockCollection {
       return { upsertedId: newDoc._id, modifiedCount: 0 };
     }
     return { modifiedCount: 0 };
+  }
+
+  async listIndexes() {
+    // Mock indexes for browser storage - return sample indexes that would exist in MongoDB
+    const defaultIndexes = [
+      {
+        name: '_id_',
+        key: { _id: 1 },
+        size: 1024
+      }
+    ];
+
+    // Add collection-specific mock indexes based on collection name
+    const collectionIndexes: Record<string, any[]> = {
+      'products': [
+        { name: 'user_id_1', key: { user_id: 1 }, size: 2048 },
+        { name: 'sku_1', key: { sku: 1 }, size: 1536 },
+        { name: 'barcode_1', key: { barcode: 1 }, size: 1536 }
+      ],
+      'stock_levels': [
+        { name: 'user_id_1', key: { user_id: 1 }, size: 2048 },
+        { name: 'product_location_compound', key: { product_id: 1, location_id: 1 }, size: 3072 }
+      ],
+      'picking_tasks': [
+        { name: 'user_id_1', key: { user_id: 1 }, size: 2048 },
+        { name: 'status_1', key: { status: 1 }, size: 1536 }
+      ]
+    };
+
+    const specificIndexes = collectionIndexes[this.collectionName] || [];
+    return {
+      toArray: () => Promise.resolve([...defaultIndexes, ...specificIndexes])
+    };
   }
 
   private matchesFilter(item: any, filter: any): boolean {
