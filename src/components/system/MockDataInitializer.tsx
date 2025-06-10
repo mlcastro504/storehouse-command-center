@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -204,7 +203,6 @@ export function MockDataInitializer() {
           )}
         </div>
 
-        {/* Generated Data Summary */}
         {isComplete && dataStats && (
           <div className="space-y-3">
             <h3 className="text-lg font-semibold text-green-600">
