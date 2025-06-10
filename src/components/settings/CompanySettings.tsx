@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Building, Upload } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 export function CompanySettings() {
+  const { t } = useTranslation(['settings', 'common']);
   const [companyData, setCompanyData] = useState({
     name: 'WarehouseOS Company',
     fiscalNumber: 'ES-12345678Z',
@@ -26,15 +28,15 @@ export function CompanySettings() {
 
   const handleSave = () => {
     toast({
-      title: "Información de la empresa guardada",
-      description: "Los datos de la empresa se han actualizado correctamente.",
+      title: t('common:success'),
+      description: t('settings:company.informationSaved'),
     });
   };
 
   const handleLogoUpload = () => {
     toast({
-      title: "Logo subido",
-      description: "El logo de la empresa se ha actualizado.",
+      title: t('common:success'),
+      description: t('settings:company.logoUploaded'),
     });
   };
 
@@ -43,16 +45,16 @@ export function CompanySettings() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building className="w-5 h-5" />
-          Información de la Empresa
+          {t('settings:company.title')}
         </CardTitle>
         <CardDescription>
-          Configura los datos básicos de tu empresa
+          {t('settings:company.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Nombre de la Empresa</Label>
+            <Label>{t('settings:company.name')}</Label>
             <Input
               value={companyData.name}
               onChange={(e) => setCompanyData({ ...companyData, name: e.target.value })}
@@ -60,7 +62,7 @@ export function CompanySettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>Nombre Comercial</Label>
+            <Label>{t('settings:company.commercialName')}</Label>
             <Input
               value={companyData.commercialName}
               onChange={(e) => setCompanyData({ ...companyData, commercialName: e.target.value })}
@@ -68,7 +70,7 @@ export function CompanySettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>Número Fiscal</Label>
+            <Label>{t('settings:company.fiscalNumber')}</Label>
             <Input
               value={companyData.fiscalNumber}
               onChange={(e) => setCompanyData({ ...companyData, fiscalNumber: e.target.value })}
@@ -76,7 +78,7 @@ export function CompanySettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>Teléfono</Label>
+            <Label>{t('settings:company.phone')}</Label>
             <Input
               value={companyData.phone}
               onChange={(e) => setCompanyData({ ...companyData, phone: e.target.value })}
@@ -84,7 +86,7 @@ export function CompanySettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>País</Label>
+            <Label>{t('settings:company.country')}</Label>
             <Select value={companyData.country} onValueChange={(value) => setCompanyData({ ...companyData, country: value })}>
               <SelectTrigger>
                 <SelectValue />
@@ -100,7 +102,7 @@ export function CompanySettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>Zona Horaria</Label>
+            <Label>{t('settings:company.timezone')}</Label>
             <Select value={companyData.timezone} onValueChange={(value) => setCompanyData({ ...companyData, timezone: value })}>
               <SelectTrigger>
                 <SelectValue />
@@ -116,7 +118,7 @@ export function CompanySettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>Moneda Base</Label>
+            <Label>{t('settings:company.baseCurrency')}</Label>
             <Select value={companyData.baseCurrency} onValueChange={(value) => setCompanyData({ ...companyData, baseCurrency: value })}>
               <SelectTrigger>
                 <SelectValue />
@@ -130,7 +132,7 @@ export function CompanySettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>URL Pública</Label>
+            <Label>{t('settings:company.publicUrl')}</Label>
             <Input
               value={companyData.publicUrl}
               onChange={(e) => setCompanyData({ ...companyData, publicUrl: e.target.value })}
@@ -139,7 +141,7 @@ export function CompanySettings() {
         </div>
 
         <div className="space-y-2">
-          <Label>Dirección</Label>
+          <Label>{t('settings:company.address')}</Label>
           <Textarea
             value={companyData.address}
             onChange={(e) => setCompanyData({ ...companyData, address: e.target.value })}
@@ -148,19 +150,19 @@ export function CompanySettings() {
         </div>
 
         <div className="space-y-2">
-          <Label>Logo de la Empresa</Label>
+          <Label>{t('settings:company.logo')}</Label>
           <div className="flex items-center gap-4">
             <Button variant="outline" onClick={handleLogoUpload} className="flex items-center gap-2">
               <Upload className="w-4 h-4" />
-              Subir Logo
+              {t('settings:company.uploadLogo')}
             </Button>
-            <span className="text-sm text-muted-foreground">Formatos aceptados: PNG, JPG, SVG (max 2MB)</span>
+            <span className="text-sm text-muted-foreground">{t('settings:company.logoFormats')}</span>
           </div>
         </div>
 
         <div className="flex justify-end">
           <Button onClick={handleSave}>
-            Guardar Información
+            {t('settings:company.saveInformation')}
           </Button>
         </div>
       </CardContent>

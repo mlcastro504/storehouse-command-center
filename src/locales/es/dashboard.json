@@ -1,0 +1,22 @@
+
+{
+  "title": "Panel Principal",
+  "welcome": "Bienvenido de nuevo",
+  "overview": "Resumen del Sistema",
+  "kpis": {
+    "totalProducts": "Total de Productos",
+    "activeOrders": "Órdenes Activas",
+    "pendingTasks": "Tareas Pendientes",
+    "systemHealth": "Estado del Sistema"
+  },
+  "activity": {
+    "title": "Actividad Reciente",
+    "noActivity": "No hay actividad reciente"
+  },
+  "tasks": {
+    "title": "Resumen de Tareas",
+    "pending": "Pendiente",
+    "inProgress": "En Progreso",
+    "completed": "Completado"
+  }
+}

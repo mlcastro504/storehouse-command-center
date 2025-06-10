@@ -1,0 +1,22 @@
+
+{
+  "title": "Dashboard",
+  "welcome": "Welcome back",
+  "overview": "System Overview",
+  "kpis": {
+    "totalProducts": "Total Products",
+    "activeOrders": "Active Orders",
+    "pendingTasks": "Pending Tasks",
+    "systemHealth": "System Health"
+  },
+  "activity": {
+    "title": "Recent Activity",
+    "noActivity": "No recent activity"
+  },
+  "tasks": {
+    "title": "Tasks Overview",
+    "pending": "Pending",
+    "inProgress": "In Progress",
+    "completed": "Completed"
+  }
+}

@@ -1,0 +1,43 @@
+
+{
+  "title": "Configuración del Sistema",
+  "description": "Centro de control y administración global de WarehouseOS",
+  "tabs": {
+    "company": "Empresa",
+    "warehouses": "Almacenes",
+    "database": "MongoDB",
+    "backup": "Backup",
+    "api": "API",
+    "security": "Seguridad",
+    "system": "Sistema",
+    "legacy": "Legacy",
+    "general": "General",
+    "account": "Cuenta",
+    "notifications": "Notificaciones",
+    "integrations": "Integraciones"
+  },
+  "company": {
+    "title": "Información de la Empresa",
+    "description": "Configura los datos básicos de tu empresa",
+    "name": "Nombre de la Empresa",
+    "commercialName": "Nombre Comercial",
+    "fiscalNumber": "Número Fiscal",
+    "phone": "Teléfono",
+    "country": "País",
+    "timezone": "Zona Horaria",
+    "baseCurrency": "Moneda Base",
+    "publicUrl": "URL Pública",
+    "address": "Dirección",
+    "logo": "Logo de la Empresa",
+    "uploadLogo": "Subir Logo",
+    "logoFormats": "Formatos aceptados: PNG, JPG, SVG (max 2MB)",
+    "saveInformation": "Guardar Información"
+  },
+  "language": {
+    "title": "Configuración de Idioma",
+    "current": "Idioma Actual",
+    "available": "Idiomas Disponibles",
+    "detectBrowser": "Detectar idioma del navegador",
+    "defaultSystem": "Idioma por defecto del sistema"
+  }
+}
