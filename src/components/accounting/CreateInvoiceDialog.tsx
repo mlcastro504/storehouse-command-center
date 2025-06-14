@@ -131,7 +131,6 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
             Crear una nueva factura de venta o compra
           </DialogDescription>
         </DialogHeader>
-
         {toastMsg && (
           <div
             className={`rounded px-3 py-2 mb-2 text-sm ${toastMsg.variant === "destructive" ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}
@@ -188,30 +187,31 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                 <SelectValue placeholder="Seleccionar contacto" />
               </SelectTrigger>
               <SelectContent>
-                {contacts
-                  ?.map((contact) => {
-                    // Prefer contact.id, then _id, must be non-empty after trim
-                    let id = contact.id ?? contact._id;
-                    if (id == null) return null;
-                    id = String(id).trim();
-                    if (!id) return null;
-                    // Debug log, remove in production if desired
-                    // console.log('Rendered SelectItem for contact:', { id, name: contact.name });
-                    return (
-                      <SelectItem key={id} value={id}>
-                        {contact.name}
-                      </SelectItem>
-                    );
-                  })
-                  .filter(Boolean)
+                {
+                  // 1. Pre-filter all contacts to only those with a valid string ID
+                  contacts
+                    ?.filter(contact => {
+                      let id = contact?.id ?? contact?._id;
+                      return !!(id && String(id).trim());
+                    })
+                    .map(contact => {
+                      let id = contact.id ?? contact._id;
+                      id = String(id).trim();
+                      // Defensive: should never happen due to above filter
+                      if (!id) return null;
+                      // Remove debug logs for production
+                      return (
+                        <SelectItem key={id} value={id}>
+                          {contact.name}
+                        </SelectItem>
+                      );
+                    })
                 }
-                {/* Show a filler if NO items provided */}
-                {contacts?.filter(contact => {
-                  let id = contact.id ?? contact._id;
-                  if (id == null) return false;
-                  id = String(id).trim();
-                  return !!id;
-                }).length === 0 && (
+                {/* If, after filtering, there are zero contacts, show a placeholder */}
+                {(contacts?.filter(contact => {
+                  let id = contact?.id ?? contact?._id;
+                  return !!(id && String(id).trim());
+                }).length === 0) && (
                   <div className="px-2 py-1 text-sm text-gray-500">No hay contactos disponibles</div>
                 )}
               </SelectContent>
@@ -309,4 +309,5 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
     </Dialog>
   );
 }
+
 // SUGERENCIA: Este archivo es largo, conviene refactorizarlo pronto dividiéndolo en componentes más pequeños.
