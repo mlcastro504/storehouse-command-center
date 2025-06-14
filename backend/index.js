@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const { MongoClient } = require('mongodb');
@@ -47,6 +46,46 @@ app.get('/api/db-stats', async (req, res) => {
   try {
     const stats = await db.stats();
     res.json({ ok: true, stats });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ========== NUEVOS ENDPOINTS REST PARA ECOMMERCE CONNECTIONS ==========
+
+// GET todas las conexiones de ecommerce
+app.get('/api/ecommerce-connections', async (req, res) => {
+  try {
+    const connections = await db.collection('ecommerce_connections').find({}).toArray();
+    res.json({ ok: true, data: connections });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// POST nueva conexión ecommerce
+app.post('/api/ecommerce-connections', async (req, res) => {
+  try {
+    const newConnection = req.body;
+    newConnection.created_at = new Date();
+    newConnection.updated_at = new Date();
+    const result = await db.collection('ecommerce_connections').insertOne(newConnection);
+    res.json({ ok: true, id: result.insertedId });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// DELETE conexión ecommerce por ID
+app.delete('/api/ecommerce-connections/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.collection('ecommerce_connections').deleteOne({ id });
+    if (result.deletedCount === 1) {
+      res.json({ ok: true });
+    } else {
+      res.status(404).json({ ok: false, error: 'Not found' });
+    }
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }

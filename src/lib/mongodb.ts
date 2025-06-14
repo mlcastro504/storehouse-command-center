@@ -1,4 +1,3 @@
-
 // Permite elegir entre modo MOCK y modo API REST real
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000'; // Pon dirección backend aquí si no está en prod
@@ -23,16 +22,26 @@ import * as mock from './mockMongoDB';
 
 // --- Chainable Cursor for REST API Proxy ---
 class RestApiCursor {
-  sort() {
+  constructor(private _collectionName: string, private _query?: any, private _sort?: any) {}
+  sort(sortQuery: any) {
+    this._sort = sortQuery;
     return this;
   }
   limit() {
     return this;
   }
   async toArray(): Promise<any[]> {
-    throw new Error("toArray() not implemented in REST API mode. The backend API does not expose generic MongoDB queries.");
-    // Always return to satisfy type, even though error will interrupt flow.
-    // return [];
+    // SOLO soportamos collection "ecommerce_connections" y query vacía/sort básico
+    if (this._collectionName === 'ecommerce_connections') {
+      const res = await fetch(`${BACKEND_URL}/api/ecommerce-connections`);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error ?? "API error");
+      // REST API retorna array
+      return data.data;
+    }
+    throw new Error(
+      `toArray() not implemented for collection '${this._collectionName}' in REST API mode.`
+    );
   }
 }
 
@@ -40,35 +49,48 @@ class RestApiCursor {
 class RestApiDatabaseProxy {
   collection(name: string) {
     return {
-      find: () => new RestApiCursor(),
+      find: (query?: any) => new RestApiCursor(name, query),
+      insertOne: async (doc: any) => {
+        if (name === 'ecommerce_connections') {
+          const res = await fetch(`${BACKEND_URL}/api/ecommerce-connections`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(doc),
+          });
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error ?? "API error");
+          return { insertedId: data.id };
+        }
+        throw new Error(`insertOne not implemented for collection '${name}' in REST API mode.`);
+      },
+      deleteOne: async (filter: any) => {
+        if (name === 'ecommerce_connections' && filter?.id) {
+          const res = await fetch(`${BACKEND_URL}/api/ecommerce-connections/${filter.id}`, {
+            method: 'DELETE',
+          });
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error ?? "API error");
+          return { deletedCount: 1 };
+        }
+        throw new Error(`deleteOne not implemented for collection '${name}' in REST API mode.`);
+      },
       findOne: async () => {
         throw new Error(`collection('${name}').findOne(...) not implemented in REST API mode.`);
-      },
-      insertOne: async () => {
-        throw new Error(`collection('${name}').insertOne(...) not implemented in REST API mode.`);
-      },
-      insertMany: async () => {
-        throw new Error(`collection('${name}').insertMany(...) not implemented in REST API mode.`);
       },
       updateOne: async () => {
         throw new Error(`collection('${name}').updateOne(...) not implemented in REST API mode.`);
       },
-      deleteOne: async () => {
-        throw new Error(`collection('${name}').deleteOne(...) not implemented in REST API mode.`);
-      },
-      deleteMany: async () => {
-        throw new Error(`collection('${name}').deleteMany(...) not implemented in REST API mode.`);
+      insertMany: async () => {
+        throw new Error(`collection('${name}').insertMany(...) not implemented in REST API mode.`);
       },
       aggregate: async () => {
         throw new Error(`collection('${name}').aggregate(...) not implemented in REST API mode.`);
       },
       listIndexes: async () => {
         throw new Error(`collection('${name}').listIndexes(...) not implemented in REST API mode.`);
-      },
+      }
     };
   }
-
-  // Add proxies for known methods expected by code:
   async listCollections(): Promise<any[]> {
     throw new Error("listCollections() not implemented in REST API mode.");
   }
@@ -129,4 +151,3 @@ export const testConnection = (...args: Parameters<typeof mock.testConnection>) 
   getDbMode() === "mock" ? mock.testConnection(...args) : prod_testConnection(...args);
 
 // Fin
-
