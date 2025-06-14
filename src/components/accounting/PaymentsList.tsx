@@ -9,10 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Eye, Edit, CreditCard, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { Payment } from '@/types/accounting';
 import { CreatePaymentDialog } from './CreatePaymentDialog';
+import { usePaymentsPermissions } from "@/hooks/usePaymentsPermissions";
 
 export function PaymentsList() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [paymentType, setPaymentType] = useState<'received' | 'made'>('received');
+  const { canCreatePayment, canEditPayment, canDeletePayment } = usePaymentsPermissions();
 
   const { data: payments, isLoading, refetch } = useQuery({
     queryKey: ['payments'],
@@ -132,14 +134,18 @@ export function PaymentsList() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => openCreateDialog('received')} variant="default">
-                <ArrowDownCircle className="h-4 w-4 mr-2" />
-                Registrar Cobro
-              </Button>
-              <Button onClick={() => openCreateDialog('made')} variant="outline">
-                <ArrowUpCircle className="h-4 w-4 mr-2" />
-                Registrar Pago
-              </Button>
+              {canCreatePayment() && (
+                <>
+                  <Button onClick={() => openCreateDialog('received')} variant="default">
+                    <ArrowDownCircle className="h-4 w-4 mr-2" />
+                    Registrar Cobro
+                  </Button>
+                  <Button onClick={() => openCreateDialog('made')} variant="outline">
+                    <ArrowUpCircle className="h-4 w-4 mr-2" />
+                    Registrar Pago
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -198,8 +204,18 @@ export function PaymentsList() {
                           <Button variant="ghost" size="sm" title="Ver detalles">
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {payment.status === 'pending' && (
+                          {canEditPayment(payment) ? (
                             <Button variant="ghost" size="sm" title="Editar">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title={payment.status !== "pending" ? "Solo editable si pendiente" : "Sin permisos"}
+                              disabled
+                              className="text-gray-400"
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
                           )}
@@ -275,8 +291,18 @@ export function PaymentsList() {
                           <Button variant="ghost" size="sm" title="Ver detalles">
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {payment.status === 'pending' && (
+                          {canEditPayment(payment) ? (
                             <Button variant="ghost" size="sm" title="Editar">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title={payment.status !== "pending" ? "Solo editable si pendiente" : "Sin permisos"}
+                              disabled
+                              className="text-gray-400"
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
                           )}

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -14,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useInvoicesPermissions } from "@/hooks/useInvoicesPermissions";
 
 interface CreateInvoiceDialogProps {
   open: boolean;
@@ -44,6 +44,23 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
       return results;
     }
   });
+
+  const { canCreateInvoice } = useInvoicesPermissions();
+
+  if (!canCreateInvoice()) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Acción no permitida</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            No tienes permisos para crear facturas. Contacta al administrador.
+          </DialogDescription>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -8,9 +8,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Eye, Edit, Trash2, Download, Send, FileText } from 'lucide-react';
 import { Invoice } from '@/types/accounting';
 import { CreateInvoiceDialog } from './CreateInvoiceDialog';
+import { useInvoicesPermissions } from "@/hooks/useInvoicesPermissions";
 
 export function InvoicesList() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const { canCreateInvoice, canEditInvoice, canDeleteInvoice } = useInvoicesPermissions();
 
   const { data: invoices, isLoading, refetch } = useQuery({
     queryKey: ['invoices'],
@@ -127,10 +129,12 @@ export function InvoicesList() {
                 Facturas de venta y compra con seguimiento de pagos
               </p>
             </div>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Factura
-            </Button>
+            {canCreateInvoice() && (
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Factura
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -193,9 +197,21 @@ export function InvoicesList() {
                       <Button variant="ghost" size="sm" title="Ver detalles">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" title="Editar">
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      {canEditInvoice(invoice) ? (
+                        <Button variant="ghost" size="sm" title="Editar">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title={invoice.status !== "draft" ? "Solo editable en borrador" : "Sin permisos"}
+                          disabled
+                          className="text-gray-400"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" title="Descargar PDF">
                         <Download className="h-4 w-4" />
                       </Button>
@@ -204,9 +220,21 @@ export function InvoicesList() {
                           <Send className="h-4 w-4" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" title="Eliminar">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canDeleteInvoice(invoice) ? (
+                        <Button variant="ghost" size="sm" title="Eliminar">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title={invoice.status !== "draft" ? "Solo facturas en borrador eliminables" : "Sin permisos"}
+                          disabled
+                          className="text-gray-400"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

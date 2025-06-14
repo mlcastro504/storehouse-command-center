@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Contact } from '@/types/accounting';
+import { usePaymentsPermissions } from "@/hooks/usePaymentsPermissions";
 
 const paymentSchema = z.object({
   contact_id: z.string().min(1, 'El contacto es requerido'),
@@ -150,6 +151,23 @@ export function CreatePaymentDialog({ open, onOpenChange, paymentType, onSuccess
     ? 'Registra un cobro recibido de un cliente'
     : 'Registra un pago realizado a un proveedor';
   const contactLabel = paymentType === 'received' ? 'Cliente' : 'Proveedor';
+
+  const { canCreatePayment } = usePaymentsPermissions();
+
+  if (!canCreatePayment()) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Acción no permitida</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            No tienes permisos para registrar este pago/cobro. Contacta al administrador.
+          </DialogDescription>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
