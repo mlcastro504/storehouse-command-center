@@ -149,13 +149,16 @@ export function LocationSelector({
     [filteredLocations]
   );
 
+  // Defensive filter before rendering
+  const renderableLocations = safeLocations.filter(l => isValidSelectValue(l.id));
+
   return (
     <div className="space-y-2">
       {label && <label className="text-sm font-medium">{label}</label>}
       <Select
         disabled={disabled}
         onValueChange={handleValueChange}
-        value={value && value !== "" ? value : undefined}
+        value={isValidSelectValue(value) ? value : undefined}
       >
         <SelectTrigger>
           <SelectValue placeholder={placeholder} />
@@ -165,23 +168,29 @@ export function LocationSelector({
             <SelectItem value="_loading_" disabled>
               Cargando...
             </SelectItem>
-          ) : safeLocations.length === 0 ? (
+          ) : renderableLocations.length === 0 ? (
             <SelectItem value="_no_locations_" disabled>
               No hay ubicaciones disponibles
             </SelectItem>
           ) : (
-            safeLocations.map((location) => (
-              <SelectItem
-                key={`location_${location.id}`}
-                value={location.id}
-              >
-                {location.code} - {location.name}
-              </SelectItem>
-            ))
+            renderableLocations.map((location) => {
+              if (!isValidSelectValue(location.id)) {
+                // Defensive: Don't render if ID is invalid.
+                console.error("Attempted to render SelectItem with invalid/empty id:", location);
+                return null;
+              }
+              return (
+                <SelectItem
+                  key={`location_${location.id}`}
+                  value={location.id}
+                >
+                  {location.code} - {location.name}
+                </SelectItem>
+              );
+            })
           )}
         </SelectContent>
       </Select>
     </div>
   );
 }
-

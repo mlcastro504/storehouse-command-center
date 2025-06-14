@@ -134,10 +134,13 @@ export function ProductSelector({
     [products]
   );
 
+  // Defensive filter before rendering
+  const renderableProducts = safeProducts.filter(p => isValidSelectValue(p.id));
+
   return (
     <Select
       onValueChange={handleValueChange}
-      value={value && value !== "" ? value : undefined}
+      value={isValidSelectValue(value) ? value : undefined}
       disabled={disabled}
     >
       <SelectTrigger>
@@ -148,22 +151,28 @@ export function ProductSelector({
           <SelectItem value="_loading_" disabled>
             Cargando...
           </SelectItem>
-        ) : safeProducts.length === 0 ? (
+        ) : renderableProducts.length === 0 ? (
           <SelectItem value="_no_products_" disabled>
             No hay productos disponibles
           </SelectItem>
         ) : (
-          safeProducts.map((product) => (
-            <SelectItem
-              key={`product_${product.id}`}
-              value={product.id}
-            >
-              {product.name} ({product.sku})
-            </SelectItem>
-          ))
+          renderableProducts.map((product) => {
+            if (!isValidSelectValue(product.id)) {
+              // Defensive: Don't render if ID is invalid.
+              console.error("Attempted to render SelectItem with invalid/empty id:", product);
+              return null;
+            }
+            return (
+              <SelectItem
+                key={`product_${product.id}`}
+                value={product.id}
+              >
+                {product.name} ({product.sku})
+              </SelectItem>
+            );
+          })
         )}
       </SelectContent>
     </Select>
   );
 }
-
