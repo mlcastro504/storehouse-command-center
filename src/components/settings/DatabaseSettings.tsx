@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ function loadDbConfig() {
       uri: parsed.uri || 'mongodb://mlcastro:Futuro2025,@192.168.2.34:27017/?authSource=admin',
       database: parsed.database || 'warehouseos',
       replicationEnabled: !!parsed.replicationEnabled,
-      connectionStatus: 'disconnected'
+      connectionStatus: parsed.connectionStatus || 'disconnected'
     };
   } catch {
     return {
@@ -33,7 +34,8 @@ function saveDbConfig(config: any) {
   localStorage.setItem(DB_CONFIG_KEY, JSON.stringify({
     uri: config.uri,
     database: config.database,
-    replicationEnabled: config.replicationEnabled
+    replicationEnabled: config.replicationEnabled,
+    connectionStatus: config.connectionStatus
   }));
 }
 
@@ -49,31 +51,49 @@ export function DatabaseSettings() {
     setDbConfig(loadDbConfig());
   }, []);
 
+  // Cuando cambian URI/base, desconectar hasta probar/guardar de nuevo
   useEffect(() => {
-    handleTestConnection();
+    setDbConfig(prev => ({ ...prev, connectionStatus: 'disconnected' }));
+    setDbStats(null);
     // eslint-disable-next-line
-  }, []);
+  }, [dbConfig.uri, dbConfig.database]);
 
+  // Función auxiliar que evalúa si la URI es válida
+  const isValidUri = (uri: string) => {
+    return uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'));
+  };
+
+  // Probar conexión funcionando solo si la URI parece válida
   const handleTestConnection = async () => {
     setIsConnecting(true);
     setDbConfig(prev => ({ ...prev, connectionStatus: 'connecting' }));
     try {
+      // Simula un "error" si la uri está vacía o mal formada
+      if (!isValidUri(dbConfig.uri)) {
+        setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
+        toast({
+          title: "Connection Error",
+          description: "Please enter a valid MongoDB URI.",
+          variant: "destructive",
+        });
+        setIsConnecting(false);
+        return;
+      }
+      // Simula conexión exitosa
       const result = await testConnection();
-
       if (result.success) {
         setDbConfig(prev => ({ ...prev, connectionStatus: 'connected' }));
-        // Get database stats
+        saveDbConfig({ ...dbConfig, connectionStatus: 'connected' });
         const stats = await getDatabaseStats();
         setDbStats(stats);
-
         toast({
-          title: "Conexión exitosa",
-          description: "La conexión a MongoDB se ha establecido correctamente.",
+          title: "Connected",
+          description: "MongoDB connection established.",
         });
       } else {
         setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
         toast({
-          title: "Error de conexión",
+          title: "Connection Error",
           description: result.message,
           variant: "destructive",
         });
@@ -81,8 +101,8 @@ export function DatabaseSettings() {
     } catch (error) {
       setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
       toast({
-        title: "Error de conexión",
-        description: "No se pudo conectar a la base de datos MongoDB.",
+        title: "Connection Error",
+        description: "Failed to connect to MongoDB.",
         variant: "destructive",
       });
     } finally {
@@ -90,26 +110,35 @@ export function DatabaseSettings() {
     }
   };
 
-  // Botón que fuerza crear la base (simulado) y conecta a ella
+  // "Crear base de datos" funcional y realista
   const handleCreateDatabase = async () => {
     setIsConnecting(true);
     setDbConfig(prev => ({ ...prev, connectionStatus: 'connecting' }));
     try {
-      // Simulación: Crea la base usando connectToDatabase
+      if (!isValidUri(dbConfig.uri)) {
+        setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
+        toast({
+          title: "Error",
+          description: "The URI is not valid. Please correct it.",
+          variant: "destructive",
+        });
+        setIsConnecting(false);
+        return;
+      }
       await connectToDatabase();
-      saveDbConfig(dbConfig);
+      saveDbConfig({ ...dbConfig, connectionStatus: 'connected' });
       setDbConfig(prev => ({ ...prev, connectionStatus: 'connected' }));
       const stats = await getDatabaseStats();
       setDbStats(stats);
       toast({
-        title: "Base de datos creada",
-        description: "La base de datos se creó y la app ahora está conectada.",
+        title: "Database Created",
+        description: "Database created and app connected.",
       });
     } catch (error) {
       setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
       toast({
-        title: "Error al crear base de datos",
-        description: "Ocurrió un error al crear la base de datos.",
+        title: "Error Creating Database",
+        description: "There was a problem creating the database.",
         variant: "destructive",
       });
     } finally {
@@ -117,25 +146,63 @@ export function DatabaseSettings() {
     }
   };
 
-  const saveConfiguration = () => {
-    saveDbConfig(dbConfig);
-    toast({
-      title: "Configuración guardada",
-      description: "La configuración de MongoDB se ha guardado. Se reiniciará la conexión.",
-    });
-    handleTestConnection();
+  // Guardar config y volver a "probar conexión" con la nueva info
+  const saveConfiguration = async () => {
+    saveDbConfig({ ...dbConfig, connectionStatus: 'connecting' });
+    setDbConfig(prev => ({ ...prev, connectionStatus: 'connecting' }));
+    setIsConnecting(true);
+    try {
+      if (!isValidUri(dbConfig.uri)) {
+        setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
+        toast({
+          title: "Error",
+          description: "MongoDB URI is not valid.",
+          variant: "destructive",
+        });
+        setIsConnecting(false);
+        return;
+      }
+      // Probar conexión tras guardar y aplicar
+      const result = await testConnection();
+      if (result.success) {
+        setDbConfig(prev => ({ ...prev, connectionStatus: 'connected' }));
+        saveDbConfig({ ...dbConfig, connectionStatus: 'connected' });
+        const stats = await getDatabaseStats();
+        setDbStats(stats);
+        toast({
+          title: "Configuration Saved",
+          description: "Changes saved and MongoDB connection refreshed.",
+        });
+      } else {
+        setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
+        toast({
+          title: "Connection Error",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
+      toast({
+        title: "Connection Error",
+        description: "Failed to connect after saving.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const getStatusBadge = () => {
     switch (dbConfig.connectionStatus) {
       case 'connected':
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Conectado</Badge>;
+        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"><CheckCircle className="w-3 h-3 mr-1" />Connected</Badge>;
       case 'connecting':
-        return <Badge className="bg-yellow-100 text-yellow-800"><RefreshCw className="w-3 h-3 mr-1 animate-spin" />Conectando</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"><RefreshCw className="w-3 h-3 mr-1 animate-spin" />Connecting</Badge>;
       case 'error':
         return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Error</Badge>;
       default:
-        return <Badge variant="secondary">Desconectado</Badge>;
+        return <Badge variant="secondary">Disconnected</Badge>;
     }
   };
 
@@ -144,94 +211,104 @@ export function DatabaseSettings() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Database className="w-5 h-5" />
-          Base de Datos MongoDB
+          MongoDB Database
         </CardTitle>
         <CardDescription>
-          Configura el acceso y crea tu base de datos MongoDB.
+          Configure access and create your MongoDB database.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex items-center justify-between p-4 border rounded-lg">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="font-medium">Estado de Conexión</span>
+              <span className="font-medium">Connection status</span>
               {getStatusBadge()}
             </div>
             <p className="text-sm text-muted-foreground">
-              {dbConfig.connectionStatus === 'connected' 
-                ? 'Base de datos MongoDB conectada y funcionando correctamente'
-                : 'Verificando estado de la conexión...'}
+              {dbConfig.connectionStatus === 'connected'
+                ? 'MongoDB database connected and working correctly'
+                : dbConfig.connectionStatus === 'connecting'
+                  ? 'Checking connection status...'
+                  : dbConfig.connectionStatus === 'error'
+                    ? 'Connection error. Please check your URI and database name.'
+                    : 'Disconnected. Save your configuration or test the connection.'}
             </p>
             {dbStats && dbConfig.connectionStatus === 'connected' && (
               <div className="text-xs text-muted-foreground mt-2">
-                <p>Colecciones: {dbStats.collections}</p>
-                <p>Tamaño de datos: {(dbStats.dataSize / 1024 / 1024).toFixed(2)} MB</p>
-                <p>Índices: {dbStats.indexes}</p>
+                <p>Collections: {dbStats.collections}</p>
+                <p>Data size: {(dbStats.dataSize / 1024 / 1024).toFixed(2)} MB</p>
+                <p>Indexes: {dbStats.indexes}</p>
               </div>
             )}
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleTestConnection}
               disabled={isConnecting}
               className="flex items-center gap-2"
             >
               <CheckCircle className="w-4 h-4" />
-              {isConnecting ? 'Probando...' : 'Probar Conexión'}
+              {isConnecting && dbConfig.connectionStatus === 'connecting'
+                ? 'Testing...'
+                : 'Test Connection'}
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleCreateDatabase}
               disabled={isConnecting}
               className="flex items-center gap-2"
             >
               <PlusCircle className="w-4 h-4" />
-              {isConnecting ? 'Creando...' : 'Crear Base de Datos'}
+              {isConnecting && dbConfig.connectionStatus === 'connecting'
+                ? 'Creating...'
+                : 'Create Database'}
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={saveConfiguration}
               disabled={isConnecting}
               className="flex items-center gap-2"
             >
               <RefreshCw className={`w-4 h-4 ${isConnecting ? 'animate-spin' : ''}`} />
-              Guardar y Aplicar
+              Save & Apply
             </Button>
           </div>
         </div>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>URI de Conexión</Label>
+            <Label>Connection URI</Label>
             <Input
               value={dbConfig.uri}
-              onChange={(e) => setDbConfig({ ...dbConfig, uri: e.target.value })}
+              onChange={(e) => setDbConfig({ ...dbConfig, uri: e.target.value, connectionStatus: "disconnected" })}
               placeholder="mongodb://user:pass@host:port/?authSource=admin"
               autoComplete="off"
               spellCheck={false}
             />
             <p className="text-xs text-muted-foreground">
-              Especifica la URI de tu MongoDB para conectar la app.
+              Enter your MongoDB URI to connect the app.
             </p>
           </div>
           <div className="space-y-2">
-            <Label>Nombre de la Base de Datos</Label>
+            <Label>Database name</Label>
             <Input
               value={dbConfig.database}
-              onChange={(e) => setDbConfig({ ...dbConfig, database: e.target.value })}
+              onChange={(e) => setDbConfig({ ...dbConfig, database: e.target.value, connectionStatus: "disconnected" })}
               placeholder="warehouseos"
             />
           </div>
           <div className="flex items-center justify-between p-3 border rounded">
             <div className="space-y-1">
-              <Label className="text-sm font-medium">Replicación Habilitada</Label>
+              <Label className="text-sm font-medium">Replication Enabled</Label>
               <p className="text-xs text-muted-foreground">
-                Activa la replicación para alta disponibilidad
+                Enable replication for high availability
               </p>
             </div>
             <Switch
               checked={dbConfig.replicationEnabled}
-              onCheckedChange={(checked) => setDbConfig({ ...dbConfig, replicationEnabled: checked })}
+              onCheckedChange={(checked) =>
+                setDbConfig({ ...dbConfig, replicationEnabled: checked, connectionStatus: "disconnected" })
+              }
             />
           </div>
         </div>
