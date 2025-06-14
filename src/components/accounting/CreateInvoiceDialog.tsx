@@ -188,8 +188,11 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                 <SelectValue placeholder="Seleccionar contacto" />
               </SelectTrigger>
               <SelectContent>
-                {contacts?.map((contact) => (
-                  <SelectItem key={contact.id || contact._id} value={String(contact.id || contact._id)}>
+                {contacts?.filter(contact => !!(contact.id || contact._id)).map((contact) => (
+                  <SelectItem
+                    key={contact.id || contact._id}
+                    value={String(contact.id || contact._id)}
+                  >
                     {contact.name}
                   </SelectItem>
                 ))}
