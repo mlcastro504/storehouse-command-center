@@ -1,3 +1,4 @@
+
 import { BrowserStorage } from '@/lib/browserStorage';
 import { Pallet, PutAwayTask, PutAwayRule, OperatorPerformance, PutAwayMetrics, LocationConfirmation } from '@/types/putaway';
 import { Location } from '@/types/inventory';
@@ -60,7 +61,7 @@ export class PutAwayService {
         : { status: 'in_progress' };
       
       const tasks = await BrowserStorage.find('putaway_tasks', filter);
-      return Promise.all(tasks.map(this.populateTaskDetails));
+      return Promise.all(tasks.map(task => this.populateTaskDetails(task)));
     } catch (error) {
       console.error('Error getting active tasks:', error);
       return [];
@@ -360,7 +361,7 @@ export class PutAwayService {
         : { status: { $in: ['completed', 'cancelled'] } };
       
       const tasks = await BrowserStorage.find('putaway_tasks', filter);
-      const populatedTasks = await Promise.all(tasks.map(this.populateTaskDetails));
+      const populatedTasks = await Promise.all(tasks.map(task => this.populateTaskDetails(task)));
       return populatedTasks.sort((a, b) => new Date(b.completed_at || b.created_date).getTime() - new Date(a.completed_at || a.created_date).getTime());
     } catch (error) {
       console.error('Error getting task history:', error);
@@ -396,7 +397,7 @@ export class PutAwayService {
   static async getPutAwayTasks(): Promise<PutAwayTask[]> {
     try {
       const tasks = await BrowserStorage.find('putaway_tasks', {});
-      return Promise.all(tasks.map(this.populateTaskDetails));
+      return Promise.all(tasks.map(task => this.populateTaskDetails(task)));
     } catch (error) {
       console.error('Error getting put away tasks:', error);
       return [];
