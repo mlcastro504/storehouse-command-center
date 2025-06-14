@@ -24,7 +24,7 @@ export interface Role {
 
 export interface Permission {
   id: string;
-  action: 'create' | 'read' | 'update' | 'delete' | 'assign' | 'manage';
+  action: 'create' | 'read' | 'update' | 'delete' | 'assign' | 'manage' | 'execute';
   resource: string;
 }
 
