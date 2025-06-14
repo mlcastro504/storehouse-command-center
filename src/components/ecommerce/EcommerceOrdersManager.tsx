@@ -309,7 +309,6 @@ export const EcommerceOrdersManager = () => {
               <h3 className="text-lg font-semibold mb-2">No hay órdenes</h3>
               <p className="text-gray-600 mb-4">No se encontraron órdenes con los filtros aplicados.</p>
               <Button
-                loading={isSyncing}
                 disabled={isSyncing}
                 onClick={handleSyncAllChannels}
                 className="mt-2"
