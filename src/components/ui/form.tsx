@@ -63,12 +63,14 @@ const useFormField = () => {
     ? getFieldState(fieldContext.name, formState)
     : {};
 
+  // Always include error in return value for compatibility
   return {
     id,
     name: fieldContext.name,
     formItemId: `${id}-form-item`,
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
+    error: fieldState?.error, // ensure error always present, possibly undefined
     ...fieldState,
   };
 };
