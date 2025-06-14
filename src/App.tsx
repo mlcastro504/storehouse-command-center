@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -12,7 +13,6 @@ import Inventory from "./pages/Inventory";
 import Locations from "./pages/Locations";
 import Suppliers from "./pages/Suppliers";
 import Picking from "./pages/Picking";
-import StockMovements from "./pages/StockMovements";
 import StockMove from "./pages/StockMove";
 import Scanner from "./pages/Scanner";
 import PutAway from "./pages/PutAway";
@@ -54,7 +54,6 @@ function App() {
                 <Route path="/locations" element={<Locations />} />
                 <Route path="/suppliers" element={<Suppliers />} />
                 <Route path="/picking" element={<Picking />} />
-                <Route path="/stock-movements" element={<StockMovements />} />
                 <Route path="/stock-move" element={<StockMove />} />
                 <Route path="/scanner" element={<Scanner />} />
                 <Route path="/putaway" element={<PutAway />} />
