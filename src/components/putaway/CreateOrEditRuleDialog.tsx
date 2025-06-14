@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -102,10 +101,22 @@ export const CreateOrEditRuleDialog = ({ open, onOpenChange, rule }: CreateOrEdi
 
   const onSubmit = async (data: RuleFormData) => {
     try {
+      const transformedData = {
+        ...data,
+        conditions: data.conditions.map(c => {
+          const isNumericField = ['weight', 'expiry_date_soon'].includes(c.field);
+          const numericValue = parseFloat(c.value);
+          return {
+            ...c,
+            value: isNumericField && !isNaN(numericValue) ? numericValue : c.value,
+          };
+        }),
+      };
+
       if (rule) {
-        await updateRule.mutateAsync({ ...rule, ...data });
+        await updateRule.mutateAsync({ ...rule, ...transformedData });
       } else {
-        await createRule.mutateAsync(data);
+        await createRule.mutateAsync(transformedData);
       }
       onOpenChange(false);
     } catch (error) {
@@ -247,7 +258,7 @@ export const CreateOrEditRuleDialog = ({ open, onOpenChange, rule }: CreateOrEdi
                           name={`conditions.${index}.operator`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">{t('rules.field__condition_operator')}</FormLabel>
+                              <FormLabel className="text-xs">{t('rules.field_condition_operator')}</FormLabel>
                                <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -264,7 +275,7 @@ export const CreateOrEditRuleDialog = ({ open, onOpenChange, rule }: CreateOrEdi
                         />
                         <FormField
                           control={form.control}
-          name={`conditions.${index}.value`}
+                          name={`conditions.${index}.value`}
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs">{t('rules.field_condition_value')}</FormLabel>
@@ -303,7 +314,7 @@ export const CreateOrEditRuleDialog = ({ open, onOpenChange, rule }: CreateOrEdi
                 {t('cancelDialog.close_button')}
               </Button>
               <Button type="submit" disabled={isPending}>
-                {isPending ? t('createDialog.creating_button') : t('createDialog.create_button')}
+                {isPending ? t('rules.saving_button') : (rule ? t('rules.save_changes_button') : t('rules.create_button'))}
               </Button>
             </DialogFooter>
           </form>

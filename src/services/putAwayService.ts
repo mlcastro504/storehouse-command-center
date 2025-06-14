@@ -1,4 +1,3 @@
-
 import { BrowserStorage } from '@/lib/browserStorage';
 import { Pallet, PutAwayTask, PutAwayRule, OperatorPerformance, PutAwayMetrics, LocationConfirmation } from '@/types/putaway';
 import { Location } from '@/types/inventory';
@@ -257,7 +256,7 @@ export class PutAwayService {
 
   static async getPutAwayRules(): Promise<PutAwayRule[]> {
     try {
-      const rules = await BrowserStorage.find('putaway_rules', { is_active: true });
+      const rules = await BrowserStorage.find('putaway_rules', {});
       return rules.map(rule => ({
         ...rule,
         id: rule._id || rule.id,
@@ -265,6 +264,52 @@ export class PutAwayService {
     } catch (error) {
       console.error('Error getting put away rules:', error);
       return [];
+    }
+  }
+
+  static async createPutAwayRule(newRuleData: Partial<PutAwayRule>): Promise<PutAwayRule> {
+    try {
+      const fullRule: PutAwayRule = {
+        id: `rule_${Date.now()}`,
+        rule_name: newRuleData.rule_name || 'Untitled Rule',
+        description: newRuleData.description,
+        conditions: newRuleData.conditions || [],
+        location_preference: newRuleData.location_preference || 'any',
+        priority: newRuleData.priority || 99,
+        is_active: newRuleData.is_active !== undefined ? newRuleData.is_active : true,
+        created_by: 'system', // TODO: Replace with actual user ID
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      const ruleToInsert = { ...fullRule, _id: fullRule.id };
+      await BrowserStorage.insertOne('putaway_rules', ruleToInsert);
+      return fullRule;
+    } catch (error) {
+      console.error('Error creating put away rule:', error);
+      throw error;
+    }
+  }
+
+  static async updatePutAwayRule(ruleToUpdate: PutAwayRule): Promise<PutAwayRule> {
+    try {
+      const { id, ...dataToUpdate } = ruleToUpdate;
+      const updatePayload = { ...dataToUpdate, updated_at: new Date().toISOString() };
+      await BrowserStorage.updateOne('putaway_rules', { id: id }, updatePayload);
+      return ruleToUpdate;
+    } catch (error) {
+      console.error('Error updating put away rule:', error);
+      throw error;
+    }
+  }
+
+  static async deletePutAwayRule(ruleId: string): Promise<boolean> {
+    try {
+      await BrowserStorage.deleteOne('putaway_rules', { id: ruleId });
+      return true;
+    } catch (error) {
+      console.error('Error deleting put away rule:', error);
+      throw error;
     }
   }
 

@@ -1,4 +1,3 @@
-
 {
   "title": "Put Away",
   "description": "Manage pallet storage in warehouse locations",
@@ -104,6 +103,9 @@
     "field_condition_value": "Value",
     "delete_confirm_title": "Are you sure?",
     "delete_confirm_text": "This action cannot be undone. This will permanently delete the rule '{{ruleName}}'.",
+    "create_button": "Create Rule",
+    "save_changes_button": "Save Changes",
+    "saving_button": "Saving...",
     "operators": {
       "equals": "Equals",
       "not_equals": "Not Equals",

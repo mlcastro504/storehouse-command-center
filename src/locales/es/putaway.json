@@ -1,4 +1,3 @@
-
 {
   "title": "Put Away",
   "description": "Gestión de almacenaje de palets en ubicaciones del warehouse",
@@ -104,6 +103,9 @@
     "field_condition_value": "Valor",
     "delete_confirm_title": "¿Estás seguro?",
     "delete_confirm_text": "Esta acción no se puede deshacer. Esto eliminará permanentemente la regla '{{ruleName}}'.",
+    "create_button": "Crear Regla",
+    "save_changes_button": "Guardar Cambios",
+    "saving_button": "Guardando...",
     "operators": {
       "equals": "Igual a",
       "not_equals": "No es igual a",
