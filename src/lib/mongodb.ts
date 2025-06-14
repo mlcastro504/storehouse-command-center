@@ -1,3 +1,4 @@
+
 // Permite elegir entre modo MOCK y modo API REST real
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000'; // Pon dirección backend aquí si no está en prod
@@ -20,27 +21,24 @@ export function getDbMode() {
 
 import * as mock from './mockMongoDB';
 
+// --- Chainable Cursor for REST API Proxy ---
+class RestApiCursor {
+  sort() {
+    return this;
+  }
+  limit() {
+    return this;
+  }
+  async toArray() {
+    throw new Error("toArray() not implemented in REST API mode. The backend API does not expose generic MongoDB queries.");
+  }
+}
+
 // --- Rest API Proxy Class ---
 class RestApiDatabaseProxy {
   collection(name: string) {
     return {
-      find: () => ({
-        sort: () => ({
-          toArray: async () => {
-            throw new Error(
-              `collection('${name}').find(...).sort(...).toArray() not implemented in REST API mode.
-              The backend API does not yet expose generic MongoDB queries.`
-            );
-          },
-          limit: () => ({
-            toArray: async () => {
-              throw new Error(
-                `collection('${name}').find(...).sort(...).limit(...).toArray() not implemented in REST API mode.`
-              );
-            },
-          }),
-        }),
-      }),
+      find: () => new RestApiCursor(),
       findOne: async () => {
         throw new Error(`collection('${name}').findOne(...) not implemented in REST API mode.`);
       },
@@ -112,3 +110,5 @@ export const getDatabaseStats = (...args: Parameters<typeof mock.getDatabaseStat
 
 export const testConnection = (...args: Parameters<typeof mock.testConnection>) =>
   getDbMode() === "mock" ? mock.testConnection(...args) : prod_testConnection(...args);
+
+// Fin
