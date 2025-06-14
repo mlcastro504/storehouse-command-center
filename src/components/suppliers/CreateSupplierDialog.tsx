@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -91,14 +90,27 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
   // Cuando no hay editing, generamos el código nuevo una sola vez en el montaje
   // y lo guardamos en state local para mostrarlo en el resumen al final
   const [autoCode, setAutoCode] = React.useState<string | null>(null);
+  const [nameError, setNameError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!isEditing && open) {
       getNextSupplierCode().then(setAutoCode);
     }
-    if (!open) setAutoCode(null);
+    if (!open) {
+      setAutoCode(null);
+      setNameError(null);
+    }
     // eslint-disable-next-line
   }, [isEditing, open]);
+
+  // Obtener todos los proveedores para validar name duplicado
+  const { data: allSuppliers } = useQuery({
+    queryKey: ['suppliers'],
+    queryFn: async () => {
+      const db = await connectToDatabase();
+      return db.collection('suppliers').find().toArray() as Promise<Supplier[]>;
+    }
+  });
 
   const createMutation = useMutation({
     mutationFn: async (data: CreateSupplierData & { is_active: boolean }) => {
@@ -113,15 +125,22 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
       };
 
       if (!isEditing) {
-        // Asignar el código autogenerado
         supplierData = { ...supplierData, code: autoCode || (await getNextSupplierCode()) };
       } else {
-        // Mantenemos code al editar
         supplierData = { ...supplierData, code: supplier!.code };
       }
 
+      // Validación name único
+      const suppliersWithName = allSuppliers?.filter(
+        (s) =>
+          s.name.trim().toLowerCase() === data.name.trim().toLowerCase() &&
+          (!isEditing || s.id !== supplier?.id)
+      );
+      if (suppliersWithName && suppliersWithName.length > 0) {
+        throw new Error("El nombre ya existe, elija uno diferente.");
+      }
+
       if (isEditing) {
-        // Use our mock MongoDB service - filter by the string ID directly
         await db.collection('suppliers').updateOne(
           { _id: { toString: () => supplier!.id } },
           { $set: supplierData }
@@ -137,14 +156,24 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
       toast.success(isEditing ? 'Proveedor actualizado correctamente' : 'Proveedor creado correctamente');
       onOpenChange(false);
       form.reset();
+      setNameError(null);
     },
-    onError: (error) => {
-      console.error('Error creating/updating supplier:', error);
-      toast.error('Error al guardar el proveedor');
+    onError: (error: any) => {
+      if (
+        typeof error.message === "string" &&
+        error.message.includes('nombre ya existe')
+      ) {
+        setNameError(error.message);
+      } else {
+        setNameError(null);
+        console.error('Error creating/updating supplier:', error);
+        toast.error('Error al guardar el proveedor');
+      }
     },
   });
 
   const onSubmit = (data: CreateSupplierData & { is_active: boolean }) => {
+    setNameError(null);
     createMutation.mutate(data);
   };
 
@@ -160,7 +189,7 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
           </DialogDescription>
         </DialogHeader>
 
-        {/* Campo SOLO LECTURA de código */}
+        {/* Código SOLO LECTURA generado automáticamente */}
         <div className="mb-2">
           <FormLabel>Código</FormLabel>
           <Input
@@ -168,13 +197,12 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
             disabled
             readOnly
             className="font-mono"
-            placeholder="--"
+            placeholder="Generado automáticamente"
           />
         </div>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Se eliminó el campo editable de código */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -186,7 +214,11 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
                     <FormControl>
                       <Input placeholder="Nombre del proveedor" {...field} />
                     </FormControl>
-                    <FormMessage />
+                    {(nameError || form.formState.errors.name?.message) && (
+                      <FormMessage>
+                        {nameError || form.formState.errors.name?.message}
+                      </FormMessage>
+                    )}
                   </FormItem>
                 )}
               />
