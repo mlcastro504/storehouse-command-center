@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 // Tipos para el módulo de inventario
 
 export interface Product {
-  _id?: ObjectId;
+  _id?: string;
   id?: string;
   sku: string;
   name: string;
@@ -38,7 +38,7 @@ export interface Product {
 }
 
 export interface Category {
-  _id?: ObjectId;
+  _id?: string;
   id?: string;
   name: string;
   description?: string;
@@ -51,7 +51,7 @@ export interface Category {
 }
 
 export interface StockLevel {
-  _id?: ObjectId;
+  _id?: string;
   id?: string;
   product_id: string;
   location_id: string;
@@ -65,7 +65,7 @@ export interface StockLevel {
 }
 
 export interface Location {
-  _id?: ObjectId;
+  _id?: string;
   id?: string;
   code: string;
   name: string;
@@ -96,7 +96,7 @@ export interface Location {
 }
 
 export interface Warehouse {
-  _id?: ObjectId;
+  _id?: string;
   id?: string;
   code: string;
   name: string;
@@ -116,7 +116,7 @@ export interface Warehouse {
 }
 
 export interface StockMovement {
-  _id?: ObjectId;
+  _id?: string;
   id?: string;
   product_id: string;
   from_location_id?: string;
@@ -142,7 +142,7 @@ export interface StockMovement {
 }
 
 export interface CycleCount {
-  _id?: ObjectId;
+  _id?: string;
   id?: string;
   location_id: string;
   product_id?: string;
@@ -159,7 +159,7 @@ export interface CycleCount {
 }
 
 export interface CycleCountLine {
-  _id?: ObjectId;
+  _id?: string;
   id?: string;
   cycle_count_id: string;
   product_id: string;
@@ -176,7 +176,7 @@ export interface CycleCountLine {
 }
 
 export interface Supplier {
-  _id?: ObjectId;
+  _id?: string;
   id?: string;
   code: string;
   name: string;
@@ -198,7 +198,7 @@ export interface Supplier {
 }
 
 export interface ProductSupplier {
-  _id?: ObjectId;
+  _id?: string;
   id?: string;
   product_id: string;
   supplier_id: string;

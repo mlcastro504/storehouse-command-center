@@ -1,9 +1,7 @@
-import { ObjectId } from 'mongodb';
-
 // Tipos principales del sistema de escaneo
 
 export interface ScanDevice {
-  _id?: ObjectId;
+  _id?: string;
   id: string;
   device_id: string;
   device_type: 'handheld' | 'mobile_app' | 'tablet' | 'camera_device' | 'fixed';
@@ -49,7 +47,7 @@ export interface DeviceSettings {
 }
 
 export interface ScanSession {
-  _id?: ObjectId;
+  _id?: string;
   id: string;
   session_id: string;
   session_type: 'inventory' | 'picking' | 'receiving' | 'cycle_count' | 'stock_move';
@@ -76,7 +74,7 @@ export interface ScanSession {
 }
 
 export interface ScanRecord {
-  _id?: ObjectId;
+  _id?: string;
   id: string;
   session_id: string;
   scan_type: 'barcode' | 'qr_code' | 'rfid' | 'camera_scan' | 'manual_entry';
@@ -96,7 +94,7 @@ export interface ScanRecord {
 }
 
 export interface ScanValidationRule {
-  _id?: ObjectId;
+  _id?: string;
   id: string;
   rule_name: string;
   description?: string;
@@ -118,7 +116,7 @@ export interface ScanValidationRule {
 }
 
 export interface ScanTemplate {
-  _id?: ObjectId;
+  _id?: string;
   id: string;
   template_name: string;
   description?: string;
@@ -157,7 +155,7 @@ export interface ScannerMetrics {
 }
 
 export interface ScannerSettings {
-  _id?: ObjectId;
+  _id?: string;
   id: string;
   user_id: string;
   default_scan_mode: 'continuous' | 'single';
@@ -173,7 +171,7 @@ export interface ScannerSettings {
 }
 
 export interface DeviceAssignment {
-  _id?: ObjectId;
+  _id?: string;
   id: string;
   device_id: string;
   user_id: string;
@@ -186,7 +184,7 @@ export interface DeviceAssignment {
 }
 
 export interface ScanEvent {
-  _id?: ObjectId;
+  _id?: string;
   id: string;
   session_id: string;
   event_type: 'scan_start' | 'scan_success' | 'scan_error' | 'session_pause' | 'session_resume' | 'session_end';
@@ -214,7 +212,7 @@ export interface CameraScanConfig {
 
 // Tipos para el nuevo módulo Stock Move
 export interface StockMoveTask {
-  _id?: ObjectId;
+  _id?: string;
   id: string;
   product_id: string;
   quantity_needed: number;
@@ -235,7 +233,7 @@ export interface StockMoveTask {
 }
 
 export interface StockMoveExecution {
-  _id?: ObjectId;
+  _id?: string;
   id: string;
   task_id: string;
   executed_by: string;
