@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -77,8 +76,8 @@ export function DatabaseOptimizer() {
       const database = await connectToDatabase();
       logError('info', 'DatabaseOptimizer', 'Successfully connected to MongoDB');
       
-      // Get list of collections
-      const collections = await database.listCollections().toArray();
+      // Get list of collections - use our mock MongoDB service pattern
+      const collections = await database.listCollections();
       const collectionNames = collections.map(c => c.name);
       
       logError('info', 'DatabaseOptimizer', `Found ${collectionNames.length} collections to analyze`);
@@ -151,9 +150,8 @@ export function DatabaseOptimizer() {
           const sampleDocs = await collection.find({}).limit(100).toArray();
           const docCount = sampleDocs.length;
           
-          // Get existing indexes - fix the async call
-          const indexesResult = await collection.listIndexes();
-          const existingIndexes = await indexesResult.toArray();
+          // Get existing indexes - use our mock MongoDB service pattern
+          const existingIndexes = await collection.listIndexes();
           
           // Calculate missing indexes
           const expected = expectedIndexes[collectionName as keyof typeof expectedIndexes] || [];
