@@ -29,8 +29,10 @@ class RestApiCursor {
   limit() {
     return this;
   }
-  async toArray() {
+  async toArray(): Promise<any[]> {
     throw new Error("toArray() not implemented in REST API mode. The backend API does not expose generic MongoDB queries.");
+    // Always return to satisfy type, even though error will interrupt flow.
+    // return [];
   }
 }
 
@@ -63,6 +65,21 @@ class RestApiDatabaseProxy {
       listIndexes: async () => {
         throw new Error(`collection('${name}').listIndexes(...) not implemented in REST API mode.`);
       },
+    };
+  }
+
+  // Add proxies for known methods expected by code:
+  async listCollections(): Promise<any[]> {
+    throw new Error("listCollections() not implemented in REST API mode.");
+  }
+  async stats(): Promise<any> {
+    throw new Error("stats() not implemented in REST API mode.");
+  }
+  admin() {
+    return {
+      ping: async () => {
+        throw new Error("admin().ping() not implemented in REST API mode.");
+      }
     };
   }
 }
@@ -112,3 +129,4 @@ export const testConnection = (...args: Parameters<typeof mock.testConnection>) 
   getDbMode() === "mock" ? mock.testConnection(...args) : prod_testConnection(...args);
 
 // Fin
+
