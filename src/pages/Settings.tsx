@@ -11,6 +11,7 @@ import { DatabaseSettings } from '@/components/settings/DatabaseSettings';
 import { BackupSettings } from '@/components/settings/BackupSettings';
 import { ApiIntegrationSettings } from '@/components/settings/ApiIntegrationSettings';
 import { LanguageSettings } from '@/components/settings/LanguageSettings';
+import { NotificationSettings } from '@/components/settings/NotificationSettings';
 
 export default function Settings() {
   const { t } = useTranslation('settings');
@@ -24,12 +25,13 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue="company" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="company">{t('tabs.company')}</TabsTrigger>
             <TabsTrigger value="warehouses">{t('tabs.warehouses')}</TabsTrigger>
             <TabsTrigger value="database">{t('tabs.database')}</TabsTrigger>
             <TabsTrigger value="backup">{t('tabs.backup')}</TabsTrigger>
             <TabsTrigger value="api">{t('tabs.api')}</TabsTrigger>
+            <TabsTrigger value="notifications">{t('tabs.notifications')}</TabsTrigger>
             <TabsTrigger value="language">Language</TabsTrigger>
             <TabsTrigger value="security">{t('tabs.security')}</TabsTrigger>
             <TabsTrigger value="system">{t('tabs.system')}</TabsTrigger>
@@ -53,6 +55,10 @@ export default function Settings() {
 
           <TabsContent value="api">
             <ApiIntegrationSettings />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <NotificationSettings />
           </TabsContent>
 
           <TabsContent value="language">
