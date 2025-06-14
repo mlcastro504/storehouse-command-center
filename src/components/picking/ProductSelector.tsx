@@ -19,31 +19,47 @@ interface ProductSelectorProps {
   disabled?: boolean;
 }
 
-// Helper function to validate and generate safe IDs
+// Enhanced helper function to validate and generate safe IDs
 const generateSafeId = (doc: any): string => {
-  // Try multiple ID sources
+  console.log('ProductSelector: Generating ID for doc:', doc);
+  
+  // Try multiple ID sources with additional validation
   const possibleIds = [
     doc._id?.toString?.(),
     doc.id,
     doc.product_id,
-    doc.sku ? `sku_${doc.sku}` : null
-  ].filter(id => id && typeof id === 'string' && id.trim().length > 0);
+    doc.sku ? `sku_${doc.sku}` : null,
+    doc.name ? `name_${doc.name.replace(/\s+/g, '_').toLowerCase()}` : null
+  ].filter(id => id && typeof id === 'string' && id.trim().length > 0 && id !== 'undefined' && id !== 'null');
 
   if (possibleIds.length > 0) {
-    return possibleIds[0];
+    const finalId = possibleIds[0].trim();
+    console.log('ProductSelector: Using ID:', finalId);
+    return finalId;
   }
 
-  // Fallback to timestamp-based ID
-  return `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  // Enhanced fallback with more randomness
+  const fallbackId = `prod_${Date.now()}_${Math.random().toString(36).substr(2, 12)}`;
+  console.log('ProductSelector: Generated fallback ID:', fallbackId);
+  return fallbackId;
 };
 
-// Helper function to validate if an ID is safe for SelectItem
+// Stricter helper function to validate if an ID is safe for SelectItem
 const isValidSelectId = (id: any): id is string => {
-  return typeof id === 'string' && 
+  const isValid = typeof id === 'string' && 
          id.trim().length > 0 && 
          id !== '' && 
          id !== 'undefined' && 
-         id !== 'null';
+         id !== 'null' &&
+         id !== 'NaN' &&
+         !id.includes('undefined') &&
+         !id.includes('null');
+  
+  if (!isValid) {
+    console.warn('ProductSelector: Invalid ID detected:', id);
+  }
+  
+  return isValid;
 };
 
 export function ProductSelector({ 
@@ -66,15 +82,15 @@ export function ProductSelector({
 
       console.log('ProductSelector: Fetched products from MongoDB:', productsData.length);
       
-      // Convert MongoDB documents to Product interfaces with safe ID generation
-      const products: Product[] = productsData.map(doc => {
+      // Convert MongoDB documents to Product interfaces with enhanced safe ID generation
+      const products: Product[] = productsData.map((doc, index) => {
         const safeId = generateSafeId(doc);
-        console.log('ProductSelector: Generated ID for product:', { original: doc, safeId });
+        console.log(`ProductSelector: Product ${index} - Generated ID:`, safeId, 'for doc:', doc);
         
         return {
           id: safeId,
-          sku: doc.sku || '',
-          name: doc.name || '',
+          sku: doc.sku || `sku_${index}`,
+          name: doc.name || `Product ${index}`,
           description: doc.description || '',
           category_id: doc.category_id || '',
           supplier_id: doc.supplier_id || '',
@@ -98,34 +114,54 @@ export function ProductSelector({
         };
       });
       
-      // Apply strict filtering - only active products with valid IDs
-      const validProducts = products.filter(product => {
-        const isValid = product.is_active && 
-                       isValidSelectId(product.id) && 
-                       product.name && 
-                       product.name.trim().length > 0;
+      // Apply ultra-strict filtering with multiple validation layers
+      const validProducts = products.filter((product, index) => {
+        const hasValidId = isValidSelectId(product.id);
+        const hasValidName = product.name && typeof product.name === 'string' && product.name.trim().length > 0;
+        const isActive = product.is_active === true;
+        
+        const isValid = hasValidId && hasValidName && isActive;
         
         if (!isValid) {
-          console.log('ProductSelector: Filtering out invalid product:', product);
+          console.warn(`ProductSelector: Filtering out invalid product at index ${index}:`, {
+            product,
+            hasValidId,
+            hasValidName,
+            isActive,
+            reasons: {
+              invalidId: !hasValidId,
+              invalidName: !hasValidName,
+              inactive: !isActive
+            }
+          });
         }
         
         return isValid;
       });
       
       console.log('ProductSelector: Valid products after filtering:', validProducts.length);
+      console.log('ProductSelector: Valid product IDs:', validProducts.map(p => p.id));
+      
       return validProducts;
     }
   });
 
   const handleValueChange = (newValue: string) => {
+    console.log('ProductSelector: Value changed to:', newValue);
     if (onValueChange) onValueChange(newValue);
     if (onChange) onChange(newValue);
   };
 
-  // Final safety check before rendering - ensure no empty values
-  const safeProducts = (products || []).filter(product => isValidSelectId(product.id));
+  // Triple safety check before rendering
+  const safeProducts = (products || []).filter(product => {
+    const isSafe = isValidSelectId(product.id) && product.name && product.name.trim().length > 0;
+    if (!isSafe) {
+      console.error('ProductSelector: Unsafe product detected before render:', product);
+    }
+    return isSafe;
+  });
 
-  console.log('ProductSelector: Rendering with products:', safeProducts.length);
+  console.log('ProductSelector: Final safe products for rendering:', safeProducts.length);
 
   return (
     <Select onValueChange={handleValueChange} defaultValue={value} disabled={disabled}>
@@ -134,23 +170,25 @@ export function ProductSelector({
       </SelectTrigger>
       <SelectContent>
         {isLoading ? (
-          <SelectItem value="loading-placeholder" disabled>
+          <SelectItem value="loading-placeholder-unique-id" disabled>
             Cargando...
           </SelectItem>
         ) : safeProducts.length === 0 ? (
-          <SelectItem value="no-products-placeholder" disabled>
+          <SelectItem value="no-products-placeholder-unique-id" disabled>
             No hay productos disponibles
           </SelectItem>
         ) : (
           safeProducts.map((product) => {
-            // Additional safety check per item
+            // Final per-item safety validation
             if (!isValidSelectId(product.id)) {
-              console.error('ProductSelector: Skipping product with invalid ID:', product);
+              console.error('ProductSelector: CRITICAL - Invalid ID at render time:', product);
               return null;
             }
             
+            console.log('ProductSelector: Rendering item with ID:', product.id);
+            
             return (
-              <SelectItem key={product.id} value={product.id}>
+              <SelectItem key={`product_${product.id}`} value={product.id}>
                 {product.name} ({product.sku})
               </SelectItem>
             );
