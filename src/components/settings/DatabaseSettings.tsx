@@ -7,10 +7,11 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Database, CheckCircle, XCircle, RefreshCw, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { testConnection, getDatabaseStats, connectToDatabase } from '@/lib/mongodb';
+import { testConnection, getDatabaseStats, connectToDatabase, setDbMode, getDbMode } from '@/lib/mongodb';
 
 // Helpers to persist/recover db config in localStorage
 const DB_CONFIG_KEY = "warehouseos_dbconfig";
+const DB_MODE_KEY = "warehouseos_dbmode";
 function loadDbConfig() {
   try {
     const parsed = JSON.parse(localStorage.getItem(DB_CONFIG_KEY) ?? '{}');
@@ -42,8 +43,22 @@ export function DatabaseSettings() {
   const [dbConfig, setDbConfig] = useState(loadDbConfig());
   const [isConnecting, setIsConnecting] = useState(false);
   const [dbStats, setDbStats] = useState<any>(null);
+  const [dbMode, setDbModeLocal] = useState(getDbMode() ?? 'mock');
 
   const { toast } = useToast();
+
+  useEffect(() => {
+    setDbConfig(loadDbConfig());
+    setDbModeLocal(getDbMode() ?? 'mock');
+  }, []);
+
+  const handleChangeMode = (mode: 'mock' | 'api') => {
+    setDbMode(mode);
+    toast({
+      title: "Database Mode Changed",
+      description: `Switched to ${mode === 'mock' ? 'local storage' : 'backend REST API'} mode.`,
+    });
+  };
 
   // Sincroniza config inicial desde localStorage
   useEffect(() => {
@@ -233,6 +248,27 @@ export function DatabaseSettings() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Label>Database Mode</Label>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={dbMode === "mock" ? "default" : "outline"}
+              className="text-xs"
+              size="sm"
+              onClick={() => handleChangeMode("mock")}
+            >
+              Mock (Local)
+            </Button>
+            <Button
+              variant={dbMode === "api" ? "default" : "outline"}
+              className="text-xs"
+              size="sm"
+              onClick={() => handleChangeMode("api")}
+            >
+              Producción (REST)
+            </Button>
+          </div>
+        </div>
         <div className="flex items-center justify-between p-4 border rounded-lg">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
