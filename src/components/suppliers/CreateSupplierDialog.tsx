@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
 import { CreateSupplierData, Supplier } from '@/types/suppliers';
 import {
@@ -26,6 +26,35 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
+// Función "mock": obtiene siguiente código en formato SUP-0001, SUP-0002, etc.
+let supplierCounter = 1;
+const getNextSupplierCode = (() => {
+  let counter = 1;
+  return async () => {
+    // En una app real, esto vendría de una consulta backend/DB.
+    // Aquí simulamos auto-increment.
+    const db = await connectToDatabase();
+    const all = await db.collection('suppliers').find().toArray();
+    const usedCodes = all
+      .map((sup: any) => sup.code)
+      .filter(Boolean)
+      .sort();
+    if (usedCodes.length > 0) {
+      // SUP-0004
+      const nums = usedCodes
+        .map((code: string) => {
+          const match = code.match(/^SUP-(\d+)$/);
+          return match ? parseInt(match[1], 10) : 0;
+        })
+        .filter(n => n > 0);
+      counter = (nums.length > 0 ? Math.max(...nums) : 0) + 1;
+    }
+    const code = `SUP-${counter.toString().padStart(4, '0')}`;
+    counter++;
+    return code;
+  };
+})();
+
 interface CreateSupplierDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,37 +65,60 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
   const queryClient = useQueryClient();
   const isEditing = !!supplier;
 
-  const form = useForm<CreateSupplierData & { is_active: boolean }>({
-    defaultValues: {
-      code: supplier?.code || '',
-      name: supplier?.name || '',
-      contact_person: supplier?.contact_person || '',
-      email: supplier?.email || '',
-      phone: supplier?.phone || '',
-      address: supplier?.address || '',
-      city: supplier?.city || '',
-      state: supplier?.state || '',
-      postal_code: supplier?.postal_code || '',
-      country: supplier?.country || '',
-      tax_id: supplier?.tax_id || '',
-      payment_terms: supplier?.payment_terms || '',
-      lead_time_days: supplier?.lead_time_days || 0,
-      notes: supplier?.notes || '',
-      is_active: supplier?.is_active ?? true,
-    },
-  });
+  // Form
+  const form = useForm<CreateSupplierData & { is_active: boolean }>(
+    {
+      defaultValues: {
+        // eliminamos 'code' del editable (lo mostramos aparte abajo si se edita)
+        name: supplier?.name || '',
+        contact_person: supplier?.contact_person || '',
+        email: supplier?.email || '',
+        phone: supplier?.phone || '',
+        address: supplier?.address || '',
+        city: supplier?.city || '',
+        state: supplier?.state || '',
+        postal_code: supplier?.postal_code || '',
+        country: supplier?.country || '',
+        tax_id: supplier?.tax_id || '',
+        payment_terms: supplier?.payment_terms || '',
+        lead_time_days: supplier?.lead_time_days || 0,
+        notes: supplier?.notes || '',
+        is_active: supplier?.is_active ?? true,
+      },
+    }
+  );
+
+  // Cuando no hay editing, generamos el código nuevo una sola vez en el montaje
+  // y lo guardamos en state local para mostrarlo en el resumen al final
+  const [autoCode, setAutoCode] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!isEditing && open) {
+      getNextSupplierCode().then(setAutoCode);
+    }
+    if (!open) setAutoCode(null);
+    // eslint-disable-next-line
+  }, [isEditing, open]);
 
   const createMutation = useMutation({
     mutationFn: async (data: CreateSupplierData & { is_active: boolean }) => {
       console.log('Creating/updating supplier:', data);
       const db = await connectToDatabase();
-      
-      const supplierData = {
+
+      let supplierData = {
         ...data,
         lead_time_days: Number(data.lead_time_days) || 0,
         created_at: isEditing ? supplier!.created_at : new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
+
+      if (!isEditing) {
+        // Asignar el código autogenerado
+        supplierData = { ...supplierData, code: autoCode || (await getNextSupplierCode()) };
+      } else {
+        // Mantenemos code al editar
+        supplierData = { ...supplierData, code: supplier!.code };
+      }
 
       if (isEditing) {
         // Use our mock MongoDB service - filter by the string ID directly
@@ -108,24 +160,22 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
           </DialogDescription>
         </DialogHeader>
 
+        {/* Campo SOLO LECTURA de código */}
+        <div className="mb-2">
+          <FormLabel>Código</FormLabel>
+          <Input
+            value={isEditing ? supplier?.code : (autoCode || '')}
+            disabled
+            readOnly
+            className="font-mono"
+            placeholder="--"
+          />
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Se eliminó el campo editable de código */}
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="code"
-                rules={{ required: 'El código es requerido' }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ej: PROV001" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="name"
@@ -140,9 +190,6 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
                   </FormItem>
                 )}
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="contact_person"
@@ -156,7 +203,9 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
                   </FormItem>
                 )}
               />
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="email"
@@ -170,9 +219,7 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
                   </FormItem>
                 )}
               />
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="phone"
@@ -186,7 +233,9 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
                   </FormItem>
                 )}
               />
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="tax_id"
@@ -200,21 +249,20 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dirección</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Dirección completa" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Dirección</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Dirección completa" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <div className="grid grid-cols-3 gap-4">
               <FormField
@@ -230,7 +278,6 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="state"
@@ -244,7 +291,6 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="postal_code"
