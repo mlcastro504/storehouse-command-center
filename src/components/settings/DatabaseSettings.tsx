@@ -6,42 +6,67 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Database, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Database, CheckCircle, XCircle, RefreshCw, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { testConnection, getDatabaseStats } from '@/lib/mongodb';
+import { testConnection, getDatabaseStats, connectToDatabase } from '@/lib/mongodb';
+
+// Helpers to persist/recover db config in localStorage
+const DB_CONFIG_KEY = "warehouseos_dbconfig";
+function loadDbConfig() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(DB_CONFIG_KEY) ?? '{}');
+    return {
+      uri: parsed.uri || 'mongodb://mlcastro:Futuro2025,@192.168.2.34:27017/?authSource=admin',
+      database: parsed.database || 'warehouseos',
+      replicationEnabled: !!parsed.replicationEnabled,
+      connectionStatus: 'disconnected'
+    };
+  } catch {
+    return {
+      uri: 'mongodb://mlcastro:Futuro2025,@192.168.2.34:27017/?authSource=admin',
+      database: 'warehouseos',
+      replicationEnabled: false,
+      connectionStatus: 'disconnected'
+    };
+  }
+}
+function saveDbConfig(config: any) {
+  localStorage.setItem(DB_CONFIG_KEY, JSON.stringify({
+    uri: config.uri,
+    database: config.database,
+    replicationEnabled: config.replicationEnabled
+  }));
+}
 
 export function DatabaseSettings() {
-  const [dbConfig, setDbConfig] = useState({
-    uri: 'mongodb://mlcastro:Futuro2025,@192.168.2.34:27017/?authSource=admin',
-    database: 'warehouseos',
-    replicationEnabled: false,
-    connectionStatus: 'disconnected'
-  });
-
+  const [dbConfig, setDbConfig] = useState(loadDbConfig());
   const [isConnecting, setIsConnecting] = useState(false);
   const [dbStats, setDbStats] = useState<any>(null);
 
   const { toast } = useToast();
 
+  // Sincronizar config inicial desde localStorage
   useEffect(() => {
-    // Test connection on component mount
+    setDbConfig(loadDbConfig());
+  }, []);
+
+  useEffect(() => {
     handleTestConnection();
+    // eslint-disable-next-line
   }, []);
 
   const handleTestConnection = async () => {
     setIsConnecting(true);
     setDbConfig(prev => ({ ...prev, connectionStatus: 'connecting' }));
-    
     try {
       const result = await testConnection();
-      
+
       if (result.success) {
         setDbConfig(prev => ({ ...prev, connectionStatus: 'connected' }));
-        
         // Get database stats
         const stats = await getDatabaseStats();
         setDbStats(stats);
-        
+
         toast({
           title: "Conexión exitosa",
           description: "La conexión a MongoDB se ha establecido correctamente.",
@@ -66,16 +91,40 @@ export function DatabaseSettings() {
     }
   };
 
-  const restartConnection = () => {
-    handleTestConnection();
+  // Botón que fuerza crear la base (simulado) y conecta a ella
+  const handleCreateDatabase = async () => {
+    setIsConnecting(true);
+    setDbConfig(prev => ({ ...prev, connectionStatus: 'connecting' }));
+    try {
+      // Simulación: Crea la base usando connectToDatabase
+      await connectToDatabase();
+      saveDbConfig(dbConfig);
+      setDbConfig(prev => ({ ...prev, connectionStatus: 'connected' }));
+      const stats = await getDatabaseStats();
+      setDbStats(stats);
+      toast({
+        title: "Base de datos creada",
+        description: "La base de datos se creó y la app ahora está conectada.",
+      });
+    } catch (error) {
+      setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
+      toast({
+        title: "Error al crear base de datos",
+        description: "Ocurrió un error al crear la base de datos.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const saveConfiguration = () => {
+    saveDbConfig(dbConfig);
     toast({
       title: "Configuración guardada",
       description: "La configuración de MongoDB se ha guardado. Se reiniciará la conexión.",
     });
-    restartConnection();
+    handleTestConnection();
   };
 
   const getStatusBadge = () => {
@@ -99,7 +148,7 @@ export function DatabaseSettings() {
           Base de Datos MongoDB
         </CardTitle>
         <CardDescription>
-          Configuración de conexión a MongoDB en 192.168.2.34
+          Configura el acceso y crea tu base de datos MongoDB.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -134,29 +183,39 @@ export function DatabaseSettings() {
             </Button>
             <Button 
               variant="outline" 
-              onClick={restartConnection}
+              onClick={handleCreateDatabase}
+              disabled={isConnecting}
+              className="flex items-center gap-2"
+            >
+              <PlusCircle className="w-4 h-4" />
+              {isConnecting ? 'Creando...' : 'Crear Base de Datos'}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={saveConfiguration}
               disabled={isConnecting}
               className="flex items-center gap-2"
             >
               <RefreshCw className={`w-4 h-4 ${isConnecting ? 'animate-spin' : ''}`} />
-              Reiniciar
+              Guardar y Aplicar
             </Button>
           </div>
         </div>
-
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>URI de Conexión</Label>
             <Input
-              value={dbConfig.uri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')}
-              readOnly
-              className="bg-muted"
+              value={dbConfig.uri}
+              onChange={(e) => setDbConfig({ ...dbConfig, uri: e.target.value })}
+              placeholder="mongodb://user:pass@host:port/?authSource=admin"
+              className="bg-white"
+              autoComplete="off"
+              spellCheck={false}
             />
             <p className="text-xs text-muted-foreground">
-              Conectado a: 192.168.2.34:27017 (solo lectura)
+              Especifica la URI de tu MongoDB para conectar la app.
             </p>
           </div>
-
           <div className="space-y-2">
             <Label>Nombre de la Base de Datos</Label>
             <Input
@@ -165,7 +224,6 @@ export function DatabaseSettings() {
               placeholder="warehouseos"
             />
           </div>
-
           <div className="flex items-center justify-between p-3 border rounded">
             <div className="space-y-1">
               <Label className="text-sm font-medium">Replicación Habilitada</Label>
@@ -178,15 +236,6 @@ export function DatabaseSettings() {
               onCheckedChange={(checked) => setDbConfig({ ...dbConfig, replicationEnabled: checked })}
             />
           </div>
-        </div>
-
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={handleTestConnection} disabled={isConnecting}>
-            Probar Configuración
-          </Button>
-          <Button onClick={saveConfiguration} disabled={isConnecting}>
-            Guardar y Aplicar
-          </Button>
         </div>
       </CardContent>
     </Card>
