@@ -4,6 +4,7 @@ import { useTheme } from "next-themes"
 import { useAuth } from '@/hooks/useAuth'
 import { getModulesForUser } from '@/data/modules'
 import { useState, useEffect } from 'react'
+import { useTranslation } from "react-i18next"
 import {
   Sidebar,
   SidebarContent,
@@ -23,15 +24,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 export function AppSidebar() {
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
+  const { t } = useTranslation(['common', 'settings', 'dashboard', 'inventory', 'locations', 'suppliers', 'picking', 'stock-movements', 'stock-move', 'putaway', 'scanner', 'loading', 'users', 'customers', 'ecommerce', 'accounting', 'chat']);
   const [companyName, setCompanyName] = useState('WarehouseOS')
   const [companyLogo, setCompanyLogo] = useState('')
   
   // Asegurar que se muestren todos los módulos disponibles para el usuario
   const userModules = user ? getModulesForUser(user.role.level) : []
   
-  console.log('User role level:', user?.role.level)
-  console.log('Available modules:', userModules)
-
   // Cargar configuraciones de la empresa
   useEffect(() => {
     const savedName = localStorage.getItem('companyName')
@@ -47,7 +46,7 @@ export function AppSidebar() {
 
   const getIcon = (iconName: string) => {
     const IconComponent = LucideIcons[iconName as keyof typeof LucideIcons] as React.ComponentType<any>
-    return IconComponent || Home
+    return IconComponent || LucideIcons.Home
   }
 
   return (
@@ -67,14 +66,14 @@ export function AppSidebar() {
           )}
           <div>
             <h2 className="font-bold text-lg">{companyName}</h2>
-            <p className="text-xs text-muted-foreground">Sistema de Gestión</p>
+            <p className="text-xs text-muted-foreground">{t('sidebar.managementSystem')}</p>
           </div>
         </div>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Módulos Principales</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('sidebar.mainModules')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {userModules.length > 0 ? (
@@ -85,7 +84,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild>
                         <a href={module.path} className="flex items-center gap-2">
                           <IconComponent className="w-4 h-4" />
-                          <span>{module.displayName}</span>
+                          <span>{t(module.displayName)}</span>
                         </a>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -105,14 +104,14 @@ export function AppSidebar() {
         <SidebarSeparator />
 
         <SidebarGroup>
-          <SidebarGroupLabel>Sistema</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('sidebar.system')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <a href="/settings" className="flex items-center gap-2">
                     <Settings className="w-4 h-4" />
-                    <span>Configuración</span>
+                    <span>{t('settings:title')}</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -21,7 +21,7 @@ export const modules = [
   {
     id: 'dashboard',
     name: 'Dashboard',
-    displayName: 'Panel Principal',
+    displayName: 'dashboard:title',
     description: 'Vista general del sistema y métricas principales',
     icon: 'BarChart3',
     path: '/dashboard',
@@ -31,7 +31,7 @@ export const modules = [
   {
     id: 'inventory',
     name: 'Inventory',
-    displayName: 'Inventario',
+    displayName: 'inventory:title',
     description: 'Gestión de productos, categorías y control de stock',
     icon: 'Package',
     path: '/inventory',
@@ -41,7 +41,7 @@ export const modules = [
   {
     id: 'locations',
     name: 'Locations',
-    displayName: 'Ubicaciones',
+    displayName: 'locations:title',
     description: 'Gestión de almacenes, zonas y ubicaciones físicas',
     icon: 'MapPin',
     path: '/locations',
@@ -51,7 +51,7 @@ export const modules = [
   {
     id: 'suppliers',
     name: 'Suppliers',
-    displayName: 'Proveedores',
+    displayName: 'suppliers:title',
     description: 'Gestión de proveedores y relaciones comerciales',
     icon: 'Truck',
     path: '/suppliers',
@@ -61,7 +61,7 @@ export const modules = [
   {
     id: 'picking',
     name: 'Picking',
-    displayName: 'Picking',
+    displayName: 'picking:title',
     description: 'Gestión de tareas de recolección de productos',
     icon: 'ClipboardList',
     path: '/picking',
@@ -71,7 +71,7 @@ export const modules = [
   {
     id: 'stock-movements',
     name: 'StockMovements',
-    displayName: 'Movimientos de Stock',
+    displayName: 'stock-movements:title',
     description: 'Registro y seguimiento de movimientos de inventario',
     icon: 'TruckIcon',
     path: '/stock-movements',
@@ -81,7 +81,7 @@ export const modules = [
   {
     id: 'stock-move',
     name: 'StockMove',
-    displayName: 'Stock Move',
+    displayName: 'stock-move:title',
     description: 'Módulo de reposición automática y movimientos de stock',
     icon: 'ArrowUpDown',
     path: '/stock-move',
@@ -91,7 +91,7 @@ export const modules = [
   {
     id: 'putaway',
     name: 'PutAway',
-    displayName: 'Put Away',
+    displayName: 'putaway:title',
     description: 'Gestión de tareas de almacenamiento y ubicación',
     icon: 'Archive',
     path: '/putaway',
@@ -101,7 +101,7 @@ export const modules = [
   {
     id: 'scanner',
     name: 'Scanner',
-    displayName: 'Escáner',
+    displayName: 'scanner:title',
     description: 'Sistema de escaneo y captura de códigos de barras',
     icon: 'ScanLine',
     path: '/scanner',
@@ -111,7 +111,7 @@ export const modules = [
   {
     id: 'loading',
     name: 'Loading',
-    displayName: 'Carga',
+    displayName: 'loading:title',
     description: 'Gestión de muelles de carga y programación de citas',
     icon: 'TruckIcon',
     path: '/loading',
@@ -121,7 +121,7 @@ export const modules = [
   {
     id: 'users',
     name: 'Users',
-    displayName: 'Usuarios',
+    displayName: 'users:title',
     description: 'Gestión de usuarios, roles y permisos del sistema',
     icon: 'Users',
     path: '/users',
@@ -131,7 +131,7 @@ export const modules = [
   {
     id: 'customers',
     name: 'Customers',
-    displayName: 'Clientes',
+    displayName: 'customers:title',
     description: 'Gestión de clientes y relaciones comerciales',
     icon: 'UserPlus',
     path: '/customers',
@@ -141,7 +141,7 @@ export const modules = [
   {
     id: 'ecommerce',
     name: 'Ecommerce',
-    displayName: 'E-commerce',
+    displayName: 'ecommerce:title',
     description: 'Integración con plataformas de comercio electrónico',
     icon: 'ShoppingCart',
     path: '/ecommerce',
@@ -151,7 +151,7 @@ export const modules = [
   {
     id: 'accounting',
     name: 'Accounting',
-    displayName: 'Contabilidad',
+    displayName: 'accounting:title',
     description: 'Gestión contable, facturas y transacciones financieras',
     icon: 'Calculator',
     path: '/accounting',
@@ -161,7 +161,7 @@ export const modules = [
   {
     id: 'chat',
     name: 'Chat',
-    displayName: 'Chat',
+    displayName: 'chat:title',
     description: 'Sistema de comunicación interna y colaboración',
     icon: 'MessageSquare',
     path: '/chat',
@@ -171,7 +171,7 @@ export const modules = [
   {
     id: 'settings',
     name: 'Settings',
-    displayName: 'Configuración',
+    displayName: 'settings:title',
     description: 'Configuración del sistema y preferencias de usuario',
     icon: 'Settings',
     path: '/settings',
