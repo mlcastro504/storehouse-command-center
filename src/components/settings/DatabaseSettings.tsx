@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -116,7 +115,7 @@ export function DatabaseSettings() {
     return uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'));
   };
 
-  // Botón para crear/montar la BD y conectar definitivamente
+  // Botón para crear/montar la BD y conectar definitivamente - *modificado*
   const handleCreateDatabase = async () => {
     setIsConnecting(true);
     setDbConfig(prev => ({ ...prev, connectionStatus: 'connecting' }));
@@ -131,7 +130,17 @@ export function DatabaseSettings() {
         setIsConnecting(false);
         return;
       }
-      await connectToDatabase(dbConfig.uri, dbConfig.database); // Crea y conecta
+      // Conecta y Crea un documento especial para forzar la creación
+      const db = await connectToDatabase(dbConfig.uri, dbConfig.database);
+      // Aquí creamos la colección "metadata" y document dummy
+      if (db && typeof db.collection === "function") {
+        const meta = db.collection("metadata");
+        await meta.insertOne({
+          createdAt: new Date().toISOString(),
+          app: "warehouseos",
+          message: "Initial database creation"
+        });
+      }
       saveDbConfig({ ...dbConfig, connectionStatus: 'connected' });
       setDbConfig(prev => ({ ...prev, connectionStatus: 'connected' }));
       const stats = await getDatabaseStats();
