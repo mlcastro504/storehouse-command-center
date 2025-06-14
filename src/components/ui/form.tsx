@@ -70,7 +70,7 @@ const useFormField = () => {
     formItemId: `${id}-form-item`,
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
-    error: fieldState?.error, // ensure error always present, possibly undefined
+    error: ('error' in fieldState ? (fieldState as any).error : undefined),
     ...fieldState,
   };
 };
