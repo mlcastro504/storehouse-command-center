@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Edit } from 'lucide-react';
+import { Eye, Edit, Trash2 } from 'lucide-react';
+import { DeleteStockMovementDialog } from './DeleteStockMovementDialog';
+import { EditStockMovementDialog } from './EditStockMovementDialog';
 
 const mockMovements = [
   {
@@ -27,6 +29,20 @@ const mockMovements = [
 ];
 
 export const StockMovementsList = () => {
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [selectedMovement, setSelectedMovement] = useState<any>(null);
+
+  const handleDelete = (movement: any) => {
+    setSelectedMovement(movement);
+    setDeleteOpen(true);
+  };
+
+  const handleEdit = (movement: any) => {
+    setSelectedMovement(movement);
+    setEditOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       <Table>
@@ -58,11 +74,11 @@ export const StockMovementsList = () => {
               </TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => handleEdit(movement)}>
                     <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleDelete(movement)}>
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </TableCell>
@@ -70,6 +86,16 @@ export const StockMovementsList = () => {
           ))}
         </TableBody>
       </Table>
+      <DeleteStockMovementDialog
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        movement={selectedMovement}
+      />
+      <EditStockMovementDialog
+        open={editOpen}
+        setOpen={setEditOpen}
+        movement={selectedMovement}
+      />
     </div>
   );
 };
