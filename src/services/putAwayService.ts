@@ -4,12 +4,49 @@ import { Pallet, PutAwayTask, PutAwayRule, OperatorPerformance, PutAwayMetrics, 
 import { Location } from '@/types/inventory';
 
 export class PutAwayService {
+  private static async populateTaskDetails(task: any): Promise<PutAwayTask> {
+    const populatedTask = { ...task, id: task._id || task.id };
+
+    if (task.pallet_id) {
+        const pallet = await BrowserStorage.findOne('pallets', { id: task.pallet_id });
+        if (pallet && pallet.product_id) {
+            const product = await BrowserStorage.findOne('products', { id: pallet.product_id });
+            pallet.product = product;
+        }
+        populatedTask.pallet = pallet;
+    }
+    
+    if (task.product_id && !populatedTask.product) {
+        const product = await BrowserStorage.findOne('products', { id: task.product_id });
+        if (product) {
+          populatedTask.product = product;
+        }
+    }
+    if (task.from_location_id) {
+        populatedTask.from_location = await BrowserStorage.findOne('locations', { id: task.from_location_id });
+    }
+    if (task.to_location_id) {
+        populatedTask.to_location = await BrowserStorage.findOne('locations', { id: task.to_location_id });
+    }
+    if (task.suggested_location_id) {
+        populatedTask.suggested_location = await BrowserStorage.findOne('locations', { id: task.suggested_location_id });
+    }
+    if (task.actual_location_id) {
+        populatedTask.actual_location = await BrowserStorage.findOne('locations', { id: task.actual_location_id });
+    }
+
+    return populatedTask as PutAwayTask;
+  }
+
   static async getPendingPallets(): Promise<Pallet[]> {
     try {
       const pallets = await BrowserStorage.find('pallets', { status: 'waiting_putaway' });
-      return pallets.map(pallet => ({
-        ...pallet,
-        id: pallet._id || pallet.id,
+      return Promise.all(pallets.map(async (pallet) => {
+        const populatedPallet = { ...pallet, id: pallet._id || pallet.id };
+        if (pallet.product_id) {
+            populatedPallet.product = await BrowserStorage.findOne('products', { id: pallet.product_id });
+        }
+        return populatedPallet;
       }));
     } catch (error) {
       console.error('Error getting pending pallets:', error);
@@ -24,10 +61,7 @@ export class PutAwayService {
         : { status: 'in_progress' };
       
       const tasks = await BrowserStorage.find('putaway_tasks', filter);
-      return tasks.map(task => ({
-        ...task,
-        id: task._id || task.id,
-      }));
+      return Promise.all(tasks.map(this.populateTaskDetails));
     } catch (error) {
       console.error('Error getting active tasks:', error);
       return [];
@@ -102,11 +136,13 @@ export class PutAwayService {
       });
 
       // Actualizar palet
-      await BrowserStorage.updateOne('pallets', { id: task.pallet_id }, {
-        status: 'stored',
-        location_id: locationId,
-        completed_at: completedAt
-      });
+      if (task.pallet_id) {
+        await BrowserStorage.updateOne('pallets', { id: task.pallet_id }, {
+          status: 'stored',
+          location_id: locationId,
+          completed_at: completedAt
+        });
+      }
 
       // Actualizar ubicación
       await BrowserStorage.updateOne('locations', { id: locationId }, {
@@ -279,10 +315,8 @@ export class PutAwayService {
         : { status: { $in: ['completed', 'cancelled'] } };
       
       const tasks = await BrowserStorage.find('putaway_tasks', filter);
-      return tasks.map(task => ({
-        ...task,
-        id: task._id || task.id,
-      })).sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+      const populatedTasks = await Promise.all(tasks.map(this.populateTaskDetails));
+      return populatedTasks.sort((a, b) => new Date(b.completed_at || b.created_date).getTime() - new Date(a.completed_at || a.created_date).getTime());
     } catch (error) {
       console.error('Error getting task history:', error);
       return [];
@@ -317,10 +351,7 @@ export class PutAwayService {
   static async getPutAwayTasks(): Promise<PutAwayTask[]> {
     try {
       const tasks = await BrowserStorage.find('putaway_tasks', {});
-      return tasks.map(task => ({
-        ...task,
-        id: task._id || task.id,
-      }));
+      return Promise.all(tasks.map(this.populateTaskDetails));
     } catch (error) {
       console.error('Error getting put away tasks:', error);
       return [];

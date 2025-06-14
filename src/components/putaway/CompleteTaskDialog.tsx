@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -38,6 +39,7 @@ interface CompleteTaskDialogProps {
 }
 
 export const CompleteTaskDialog = ({ open, onOpenChange, task }: CompleteTaskDialogProps) => {
+  const { t } = useTranslation('putaway');
   const completeTask = useCompleteTask();
 
   const form = useForm<CompleteTaskFormData>({
@@ -66,16 +68,16 @@ export const CompleteTaskDialog = ({ open, onOpenChange, task }: CompleteTaskDia
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Completar Tarea Put Away</DialogTitle>
+          <DialogTitle>{t('completeDialog.title')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <Alert>
             <MapPin className="h-4 w-4" />
             <AlertDescription>
-              <strong>Ubicación:</strong> {task.suggested_location?.name}
+              <strong>{t('completeDialog.location')}:</strong> {task.suggested_location?.name}
               <br />
-              <strong>Palet:</strong> {task.pallet?.pallet_number}
+              <strong>{t('completeDialog.pallet')}:</strong> {task.pallet?.pallet_number}
             </AlertDescription>
           </Alert>
 
@@ -88,17 +90,17 @@ export const CompleteTaskDialog = ({ open, onOpenChange, task }: CompleteTaskDia
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
                       <Key className="h-4 w-4" />
-                      Código de Confirmación
+                      {t('completeDialog.code_label')}
                     </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Ingresa el código de la ubicación"
+                        placeholder={t('completeDialog.code_placeholder')}
                         className="text-center font-mono text-lg"
                       />
                     </FormControl>
                     <FormDescription>
-                      Escanea o ingresa el código único de la ubicación donde colocaste el palet
+                      {t('completeDialog.code_desc')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -111,13 +113,13 @@ export const CompleteTaskDialog = ({ open, onOpenChange, task }: CompleteTaskDia
                   variant="outline"
                   onClick={() => onOpenChange(false)}
                 >
-                  Cancelar
+                  {t('completeDialog.cancel_button')}
                 </Button>
                 <Button
                   type="submit"
                   disabled={completeTask.isPending}
                 >
-                  {completeTask.isPending ? 'Completando...' : 'Completar Tarea'}
+                  {completeTask.isPending ? t('completeDialog.confirming_button') : t('completeDialog.confirm_button')}
                 </Button>
               </div>
             </form>

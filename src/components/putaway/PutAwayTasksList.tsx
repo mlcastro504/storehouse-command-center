@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { usePutAwayTasks } from '@/hooks/usePutAway';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export const PutAwayTasksList = () => {
+  const { t, i18n } = useTranslation('putaway');
   const { data: tasks, isLoading, error } = usePutAwayTasks();
 
   if (isLoading) {
@@ -32,7 +34,7 @@ export const PutAwayTasksList = () => {
   if (error) {
     return (
       <div className="text-center text-red-500 py-8">
-        Error al cargar las tareas de put away
+        {t('allTasks.error')}
       </div>
     );
   }
@@ -41,7 +43,7 @@ export const PutAwayTasksList = () => {
     return (
       <div className="text-center text-muted-foreground py-8">
         <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-        <p>No hay tareas de put away pendientes</p>
+        <p>{t('allTasks.empty_title')}</p>
       </div>
     );
   }
@@ -49,13 +51,13 @@ export const PutAwayTasksList = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="secondary">Pendiente</Badge>;
+        return <Badge variant="secondary">{t('taskList.status_pending')}</Badge>;
       case 'in_progress':
-        return <Badge variant="default">En Progreso</Badge>;
+        return <Badge variant="default">{t('taskList.status_in_progress')}</Badge>;
       case 'completed':
-        return <Badge variant="outline" className="border-green-500 text-green-600">Completada</Badge>;
+        return <Badge variant="outline" className="border-green-500 text-green-600">{t('taskList.status_completed')}</Badge>;
       case 'cancelled':
-        return <Badge variant="destructive">Cancelada</Badge>;
+        return <Badge variant="destructive">{t('taskList.status_cancelled')}</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -64,13 +66,13 @@ export const PutAwayTasksList = () => {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'urgent':
-        return <Badge variant="destructive">Urgente</Badge>;
+        return <Badge variant="destructive">{t('taskList.priority_urgent')}</Badge>;
       case 'high':
-        return <Badge variant="destructive">Alta</Badge>;
+        return <Badge variant="destructive">{t('taskList.priority_high')}</Badge>;
       case 'medium':
-        return <Badge variant="default">Media</Badge>;
+        return <Badge variant="default">{t('taskList.priority_medium')}</Badge>;
       case 'low':
-        return <Badge variant="secondary">Baja</Badge>;
+        return <Badge variant="secondary">{t('taskList.priority_low')}</Badge>;
       default:
         return <Badge variant="secondary">{priority}</Badge>;
     }
@@ -81,15 +83,15 @@ export const PutAwayTasksList = () => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Tarea</TableHead>
-            <TableHead>Producto</TableHead>
-            <TableHead>Ubicaciones</TableHead>
-            <TableHead>Cantidad</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead>Prioridad</TableHead>
-            <TableHead>Asignado</TableHead>
-            <TableHead>Fecha</TableHead>
-            <TableHead>Acciones</TableHead>
+            <TableHead>{t('taskList.task')}</TableHead>
+            <TableHead>{t('taskList.product')}</TableHead>
+            <TableHead>{t('taskList.locations')}</TableHead>
+            <TableHead>{t('taskList.quantity')}</TableHead>
+            <TableHead>{t('taskList.status')}</TableHead>
+            <TableHead>{t('taskList.priority')}</TableHead>
+            <TableHead>{t('taskList.assigned_to')}</TableHead>
+            <TableHead>{t('taskList.date')}</TableHead>
+            <TableHead>{t('taskList.actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -108,36 +110,36 @@ export const PutAwayTasksList = () => {
                 <div className="space-y-1 text-sm">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3 w-3 text-muted-foreground" />
-                    <span>Desde: {task.from_location?.name || 'N/A'}</span>
+                    <span>{t('taskList.from')}: {task.from_location?.name || 'N/A'}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3 w-3 text-green-600" />
-                    <span>Hacia: {task.to_location?.name || task.suggested_location?.name || 'N/A'}</span>
+                    <span>{t('taskList.to')}: {task.to_location?.name || task.suggested_location?.name || 'N/A'}</span>
                   </div>
                 </div>
               </TableCell>
               <TableCell>
                 <div className="text-sm">
                   <div>{task.quantity_completed || 0} / {task.quantity_to_putaway || 0}</div>
-                  <div className="text-muted-foreground">unidades</div>
+                  <div className="text-muted-foreground">{t('taskList.units')}</div>
                 </div>
               </TableCell>
               <TableCell>{getStatusBadge(task.status)}</TableCell>
               <TableCell>{getPriorityBadge(task.priority)}</TableCell>
               <TableCell>
-                {task.assigned_to ? (
+                {task.assigned_to || task.operator_id ? (
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{task.assigned_to}</span>
+                    <span className="text-sm">{task.assigned_to || task.operator_id}</span>
                   </div>
                 ) : (
-                  <span className="text-muted-foreground text-sm">Sin asignar</span>
+                  <span className="text-muted-foreground text-sm">{t('taskList.unassigned')}</span>
                 )}
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  {format(new Date(task.created_date || task.started_at), 'dd/MM/yyyy', { locale: es })}
+                  {format(new Date(task.created_date || task.started_at), 'dd/MM/yyyy', { locale: i18n.language === 'es' ? es : undefined })}
                 </div>
               </TableCell>
               <TableCell>
@@ -145,13 +147,13 @@ export const PutAwayTasksList = () => {
                   {task.status === 'pending' && (
                     <Button size="sm" variant="outline">
                       <Play className="h-4 w-4 mr-1" />
-                      Iniciar
+                      {t('taskList.start_button')}
                     </Button>
                   )}
                   {task.status === 'in_progress' && (
                     <Button size="sm" variant="default">
                       <CheckCircle className="h-4 w-4 mr-1" />
-                      Completar
+                      {t('taskList.complete_button')}
                     </Button>
                   )}
                 </div>

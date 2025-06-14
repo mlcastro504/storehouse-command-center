@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { useActiveTasks, useCompleteTask, useCancelTask } from '@/hooks/usePutAway';
+import { useTranslation } from 'react-i18next';
+import { useActiveTasks } from '@/hooks/usePutAway';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,9 +14,10 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export const ActiveTasksList = () => {
+  const { t, i18n } = useTranslation('putaway');
   const { user } = useAuth();
-  const { data: tasks, isLoading, error } = useActiveTasks();
-  const [selectedTask, setSelectedTask] = React.useState<string | null>(null);
+  const { data: tasks, isLoading, error } = useActiveTasks(user?.id); // Only show user's tasks
+  const [selectedTask, setSelectedTask] = React.useState<any | null>(null);
   const [showCompleteDialog, setShowCompleteDialog] = React.useState(false);
   const [showCancelDialog, setShowCancelDialog] = React.useState(false);
 
@@ -32,7 +34,7 @@ export const ActiveTasksList = () => {
   if (error) {
     return (
       <div className="text-center text-red-500 py-8">
-        Error al cargar las tareas activas
+        {t('active.error')}
       </div>
     );
   }
@@ -41,23 +43,21 @@ export const ActiveTasksList = () => {
     return (
       <div className="text-center text-muted-foreground py-8">
         <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-        <p>No hay tareas activas en este momento</p>
-        <p className="text-sm">Las tareas aparecerán aquí cuando tomes un palet</p>
+        <p>{t('active.empty_title')}</p>
+        <p className="text-sm">{t('active.empty_description')}</p>
       </div>
     );
   }
 
-  const handleCompleteTask = (taskId: string) => {
-    setSelectedTask(taskId);
+  const handleCompleteTask = (task: any) => {
+    setSelectedTask(task);
     setShowCompleteDialog(true);
   };
 
-  const handleCancelTask = (taskId: string) => {
-    setSelectedTask(taskId);
+  const handleCancelTask = (task: any) => {
+    setSelectedTask(task);
     setShowCancelDialog(true);
   };
-
-  const selectedTaskData = tasks.find(t => t.id === selectedTask);
 
   return (
     <>
@@ -69,11 +69,11 @@ export const ActiveTasksList = () => {
                 <div>
                   <CardTitle className="text-lg">{task.task_number}</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Palet: {task.pallet?.pallet_number}
+                    {t('active.pallet')}: {task.pallet?.pallet_number}
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Badge variant="default">En Progreso</Badge>
+                  <Badge variant="default">{t('active.status_in_progress')}</Badge>
                   <Badge variant="outline">{task.priority}</Badge>
                 </div>
               </div>
@@ -83,7 +83,7 @@ export const ActiveTasksList = () => {
                 <div className="flex items-center gap-2">
                   <Package className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Producto</p>
+                    <p className="text-sm text-muted-foreground">{t('active.product')}</p>
                     <p className="font-medium">
                       {task.pallet?.product?.name || 'Desconocido'}
                     </p>
@@ -93,7 +93,7 @@ export const ActiveTasksList = () => {
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-green-600" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Ubicación Sugerida</p>
+                    <p className="text-sm text-muted-foreground">{t('active.suggested_location')}</p>
                     <p className="font-medium">
                       {task.suggested_location?.name || 'No asignada'}
                     </p>
@@ -103,9 +103,9 @@ export const ActiveTasksList = () => {
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Iniciado</p>
+                    <p className="text-sm text-muted-foreground">{t('active.started')}</p>
                     <p className="font-medium">
-                      {format(new Date(task.started_at), 'dd/MM HH:mm', { locale: es })}
+                      {format(new Date(task.started_at), 'dd/MM HH:mm', { locale: i18n.language === 'es' ? es : undefined })}
                     </p>
                   </div>
                 </div>
@@ -114,7 +114,7 @@ export const ActiveTasksList = () => {
               <div className="flex items-center gap-2 mb-4">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
-                  Asignado a: {task.operator_id === user?.id ? 'Ti' : task.operator_id}
+                  {t('active.assigned_to')}: {task.operator_id === user?.id ? t('active.assigned_to_you') : task.operator_id}
                 </span>
               </div>
 
@@ -123,17 +123,17 @@ export const ActiveTasksList = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleCancelTask(task.id)}
+                    onClick={() => handleCancelTask(task)}
                   >
                     <X className="h-4 w-4 mr-1" />
-                    Cancelar
+                    {t('active.cancel_button')}
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => handleCompleteTask(task.id)}
+                    onClick={() => handleCompleteTask(task)}
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    Completar
+                    {t('active.complete_button')}
                   </Button>
                 </div>
               )}
@@ -142,17 +142,17 @@ export const ActiveTasksList = () => {
         ))}
       </div>
 
-      {selectedTaskData && (
+      {selectedTask && (
         <>
           <CompleteTaskDialog
             open={showCompleteDialog}
             onOpenChange={setShowCompleteDialog}
-            task={selectedTaskData}
+            task={selectedTask}
           />
           <CancelTaskDialog
             open={showCancelDialog}
             onOpenChange={setShowCancelDialog}
-            task={selectedTaskData}
+            task={selectedTask}
           />
         </>
       )}

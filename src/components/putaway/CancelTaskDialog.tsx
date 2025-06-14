@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -37,6 +38,7 @@ interface CancelTaskDialogProps {
 }
 
 export const CancelTaskDialog = ({ open, onOpenChange, task }: CancelTaskDialogProps) => {
+  const { t } = useTranslation('putaway');
   const cancelTask = useCancelTask();
 
   const form = useForm<CancelTaskFormData>({
@@ -63,20 +65,20 @@ export const CancelTaskDialog = ({ open, onOpenChange, task }: CancelTaskDialogP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Cancelar Tarea Put Away</DialogTitle>
+          <DialogTitle>{t('cancelDialog.title')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              ¿Estás seguro de que quieres cancelar esta tarea? El palet volverá a estar disponible para otros operarios.
+              {t('cancelDialog.alert')}
             </AlertDescription>
           </Alert>
 
           <div className="text-sm">
-            <p><strong>Tarea:</strong> {task.task_number}</p>
-            <p><strong>Palet:</strong> {task.pallet?.pallet_number}</p>
+            <p><strong>{t('cancelDialog.task')}:</strong> {task.task_number}</p>
+            <p><strong>{t('cancelDialog.pallet')}:</strong> {task.pallet?.pallet_number}</p>
           </div>
 
           <Form {...form}>
@@ -86,11 +88,11 @@ export const CancelTaskDialog = ({ open, onOpenChange, task }: CancelTaskDialogP
                 name="reason"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Motivo de Cancelación</FormLabel>
+                    <FormLabel>{t('cancelDialog.reason_label')}</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
-                        placeholder="Explica por qué necesitas cancelar esta tarea..."
+                        placeholder={t('cancelDialog.reason_placeholder')}
                         rows={3}
                       />
                     </FormControl>
@@ -105,14 +107,14 @@ export const CancelTaskDialog = ({ open, onOpenChange, task }: CancelTaskDialogP
                   variant="outline"
                   onClick={() => onOpenChange(false)}
                 >
-                  Cerrar
+                  {t('cancelDialog.close_button')}
                 </Button>
                 <Button
                   type="submit"
                   variant="destructive"
                   disabled={cancelTask.isPending}
                 >
-                  {cancelTask.isPending ? 'Cancelando...' : 'Cancelar Tarea'}
+                  {cancelTask.isPending ? t('cancelDialog.confirming_button') : t('cancelDialog.confirm_button')}
                 </Button>
               </div>
             </form>

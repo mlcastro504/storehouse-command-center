@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,18 +9,20 @@ import { ActiveTasksList } from '@/components/putaway/ActiveTasksList';
 import { TaskHistoryList } from '@/components/putaway/TaskHistoryList';
 import { PutAwayMetricsDashboard } from '@/components/putaway/PutAwayMetricsDashboard';
 import { PutAwayRulesList } from '@/components/putaway/PutAwayRulesList';
-import { Package, Clock, History, BarChart3, Settings } from 'lucide-react';
+import { PutAwayTasksList } from '@/components/putaway/PutAwayTasksList';
+import { CreatePutAwayTaskDialog } from '@/components/putaway/CreatePutAwayTaskDialog';
+import { Package, Clock, History, BarChart3, Settings, List } from 'lucide-react';
 
 export default function PutAway() {
+  const { t } = useTranslation('putaway');
+
   return (
     <MainLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Put Away</h1>
-            <p className="text-muted-foreground">
-              Gestión de almacenaje de palets en ubicaciones del warehouse
-            </p>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
+            <p className="text-muted-foreground">{t('description')}</p>
           </div>
         </div>
 
@@ -30,32 +33,36 @@ export default function PutAway() {
           <TabsList>
             <TabsTrigger value="pending" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
-              Palets Pendientes
+              {t('tabs.pending')}
             </TabsTrigger>
             <TabsTrigger value="active" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Tareas Activas
+              {t('tabs.active')}
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-2">
               <History className="h-4 w-4" />
-              Historial
+              {t('tabs.history')}
+            </TabsTrigger>
+            <TabsTrigger value="all" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              {t('tabs.allTasks')}
             </TabsTrigger>
             <TabsTrigger value="metrics" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
-              Métricas
+              {t('tabs.metrics')}
             </TabsTrigger>
             <TabsTrigger value="rules" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Reglas
+              {t('tabs.rules')}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="pending" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Palets Disponibles para Almacenar</CardTitle>
+                <CardTitle>{t('pending.title')}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Selecciona un palet para iniciar el proceso de Put Away
+                  {t('pending.description')}
                 </p>
               </CardHeader>
               <CardContent>
@@ -67,9 +74,9 @@ export default function PutAway() {
           <TabsContent value="active" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Tareas en Progreso</CardTitle>
+                <CardTitle>{t('active.title')}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Tareas de Put Away actualmente en proceso
+                  {t('active.description')}
                 </p>
               </CardHeader>
               <CardContent>
@@ -81,9 +88,9 @@ export default function PutAway() {
           <TabsContent value="history" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Historial de Tareas</CardTitle>
+                <CardTitle>{t('history.title')}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Registro de todas las tareas completadas y canceladas
+                  {t('history.description')}
                 </p>
               </CardHeader>
               <CardContent>
@@ -92,18 +99,34 @@ export default function PutAway() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="all" className="space-y-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>{t('allTasks.title')}</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {t('allTasks.description')}
+                  </p>
+                </div>
+                <CreatePutAwayTaskDialog />
+              </CardHeader>
+              <CardContent>
+                <PutAwayTasksList />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="metrics" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Métricas Detalladas</CardTitle>
+                <CardTitle>{t('metrics.title')}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Análisis de rendimiento y estadísticas del módulo Put Away
+                  {t('metrics.description')}
                 </p>
               </CardHeader>
               <CardContent>
-                {/* Aquí irían gráficos más detallados */}
                 <div className="text-center text-muted-foreground py-8">
-                  Métricas detalladas en desarrollo
+                  {t('metrics.wip')}
                 </div>
               </CardContent>
             </Card>
@@ -112,9 +135,9 @@ export default function PutAway() {
           <TabsContent value="rules" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Reglas de Put Away</CardTitle>
+                <CardTitle>{t('rules.title')}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Configuración de reglas automáticas para ubicación de palets
+                  {t('rules.description')}
                 </p>
               </CardHeader>
               <CardContent>

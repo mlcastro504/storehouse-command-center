@@ -1,11 +1,14 @@
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Settings, Plus, Eye } from 'lucide-react';
 
 export const PutAwayRulesList = () => {
+  const { t } = useTranslation('putaway');
+
   // Datos de ejemplo para las reglas
   const sampleRules = [
     {
@@ -41,14 +44,14 @@ export const PutAwayRulesList = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold">Reglas de Ubicación Automática</h3>
+          <h3 className="text-lg font-semibold">{t('rules.subtitle')}</h3>
           <p className="text-sm text-muted-foreground">
-            Define reglas para determinar automáticamente dónde ubicar los productos
+            {t('rules.subtitle_desc')}
           </p>
         </div>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          Nueva Regla
+          {t('rules.new_rule_button')}
         </Button>
       </div>
 
@@ -64,11 +67,11 @@ export const PutAwayRulesList = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">Prioridad {rule.priority}</Badge>
+                  <Badge variant="outline">{t('rules.priority')} {rule.priority}</Badge>
                   {rule.is_active ? (
-                    <Badge variant="default">Activa</Badge>
+                    <Badge variant="default">{t('rules.status_active')}</Badge>
                   ) : (
-                    <Badge variant="secondary">Inactiva</Badge>
+                    <Badge variant="secondary">{t('rules.status_inactive')}</Badge>
                   )}
                 </div>
               </div>
@@ -76,7 +79,7 @@ export const PutAwayRulesList = () => {
             <CardContent>
               <div className="space-y-3">
                 <div>
-                  <h4 className="text-sm font-medium mb-2">Condiciones:</h4>
+                  <h4 className="text-sm font-medium mb-2">{t('rules.conditions')}:</h4>
                   <div className="flex flex-wrap gap-2">
                     {rule.conditions.map((condition, index) => (
                       <Badge key={index} variant="outline" className="text-xs">
@@ -87,18 +90,18 @@ export const PutAwayRulesList = () => {
                 </div>
                 
                 <div>
-                  <h4 className="text-sm font-medium mb-1">Ubicación Sugerida:</h4>
+                  <h4 className="text-sm font-medium mb-1">{t('rules.suggested_location')}:</h4>
                   <Badge variant="secondary">{rule.suggested_location}</Badge>
                 </div>
 
                 <div className="flex justify-end gap-2">
                   <Button size="sm" variant="outline">
                     <Eye className="h-4 w-4 mr-1" />
-                    Ver Detalles
+                    {t('rules.view_details_button')}
                   </Button>
                   <Button size="sm" variant="outline">
                     <Settings className="h-4 w-4 mr-1" />
-                    Editar
+                    {t('rules.edit_button')}
                   </Button>
                 </div>
               </div>

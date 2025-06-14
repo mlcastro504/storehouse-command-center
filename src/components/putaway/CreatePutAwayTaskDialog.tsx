@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -44,6 +45,7 @@ const putAwayTaskSchema = z.object({
 type PutAwayTaskFormData = z.infer<typeof putAwayTaskSchema>;
 
 export const CreatePutAwayTaskDialog = () => {
+  const { t } = useTranslation('putaway');
   const [open, setOpen] = React.useState(false);
   const { data: products } = useProducts();
   const { data: locations } = useLocations();
@@ -90,12 +92,12 @@ export const CreatePutAwayTaskDialog = () => {
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          Nueva Tarea Put Away
+          {t('allTasks.create_button')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Crear Tarea de Put Away</DialogTitle>
+          <DialogTitle>{t('createDialog.title')}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -105,11 +107,11 @@ export const CreatePutAwayTaskDialog = () => {
                 name="product_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Producto</FormLabel>
+                    <FormLabel>{t('createDialog.product')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar producto" />
+                          <SelectValue placeholder={t('createDialog.select_product')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -129,7 +131,7 @@ export const CreatePutAwayTaskDialog = () => {
                 name="quantity_to_putaway"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cantidad</FormLabel>
+                    <FormLabel>{t('createDialog.quantity')}</FormLabel>
                     <FormControl>
                       <Input {...field} type="number" />
                     </FormControl>
@@ -145,11 +147,11 @@ export const CreatePutAwayTaskDialog = () => {
                 name="from_location_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ubicación Origen</FormLabel>
+                    <FormLabel>{t('createDialog.from_location')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar origen" />
+                          <SelectValue placeholder={t('createDialog.select_origin')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -169,11 +171,11 @@ export const CreatePutAwayTaskDialog = () => {
                 name="to_location_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ubicación Destino</FormLabel>
+                    <FormLabel>{t('createDialog.to_location')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar destino" />
+                          <SelectValue placeholder={t('createDialog.select_destination')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -196,18 +198,18 @@ export const CreatePutAwayTaskDialog = () => {
                 name="priority"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Prioridad</FormLabel>
+                    <FormLabel>{t('createDialog.priority')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar prioridad" />
+                          <SelectValue placeholder={t('createDialog.select_priority')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="low">Baja</SelectItem>
-                        <SelectItem value="medium">Media</SelectItem>
-                        <SelectItem value="high">Alta</SelectItem>
-                        <SelectItem value="urgent">Urgente</SelectItem>
+                        <SelectItem value="low">{t('createDialog.priority_low')}</SelectItem>
+                        <SelectItem value="medium">{t('createDialog.priority_medium')}</SelectItem>
+                        <SelectItem value="high">{t('createDialog.priority_high')}</SelectItem>
+                        <SelectItem value="urgent">{t('createDialog.priority_urgent')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -219,9 +221,9 @@ export const CreatePutAwayTaskDialog = () => {
                 name="assigned_to"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Asignar a</FormLabel>
+                    <FormLabel>{t('createDialog.assign_to')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Nombre del operario" />
+                      <Input {...field} placeholder={t('createDialog.operator_name')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -234,9 +236,9 @@ export const CreatePutAwayTaskDialog = () => {
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notas</FormLabel>
+                  <FormLabel>{t('createDialog.notes')}</FormLabel>
                   <FormControl>
-                    <Textarea {...field} placeholder="Notas adicionales..." />
+                    <Textarea {...field} placeholder={t('createDialog.notes_placeholder')} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -245,10 +247,10 @@ export const CreatePutAwayTaskDialog = () => {
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                Cancelar
+                {t('createDialog.cancel_button')}
               </Button>
               <Button type="submit" disabled={createTask.isPending}>
-                {createTask.isPending ? 'Creando...' : 'Crear Tarea'}
+                {createTask.isPending ? t('createDialog.creating_button') : t('createDialog.create_button')}
               </Button>
             </div>
           </form>
