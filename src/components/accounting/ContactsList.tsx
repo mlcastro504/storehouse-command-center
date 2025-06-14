@@ -1,24 +1,22 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { connectToDatabase } from '@/lib/mongodb';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Edit, Trash2, Mail, Phone } from 'lucide-react';
-import { Contact } from '@/types/accounting';
 
 export function ContactsList() {
   const { data: contacts, isLoading } = useQuery({
     queryKey: ['contacts'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('contacts')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      return data as Contact[];
+      const db = await connectToDatabase();
+      const contactsData = await db.collection('contacts').find().sort({ name: 1 }).toArray();
+      return contactsData.map((c: any) => ({
+        ...c,
+        id: c.id ?? c._id?.toString?.() ?? "",
+      }));
     }
   });
 

@@ -1,6 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { connectToDatabase } from '@/lib/mongodb';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -10,45 +10,30 @@ export function EcommerceDashboard() {
   const { data: connections = [] } = useQuery({
     queryKey: ['ecommerce-connections'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ecommerce_connections')
-        .select(`
-          *,
-          platform:ecommerce_platforms(*)
-        `)
-        .eq('is_active', true);
-      
-      if (error) throw error;
-      return data || [];
+      const db = await connectToDatabase();
+      const data = await db.collection('ecommerce_connections').find({ is_active: true }).toArray();
+      return data.map((c: any) => ({
+        ...c,
+        id: c.id ?? c._id?.toString?.() ?? "",
+      }));
     },
   });
 
   const { data: stats } = useQuery({
-    queryKey: ['ecommerce-stats'],
+    queryKey: ['ecommerce-stats', connections],
     queryFn: async () => {
-      const [productsResult, ordersResult, recentOrdersResult] = await Promise.all([
-        supabase
-          .from('ecommerce_products')
-          .select('id, sync_status')
-          .eq('sync_status', 'synced'),
-        supabase
-          .from('ecommerce_orders')
-          .select('id, warehouse_status, total_amount')
-          .gte('order_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
-        supabase
-          .from('ecommerce_orders')
-          .select('*')
-          .order('order_date', { ascending: false })
-          .limit(5)
-      ]);
+      const db = await connectToDatabase();
+      const productsResult = await db.collection('ecommerce_products').find({ sync_status: 'synced' }).toArray();
+      const ordersResult = await db.collection('ecommerce_orders').find().toArray();
+      const recentOrdersResult = await db.collection('ecommerce_orders').find().sort({ order_date: -1 }).limit(5).toArray();
 
-      const totalRevenue = ordersResult.data?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
-      
+      const totalRevenue = ordersResult.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
+
       return {
-        totalProducts: productsResult.data?.length || 0,
-        totalOrders: ordersResult.data?.length || 0,
+        totalProducts: productsResult.length || 0,
+        totalOrders: ordersResult.length || 0,
         totalRevenue,
-        recentOrders: recentOrdersResult.data || []
+        recentOrders: recentOrdersResult
       };
     },
     enabled: connections.length > 0,

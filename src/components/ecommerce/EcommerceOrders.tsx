@@ -1,6 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { connectToDatabase } from '@/lib/mongodb';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,18 +14,18 @@ export function EcommerceOrders() {
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['ecommerce-orders', searchTerm],
     queryFn: async () => {
-      let query = supabase
-        .from('ecommerce_orders')
-        .select('*')
-        .order('order_date', { ascending: false });
-
+      const db = await connectToDatabase();
+      let result = await db.collection('ecommerce_orders').find().sort({ order_date: -1 }).toArray();
       if (searchTerm) {
-        query = query.or(`order_number.ilike.%${searchTerm}%,customer_name.ilike.%${searchTerm}%,customer_email.ilike.%${searchTerm}%`);
+        const lower = searchTerm.toLowerCase();
+        result = result.filter(
+          (o: any) =>
+            (o.order_number && o.order_number.toLowerCase().includes(lower)) ||
+            (o.customer_name && o.customer_name.toLowerCase().includes(lower)) ||
+            (o.customer_email && o.customer_email.toLowerCase().includes(lower))
+        );
       }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+      return result;
     },
   });
 

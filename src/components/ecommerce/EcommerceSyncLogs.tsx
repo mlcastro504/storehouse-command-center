@@ -1,6 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { connectToDatabase } from '@/lib/mongodb';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Activity, AlertCircle, CheckCircle, Clock } from 'lucide-react';
@@ -9,20 +9,16 @@ export function EcommerceSyncLogs() {
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['ecommerce-sync-logs'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ecommerce_sync_logs')
-        .select(`
-          *,
-          connection:ecommerce_connections(
-            store_name,
-            platform:ecommerce_platforms(display_name)
-          )
-        `)
-        .order('started_at', { ascending: false })
-        .limit(50);
-      
-      if (error) throw error;
-      return data || [];
+      const db = await connectToDatabase();
+      const raw = await db.collection('ecommerce_sync_logs').find().sort({ started_at: -1 }).limit(50).toArray();
+      // populate platform display name from connections/platforms mock
+      return raw.map((log: any) => ({
+        ...log,
+        connection: {
+          store_name: log.store_name,
+          platform: { display_name: log.platform_display_name }
+        }
+      }));
     },
   });
 

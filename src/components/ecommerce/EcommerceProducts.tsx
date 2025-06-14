@@ -1,6 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { connectToDatabase } from '@/lib/mongodb';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,18 +14,17 @@ export function EcommerceProducts() {
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['ecommerce-products', searchTerm],
     queryFn: async () => {
-      let query = supabase
-        .from('ecommerce_products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+      const db = await connectToDatabase();
+      let all = await db.collection('ecommerce_products').find().sort({ created_at: -1 }).toArray();
       if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%`);
+        const lower = searchTerm.toLowerCase();
+        all = all.filter(
+          (p: any) =>
+            (p.title && p.title.toLowerCase().includes(lower)) ||
+            (p.sku && p.sku.toLowerCase().includes(lower))
+        );
       }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+      return all;
     },
   });
 

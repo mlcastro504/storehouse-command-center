@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { connectToDatabase } from '@/lib/mongodb';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,27 +17,22 @@ export function EcommerceConnections() {
   const { data: connections = [], isLoading } = useQuery({
     queryKey: ['ecommerce-connections'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ecommerce_connections')
-        .select(`
-          *,
-          platform:ecommerce_platforms(*)
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data || [];
+      const db = await connectToDatabase();
+      const data = await db.collection('ecommerce_connections').find().sort({ created_at: -1 }).toArray();
+      return data.map((c: any) => ({
+        ...c,
+        id: c.id ?? c._id?.toString?.() ?? "",
+      }));
     },
   });
 
   const toggleSyncMutation = useMutation({
     mutationFn: async ({ id, enabled }: { id: string; enabled: boolean }) => {
-      const { error } = await supabase
-        .from('ecommerce_connections')
-        .update({ sync_enabled: enabled })
-        .eq('id', id);
-      
-      if (error) throw error;
+      const db = await connectToDatabase();
+      await db.collection('ecommerce_connections').updateOne(
+        { id },
+        { $set: { sync_enabled: enabled } }
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ecommerce-connections'] });
@@ -46,7 +41,7 @@ export function EcommerceConnections() {
         description: "El estado de sincronización ha sido actualizado correctamente.",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "No se pudo actualizar la conexión.",
@@ -57,12 +52,8 @@ export function EcommerceConnections() {
 
   const deleteConnectionMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('ecommerce_connections')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
+      const db = await connectToDatabase();
+      await db.collection('ecommerce_connections').deleteOne({ id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ecommerce-connections'] });
@@ -71,7 +62,7 @@ export function EcommerceConnections() {
         description: "La conexión ha sido eliminada correctamente.",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "No se pudo eliminar la conexión.",

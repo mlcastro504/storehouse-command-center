@@ -1,8 +1,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { connectToDatabase } from '@/lib/mongodb';
 import {
   Dialog,
   DialogContent,
@@ -15,8 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 
 interface CreateConnectionDialogProps {
   open: boolean;
@@ -24,8 +21,6 @@ interface CreateConnectionDialogProps {
 }
 
 export function CreateConnectionDialog({ open, onOpenChange }: CreateConnectionDialogProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
@@ -40,37 +35,26 @@ export function CreateConnectionDialog({ open, onOpenChange }: CreateConnectionD
   const { data: platforms = [] } = useQuery({
     queryKey: ['ecommerce-platforms'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ecommerce_platforms')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_name');
-      
-      if (error) throw error;
-      return data || [];
+      const db = await connectToDatabase();
+      const plats = await db.collection('ecommerce_platforms').find({ is_active: true }).sort({ display_name: 1 }).toArray();
+      return plats;
     },
   });
 
   const createConnectionMutation = useMutation({
     mutationFn: async (data: any) => {
-      const { error } = await supabase
-        .from('ecommerce_connections')
-        .insert([{
-          ...data,
-          user_id: user?.id,
-          api_key_encrypted: data.api_key, // En producción esto debería encriptarse
-          sync_enabled: false,
-          is_active: true
-        }]);
-      
-      if (error) throw error;
+      const db = await connectToDatabase();
+      await db.collection('ecommerce_connections').insertOne({
+        ...data,
+        api_key_encrypted: data.api_key,
+        sync_enabled: false,
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date()
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ecommerce-connections'] });
-      toast({
-        title: "Conexión creada",
-        description: "La conexión ha sido creada correctamente.",
-      });
       onOpenChange(false);
       setFormData({
         platform_id: '',
@@ -81,13 +65,6 @@ export function CreateConnectionDialog({ open, onOpenChange }: CreateConnectionD
         settings: {}
       });
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "No se pudo crear la conexión.",
-        variant: "destructive",
-      });
-    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -95,7 +72,7 @@ export function CreateConnectionDialog({ open, onOpenChange }: CreateConnectionD
     createConnectionMutation.mutate(formData);
   };
 
-  const selectedPlatform = platforms.find(p => p.id === formData.platform_id);
+  const selectedPlatform = platforms.find((p: any) => p.id === formData.platform_id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
