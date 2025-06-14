@@ -22,8 +22,9 @@ type FormFieldContextValue<
   name: TName
 }
 
-// Change default to undefined for stricter context usage
+// Set context defaults to undefined for strict use
 const FormFieldContext = React.createContext<FormFieldContextValue | undefined>(undefined);
+const FormItemContext = React.createContext<{ id: string } | undefined>(undefined);
 
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
@@ -38,24 +39,29 @@ const FormField = <
   )
 }
 
-const FormItemContext = React.createContext<{ id: string } | undefined>(undefined);
-
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext);
   const itemContext = React.useContext(FormItemContext);
-  const { getFieldState, formState } = useFormContext();
+  const form = useFormContext?.(); // Defensive for SSR or out-of-form rendering
 
-  // If out of context, throw helpful error
+  // Check for fieldContext
   if (!fieldContext) {
     throw new Error("useFormField must be used within a <FormField>.");
   }
+  // Check for form context
+  if (!form) {
+    throw new Error("useFormField must be used within a form context.");
+  }
+  const { getFieldState, formState } = form;
 
-  // Defensive check for itemContext or missing id
-  const id = itemContext && typeof itemContext.id === "string"
+  // Defensive id fallback if itemContext or id missing
+  const id = !!itemContext && typeof itemContext.id === "string"
     ? itemContext.id
     : "form-item-missing";
 
-  const fieldState = getFieldState(fieldContext.name, formState);
+  const fieldState = getFieldState
+    ? getFieldState(fieldContext.name, formState)
+    : {};
 
   return {
     id,
@@ -64,27 +70,36 @@ const useFormField = () => {
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
     ...fieldState,
-  }
-}
+  };
+};
 
 const FormItem = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const id = React.useId()
+  const id = React.useId();
   return (
     <FormItemContext.Provider value={{ id }}>
       <div ref={ref} className={cn("space-y-2", className)} {...props} />
     </FormItemContext.Provider>
   )
-})
-FormItem.displayName = "FormItem"
+});
+FormItem.displayName = "FormItem";
 
 const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
 >(({ className, ...props }, ref) => {
-  const { error, formItemId } = useFormField();
+  let error, formItemId;
+  try {
+    const context = useFormField();
+    error = context.error;
+    formItemId = context.formItemId;
+  } catch (err) {
+    // If used out of context, fallback so it doesn't crash everything else
+    error = undefined;
+    formItemId = undefined;
+  }
 
   return (
     <Label
@@ -94,14 +109,26 @@ const FormLabel = React.forwardRef<
       {...props}
     />
   )
-})
-FormLabel.displayName = "FormLabel"
+});
+FormLabel.displayName = "FormLabel";
 
 const FormControl = React.forwardRef<
   React.ElementRef<typeof Slot>,
   React.ComponentPropsWithoutRef<typeof Slot>
 >(({ ...props }, ref) => {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
+  let error, formItemId, formDescriptionId, formMessageId;
+  try {
+    const context = useFormField();
+    error = context.error;
+    formItemId = context.formItemId;
+    formDescriptionId = context.formDescriptionId;
+    formMessageId = context.formMessageId;
+  } catch (err) {
+    error = undefined;
+    formItemId = undefined;
+    formDescriptionId = undefined;
+    formMessageId = undefined;
+  }
 
   return (
     <Slot
@@ -109,22 +136,27 @@ const FormControl = React.forwardRef<
       id={formItemId}
       aria-describedby={
         !error
-          ? `${formDescriptionId}`
-          : `${formDescriptionId} ${formMessageId}`
+          ? `${formDescriptionId || ""}`
+          : `${formDescriptionId || ""} ${formMessageId || ""}`
       }
       aria-invalid={!!error}
       {...props}
     />
-  )
-})
-FormControl.displayName = "FormControl"
+  );
+});
+FormControl.displayName = "FormControl";
 
 const FormDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => {
-  const { formDescriptionId } = useFormField()
-
+  let formDescriptionId;
+  try {
+    const context = useFormField();
+    formDescriptionId = context.formDescriptionId;
+  } catch (err) {
+    formDescriptionId = undefined;
+  }
   return (
     <p
       ref={ref}
@@ -133,18 +165,26 @@ const FormDescription = React.forwardRef<
       {...props}
     />
   )
-})
-FormDescription.displayName = "FormDescription"
+});
+FormDescription.displayName = "FormDescription";
 
 const FormMessage = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, children, ...props }, ref) => {
-  const { error, formMessageId } = useFormField()
-  const body = error ? String(error?.message) : children
+  let error, formMessageId;
+  try {
+    const context = useFormField();
+    error = context.error;
+    formMessageId = context.formMessageId;
+  } catch (err) {
+    error = undefined;
+    formMessageId = undefined;
+  }
+  const body = error ? String(error?.message) : children;
 
   if (!body) {
-    return null
+    return null;
   }
 
   return (
@@ -157,8 +197,8 @@ const FormMessage = React.forwardRef<
       {body}
     </p>
   )
-})
-FormMessage.displayName = "FormMessage"
+});
+FormMessage.displayName = "FormMessage";
 
 export {
   useFormField,
@@ -169,4 +209,4 @@ export {
   FormDescription,
   FormMessage,
   FormField,
-}
+};
