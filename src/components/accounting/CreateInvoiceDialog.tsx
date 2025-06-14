@@ -190,23 +190,25 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                 {
                   contacts &&
                   contacts
+                    // Filter to ensure valid IDs only
                     .filter(contact => {
-                      // Only pass non-null/undefined and with valid id
                       if (!contact) return false;
                       let id = contact.id ?? contact._id;
                       if (!id) return false;
                       id = String(id).trim();
-                      if (!id) {
-                        // Optional debug: log invalid contact for diagnosis
-                        // eslint-disable-next-line no-console
-                        console.warn("Skipped contact due to missing id:", contact);
-                        return false;
-                      }
-                      return true;
+                      if (!id || id === "") return false;
+                      // Defensive: Ensure string
+                      return typeof id === "string" && id.length > 0;
                     })
                     .map(contact => {
-                      let id = contact.id ?? contact._id;
-                      id = String(id).trim();
+                      let idRaw = contact.id ?? contact._id;
+                      let id = String(idRaw).trim();
+                      // Only render if still valid (paranoia check)
+                      if (!id || id === "") {
+                        // eslint-disable-next-line no-console
+                        console.warn("Skipped contact during map due to missing id:", contact);
+                        return null;
+                      }
                       return (
                         <SelectItem key={id} value={id}>
                           {contact.name ?? id}
@@ -221,7 +223,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                     let id = contact.id ?? contact._id;
                     if (!id) return false;
                     id = String(id).trim();
-                    return !!id;
+                    return !!id && id !== "";
                   }).length === 0) && (
                   <div className="px-2 py-1 text-sm text-gray-500">No hay contactos disponibles</div>
                 )}
