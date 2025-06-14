@@ -45,9 +45,10 @@ const generateSafeId = (doc: any, index: number): string => {
 
 // Strict validation for SelectItem values
 const isValidSelectValue = (value: any): value is string => {
+  // NOTE: value must be a non-empty string and NOT 'undefined'/'null'
   return (
     typeof value === 'string' &&
-    !!value.trim() &&
+    value.trim().length > 0 &&
     value !== 'undefined' &&
     value !== 'null'
   );
@@ -152,18 +153,18 @@ export function LocationSelector({
         </SelectTrigger>
         <SelectContent>
           {isLoading ? (
-            <SelectItem value="_loading_" disabled>
+            <SelectItem value="_loading_location_" disabled>
               Cargando...
             </SelectItem>
           ) : renderableLocations.length === 0 ? (
-            <SelectItem value="_no_locations_" disabled>
+            <SelectItem value="_no_locations_available_" disabled>
               No hay ubicaciones disponibles
             </SelectItem>
           ) : (
             renderableLocations.map((location) => {
+              // Final validation before rendering each SelectItem
               if (!isValidSelectValue(location.id)) {
-                // Defensive: Don't render if ID is invalid/empty.
-                console.error("Attempted to render SelectItem with invalid/empty id:", location);
+                console.error("Skipping SelectItem due to invalid/empty id:", location);
                 return null;
               }
               return (
@@ -181,3 +182,4 @@ export function LocationSelector({
     </div>
   );
 }
+

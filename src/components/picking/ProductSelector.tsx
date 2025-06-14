@@ -41,9 +41,10 @@ const generateSafeId = (doc: any, index: number): string => {
 };
 
 const isValidSelectValue = (value: any): value is string => {
+  // NOTE: value must be a non-empty string and NOT 'undefined'/'null'
   return (
     typeof value === 'string' &&
-    !!value.trim() &&
+    value.trim().length > 0 &&
     value !== 'undefined' &&
     value !== 'null'
   );
@@ -96,7 +97,7 @@ export function ProductSelector({
         };
       });
 
-      // Filter: only products with valid non-empty-string id, name, is_active
+      // Filter: only products with valid id, name, is_active
       return products.filter(
         (product) =>
           isValidSelectValue(product.id) &&
@@ -135,18 +136,19 @@ export function ProductSelector({
       </SelectTrigger>
       <SelectContent>
         {isLoading ? (
-          <SelectItem value="_loading_" disabled>
+          <SelectItem value="_loading_item_" disabled>
             Cargando...
           </SelectItem>
         ) : renderableProducts.length === 0 ? (
-          <SelectItem value="_no_products_" disabled>
+          <SelectItem value="_no_products_available_" disabled>
             No hay productos disponibles
           </SelectItem>
         ) : (
           renderableProducts.map((product) => {
+            // Final validation before rendering each item
             if (!isValidSelectValue(product.id)) {
-              // Defensive: Don't render if ID is invalid/empty.
-              console.error("Attempted to render SelectItem with invalid/empty id:", product);
+              // Log error and skip rendering this product
+              console.error("Skipping SelectItem due to invalid/empty id:", product);
               return null;
             }
             return (
@@ -163,3 +165,4 @@ export function ProductSelector({
     </Select>
   );
 }
+
