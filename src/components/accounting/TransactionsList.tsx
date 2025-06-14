@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -15,21 +16,20 @@ export function TransactionsList() {
       console.log('TransactionsList: Connecting to MongoDB...');
       const db = await connectToDatabase();
       
-      const transactionsData = await db.collection('transactions')
-        .aggregate([
-          {
-            $lookup: {
-              from: 'journal_entries',
-              localField: '_id',
-              foreignField: 'transaction_id',
-              as: 'journal_entries'
-            }
-          },
-          {
-            $sort: { created_at: -1 }
+      // Use our mock MongoDB service - aggregate returns a Promise directly
+      const transactionsData = await db.collection('transactions').aggregate([
+        {
+          $lookup: {
+            from: 'journal_entries',
+            localField: '_id',
+            foreignField: 'transaction_id',
+            as: 'journal_entries'
           }
-        ])
-        .toArray();
+        },
+        {
+          $sort: { created_at: -1 }
+        }
+      ]);
 
       console.log('TransactionsList: Fetched transactions from MongoDB:', transactionsData.length);
       return transactionsData as Transaction[];
