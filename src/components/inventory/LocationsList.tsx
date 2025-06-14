@@ -1,13 +1,18 @@
-
 import React from 'react';
 import { useLocations } from '@/hooks/useInventory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapPin, Package } from 'lucide-react';
+import { Edit, Trash2 } from "lucide-react";
+import { EditLocationDialog } from "./EditLocationDialog";
+import { DeleteLocationDialog } from "./DeleteLocationDialog";
 
 export const LocationsList = () => {
   const { data: locations, isLoading, error } = useLocations();
+
+  const [editLocation, setEditLocation] = React.useState<any | null>(null);
+  const [deleteLocation, setDeleteLocation] = React.useState<any | null>(null);
 
   if (isLoading) {
     return (
@@ -63,6 +68,20 @@ export const LocationsList = () => {
                 ) : (
                   <Badge variant="secondary">Inactiva</Badge>
                 )}
+                <button
+                  className="ml-2 text-blue-600 hover:text-blue-800 p-1"
+                  onClick={() => setEditLocation(location)}
+                  title="Editar"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  className="ml-1 text-red-600 hover:text-red-800 p-1"
+                  onClick={() => setDeleteLocation(location)}
+                  title="Eliminar"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             </div>
           </CardHeader>
@@ -84,13 +103,29 @@ export const LocationsList = () => {
               {location.coordinates && (
                 <div className="col-span-2">
                   <div className="text-gray-500">Coordenadas</div>
-                  <div>X: {location.coordinates.x}, Y: {location.coordinates.y}</div>
+                  <div>
+                    X: {location.coordinates.x}, Y: {location.coordinates.y}
+                  </div>
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
       ))}
+      {editLocation && (
+        <EditLocationDialog
+          open={!!editLocation}
+          setOpen={(open) => !open && setEditLocation(null)}
+          location={editLocation}
+        />
+      )}
+      {deleteLocation && (
+        <DeleteLocationDialog
+          open={!!deleteLocation}
+          setOpen={(open) => !open && setDeleteLocation(null)}
+          location={deleteLocation}
+        />
+      )}
     </div>
   );
 };

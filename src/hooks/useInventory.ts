@@ -111,6 +111,39 @@ export const useCreateLocation = () => {
   });
 };
 
+export const useUpdateLocation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: any }) =>
+      InventoryService.updateLocation(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['locations'] });
+      toast.success('Ubicación actualizada exitosamente');
+    },
+    onError: (error) => {
+      console.error('Error updating location:', error);
+      toast.error('Error al actualizar la ubicación');
+    },
+  });
+};
+
+export const useDeleteLocation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => InventoryService.deleteLocation(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['locations'] });
+      toast.success('Ubicación eliminada exitosamente');
+    },
+    onError: (error) => {
+      console.error('Error deleting location:', error);
+      toast.error('Error al eliminar la ubicación');
+    },
+  });
+};
+
 export const useStockLevels = (productId?: string, locationId?: string) => {
   return useQuery({
     queryKey: ['stock-levels', productId, locationId],
