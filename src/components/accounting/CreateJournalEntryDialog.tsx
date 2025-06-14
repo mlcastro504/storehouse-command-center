@@ -186,7 +186,7 @@ export function CreateJournalEntryDialog({ open, onOpenChange, onSuccess }: Crea
 
   const { canCreateEntry } = useAccountingPermissions();
 
-  // Nuevo: Si no tiene permiso, ni siquiera muestra el formulario
+  // If user does NOT have permission, show access-denied message instead of the form
   if (!canCreateEntry()) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>

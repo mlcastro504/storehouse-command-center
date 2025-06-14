@@ -111,8 +111,8 @@ export function JournalEntriesList() {
 
   const { canEditEntry, canDeleteEntry, canCreateEntry } = useAccountingPermissions();
 
-  // Simular periodo cerrado según tus reglas reales (por ahora false)
-  const isPeriodClosed = false; 
+  // Simulate period closed - here should come real logic with periods!
+  const isPeriodClosed = false;
 
   if (isLoading) {
     return (
@@ -136,7 +136,7 @@ export function JournalEntriesList() {
                 Registro cronológico de todas las transacciones contables
               </p>
             </div>
-            {/* Sólo usuarios con permiso pueden ver el botón */}
+            {/* Only users with permission see the button */}
             {canCreateEntry() && (
               <Button onClick={() => setCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -182,7 +182,13 @@ export function JournalEntriesList() {
               {journalEntries?.map((entry) => {
                 const isBalanced = getEntryBalance(entry);
                 const lineCount = entry.entry_lines?.length || 0;
-                
+                const notEditableMsg =
+                  entry.status !== "draft"
+                    ? "Solo se pueden editar asientos en borrador"
+                    : isPeriodClosed
+                    ? "No se puede editar un asiento de un período cerrado"
+                    : null;
+
                 return (
                   <TableRow key={entry.id}>
                     <TableCell className="font-medium">
@@ -222,16 +228,41 @@ export function JournalEntriesList() {
                         <Button variant="ghost" size="sm" title="Ver detalles">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {/* Solo puede editar si cumple condiciones estrictas */}
-                        {canEditEntry(entry, isPeriodClosed) && (
+                        {canEditEntry(entry, isPeriodClosed) ? (
                           <Button variant="ghost" size="sm" title="Editar">
                             <Edit className="h-4 w-4" />
                           </Button>
+                        ) : (
+                          // Disabled edit button with tooltip if not allowed
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={notEditableMsg ? notEditableMsg : "No tiene permisos"}
+                            disabled
+                            className="text-gray-400"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
                         )}
-                        {/* Solo puede borrar si cumple condiciones estrictas */}
-                        {canDeleteEntry && canDeleteEntry(entry, isPeriodClosed) && (
+                        {canDeleteEntry && canDeleteEntry(entry, isPeriodClosed) ? (
                           <Button variant="ghost" size="sm" title="Eliminar" className="text-red-600 hover:text-red-700">
-                            {/* Aquí pondrías handler real */}
+                            <X className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          // Disabled delete button with tooltip
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={
+                              entry.status !== "draft"
+                                ? "Solo se pueden borrar asientos en borrador"
+                                : isPeriodClosed
+                                ? "No se puede borrar asientos de un período cerrado"
+                                : "No tiene permisos"
+                            }
+                            disabled
+                            className="text-gray-400"
+                          >
                             <X className="h-4 w-4" />
                           </Button>
                         )}
