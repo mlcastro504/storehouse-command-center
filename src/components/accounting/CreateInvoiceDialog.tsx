@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
 import {
@@ -36,7 +36,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
   });
   const [toastMsg, setToastMsg] = useState<{ title: string; description: string; variant?: string }|null>(null);
 
-  const { data: contacts = [], refetch } = useQuery({
+  const { data: contacts = [] } = useQuery({
     queryKey: ['contacts'],
     queryFn: async () => {
       const db = await connectToDatabase();
@@ -44,6 +44,36 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
       return results;
     }
   });
+
+  const validContacts = useMemo(() => {
+    if (!contacts) {
+      return [];
+    }
+    // For debugging: log raw contacts
+    console.log('Raw contacts from useQuery:', contacts);
+
+    const processedContacts = contacts
+      .map(contact => {
+        if (!contact) {
+          console.warn('Skipping a null/undefined item in contacts array.');
+          return null;
+        }
+        
+        const id = String(contact.id ?? contact._id ?? '').trim();
+        const name = contact.name ?? 'Unnamed Contact';
+
+        if (id === '') {
+          console.warn('Skipping contact due to empty ID:', contact);
+          return null;
+        }
+
+        return { id, name };
+      })
+      .filter((contact): contact is { id: string; name: string } => contact !== null);
+
+    console.log('Processed valid contacts for Select:', processedContacts);
+    return processedContacts;
+  }, [contacts]);
 
   const { canCreateInvoice } = useInvoicesPermissions();
 
@@ -81,11 +111,11 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
       });
 
       onSuccess();
-      refetch?.();
       // Limpiar formulario (opcional)
       setFormData(prev => ({
         ...prev,
         invoice_number: '',
+        contact_id: '',
         subtotal: 0,
         tax_amount: 0,
         total_amount: 0,
@@ -187,44 +217,12 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                 <SelectValue placeholder="Seleccionar contacto" />
               </SelectTrigger>
               <SelectContent>
-                {
-                  contacts &&
-                  contacts
-                    // Filter to ensure valid IDs only
-                    .filter(contact => {
-                      if (!contact) return false;
-                      let id = contact.id ?? contact._id;
-                      if (!id) return false;
-                      id = String(id).trim();
-                      if (!id || id === "") return false;
-                      // Defensive: Ensure string
-                      return typeof id === "string" && id.length > 0;
-                    })
-                    .map(contact => {
-                      let idRaw = contact.id ?? contact._id;
-                      let id = String(idRaw).trim();
-                      // Only render if still valid (paranoia check)
-                      if (!id || id === "") {
-                        // eslint-disable-next-line no-console
-                        console.warn("Skipped contact during map due to missing id:", contact);
-                        return null;
-                      }
-                      return (
-                        <SelectItem key={id} value={id}>
-                          {contact.name ?? id}
-                        </SelectItem>
-                      );
-                    })
-                }
-                {/* If, after filtering, there are zero contacts, show a placeholder */}
-                {(!contacts ||
-                  contacts.filter(contact => {
-                    if (!contact) return false;
-                    let id = contact.id ?? contact._id;
-                    if (!id) return false;
-                    id = String(id).trim();
-                    return !!id && id !== "";
-                  }).length === 0) && (
+                {validContacts.map(contact => (
+                  <SelectItem key={contact.id} value={contact.id}>
+                    {contact.name}
+                  </SelectItem>
+                ))}
+                {validContacts.length === 0 && (
                   <div className="px-2 py-1 text-sm text-gray-500">No hay contactos disponibles</div>
                 )}
               </SelectContent>
