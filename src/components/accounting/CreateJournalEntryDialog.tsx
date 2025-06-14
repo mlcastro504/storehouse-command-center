@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { Account } from '@/types/accounting';
+import { useAccountingPermissions } from "@/hooks/useAccountingPermissions";
 
 const journalEntrySchema = z.object({
   description: z.string().min(1, 'La descripción es requerida'),
@@ -182,6 +183,24 @@ export function CreateJournalEntryDialog({ open, onOpenChange, onSuccess }: Crea
   const onSubmit = (data: JournalEntryFormData) => {
     createMutation.mutate(data);
   };
+
+  const { canCreateEntry } = useAccountingPermissions();
+
+  // Nuevo: Si no tiene permiso, ni siquiera muestra el formulario
+  if (!canCreateEntry()) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Acción no permitida</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            No tienes permisos para crear asientos contables. Contacta al administrador.
+          </DialogDescription>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

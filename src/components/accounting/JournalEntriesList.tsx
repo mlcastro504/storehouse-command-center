@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Plus, Eye, Edit, BookOpen, Search, Filter } from 'lucide-react';
+import { Plus, Eye, Edit, BookOpen, Search, Filter, X } from 'lucide-react';
 import { JournalEntry } from '@/types/accounting';
 import { CreateJournalEntryDialog } from './CreateJournalEntryDialog';
+import { useAccountingPermissions } from "@/hooks/useAccountingPermissions";
 
 export function JournalEntriesList() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -108,6 +109,11 @@ export function JournalEntriesList() {
     return Math.abs(totalDebits - totalCredits) < 0.01;
   };
 
+  const { canEditEntry, canDeleteEntry, canCreateEntry } = useAccountingPermissions();
+
+  // Simular periodo cerrado según tus reglas reales (por ahora false)
+  const isPeriodClosed = false; 
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -130,10 +136,13 @@ export function JournalEntriesList() {
                 Registro cronológico de todas las transacciones contables
               </p>
             </div>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Asiento
-            </Button>
+            {/* Sólo usuarios con permiso pueden ver el botón */}
+            {canCreateEntry() && (
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Asiento
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -213,9 +222,17 @@ export function JournalEntriesList() {
                         <Button variant="ghost" size="sm" title="Ver detalles">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {entry.status === 'draft' && (
+                        {/* Solo puede editar si cumple condiciones estrictas */}
+                        {canEditEntry(entry, isPeriodClosed) && (
                           <Button variant="ghost" size="sm" title="Editar">
                             <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {/* Solo puede borrar si cumple condiciones estrictas */}
+                        {canDeleteEntry && canDeleteEntry(entry, isPeriodClosed) && (
+                          <Button variant="ghost" size="sm" title="Eliminar" className="text-red-600 hover:text-red-700">
+                            {/* Aquí pondrías handler real */}
+                            <X className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
