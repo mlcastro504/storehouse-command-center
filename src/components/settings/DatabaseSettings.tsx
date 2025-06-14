@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Database, CheckCircle, XCircle, RefreshCw, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { testConnection, getDatabaseStats, connectToDatabase } from '@/lib/mongodb';
+import { testConnection, getDatabaseStats, connectToDatabase, getMockConnectionState } from '@/lib/mongodb';
 
 // Helpers to persist/recover db config in localStorage
 const DB_CONFIG_KEY = "warehouseos_dbconfig";
@@ -68,7 +67,6 @@ export function DatabaseSettings() {
     setIsConnecting(true);
     setDbConfig(prev => ({ ...prev, connectionStatus: 'connecting' }));
     try {
-      // Simula un "error" si la uri está vacía o mal formada
       if (!isValidUri(dbConfig.uri)) {
         setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
         toast({
@@ -79,8 +77,8 @@ export function DatabaseSettings() {
         setIsConnecting(false);
         return;
       }
-      // Simula conexión exitosa
-      const result = await testConnection();
+      // Test against stored connection state
+      const result = await testConnection(dbConfig.uri, dbConfig.database);
       if (result.success) {
         setDbConfig(prev => ({ ...prev, connectionStatus: 'connected' }));
         saveDbConfig({ ...dbConfig, connectionStatus: 'connected' });
@@ -98,11 +96,11 @@ export function DatabaseSettings() {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
       toast({
         title: "Connection Error",
-        description: "Failed to connect to MongoDB.",
+        description: error.message || "Failed to connect to MongoDB.",
         variant: "destructive",
       });
     } finally {
@@ -110,22 +108,23 @@ export function DatabaseSettings() {
     }
   };
 
-  // "Crear base de datos" funcional y realista
+  // "Crear base de datos" ahora si conecta y guarda
   const handleCreateDatabase = async () => {
     setIsConnecting(true);
     setDbConfig(prev => ({ ...prev, connectionStatus: 'connecting' }));
     try {
-      if (!isValidUri(dbConfig.uri)) {
+      if (!isValidUri(dbConfig.uri) || !dbConfig.database) {
         setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
         toast({
           title: "Error",
-          description: "The URI is not valid. Please correct it.",
+          description: "The URI and Database name must be valid.",
           variant: "destructive",
         });
         setIsConnecting(false);
         return;
       }
-      await connectToDatabase();
+      // "Crear" es conectar en el mock
+      await connectToDatabase(dbConfig.uri, dbConfig.database);
       saveDbConfig({ ...dbConfig, connectionStatus: 'connected' });
       setDbConfig(prev => ({ ...prev, connectionStatus: 'connected' }));
       const stats = await getDatabaseStats();
@@ -134,11 +133,11 @@ export function DatabaseSettings() {
         title: "Database Created",
         description: "Database created and app connected.",
       });
-    } catch (error) {
+    } catch (error: any) {
       setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
       toast({
         title: "Error Creating Database",
-        description: "There was a problem creating the database.",
+        description: error.message || "There was a problem creating the database.",
         variant: "destructive",
       });
     } finally {
@@ -162,30 +161,21 @@ export function DatabaseSettings() {
         setIsConnecting(false);
         return;
       }
-      // Probar conexión tras guardar y aplicar
-      const result = await testConnection();
-      if (result.success) {
-        setDbConfig(prev => ({ ...prev, connectionStatus: 'connected' }));
-        saveDbConfig({ ...dbConfig, connectionStatus: 'connected' });
-        const stats = await getDatabaseStats();
-        setDbStats(stats);
-        toast({
-          title: "Configuration Saved",
-          description: "Changes saved and MongoDB connection refreshed.",
-        });
-      } else {
-        setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
-        toast({
-          title: "Connection Error",
-          description: result.message,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
+      // Guardar y reconectar
+      await connectToDatabase(dbConfig.uri, dbConfig.database);
+      saveDbConfig({ ...dbConfig, connectionStatus: 'connected' });
+      setDbConfig(prev => ({ ...prev, connectionStatus: 'connected' }));
+      const stats = await getDatabaseStats();
+      setDbStats(stats);
+      toast({
+        title: "Configuration Saved",
+        description: "Changes saved and MongoDB connection refreshed.",
+      });
+    } catch (error: any) {
       setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
       toast({
         title: "Connection Error",
-        description: "Failed to connect after saving.",
+        description: error.message || "Failed to connect after saving.",
         variant: "destructive",
       });
     } finally {

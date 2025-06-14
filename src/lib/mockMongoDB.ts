@@ -1,4 +1,3 @@
-
 // Mock MongoDB service for browser environment
 export interface MockCollection {
   find(filter?: any): MockCursor;
@@ -225,16 +224,37 @@ class MockMongoDatabase {
   }
 }
 
-export async function connectToDatabase() {
-  console.log('Using mock MongoDB connection for browser environment');
+let mockConnectionState = {
+  connected: false,
+  uri: "",
+  database: "",
+};
+
+export async function connectToDatabase(uri?: string, database?: string) {
+  console.log('Attempting mock MongoDB connection', uri, database);
+  // URI required and must start with mongodb:// or mongodb+srv://
+  if (!uri || !(uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
+    mockConnectionState = { connected: false, uri: "", database: "" };
+    throw new Error("Invalid MongoDB URI");
+  }
+  // Simulate "create" by setting the values
+  mockConnectionState = { connected: true, uri, database: database || "" };
   return new MockMongoDatabase();
+}
+
+export function getMockConnectionState() {
+  return { ...mockConnectionState };
 }
 
 export async function closeDatabaseConnection() {
   console.log('Mock MongoDB connection closed');
+  mockConnectionState = { connected: false, uri: "", database: "" };
 }
 
 export async function getDatabaseStats() {
+  if (!mockConnectionState.connected) {
+    throw new Error('Not connected to MongoDB');
+  }
   return {
     collections: 10,
     dataSize: 1024000,
@@ -243,10 +263,15 @@ export async function getDatabaseStats() {
   };
 }
 
-export async function testConnection() {
-  try {
-    return { success: true, message: 'Mock connection successful' };
-  } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+export async function testConnection(uri?: string, database?: string) {
+  // Simulate real test
+  if (!uri || !(uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
+    return { success: false, message: "Invalid MongoDB URI" };
   }
+  if (!mockConnectionState.connected ||
+      mockConnectionState.uri !== uri ||
+      (database && mockConnectionState.database !== database)) {
+    return { success: false, message: "No active connection for this URI/database" };
+  }
+  return { success: true, message: 'Mock connection successful' };
 }
