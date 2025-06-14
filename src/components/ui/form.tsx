@@ -22,9 +22,8 @@ type FormFieldContextValue<
   name: TName
 }
 
-const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue
-)
+// Change default to undefined for stricter context usage
+const FormFieldContext = React.createContext<FormFieldContextValue | undefined>(undefined);
 
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
@@ -39,21 +38,24 @@ const FormField = <
   )
 }
 
+const FormItemContext = React.createContext<{ id: string } | undefined>(undefined);
+
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext);
   const itemContext = React.useContext(FormItemContext);
   const { getFieldState, formState } = useFormContext();
 
-  const fieldState = getFieldState(fieldContext.name, formState);
-
+  // If out of context, throw helpful error
   if (!fieldContext) {
-    throw new Error("useFormField should be used within <FormField>");
+    throw new Error("useFormField must be used within a <FormField>.");
   }
 
-  // Defensive: If itemContext is undefined, set a fallback id
-  const id = itemContext && typeof itemContext.id === 'string'
+  // Defensive check for itemContext or missing id
+  const id = itemContext && typeof itemContext.id === "string"
     ? itemContext.id
-    : `form-item-missing`;
+    : "form-item-missing";
+
+  const fieldState = getFieldState(fieldContext.name, formState);
 
   return {
     id,
@@ -62,23 +64,14 @@ const useFormField = () => {
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
     ...fieldState,
-  };
+  }
 }
-
-type FormItemContextValue = {
-  id: string
-}
-
-const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
-)
 
 const FormItem = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
   const id = React.useId()
-
   return (
     <FormItemContext.Provider value={{ id }}>
       <div ref={ref} className={cn("space-y-2", className)} {...props} />
@@ -91,7 +84,7 @@ const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
 >(({ className, ...props }, ref) => {
-  const { error, formItemId } = useFormField()
+  const { error, formItemId } = useFormField();
 
   return (
     <Label
