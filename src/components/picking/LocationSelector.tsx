@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -129,25 +128,32 @@ export function LocationSelector({
   return (
     <div className="space-y-2">
       {label && <label className="text-sm font-medium">{label}</label>}
-      <Select disabled={disabled} onValueChange={handleValueChange} value={value}>
+      <Select 
+        disabled={disabled} 
+        onValueChange={handleValueChange} 
+        // Use undefined if value is empty string
+        value={value && value !== "" ? value : undefined}
+      >
         <SelectTrigger>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
           {isLoading ? (
-            <SelectItem value="loading_placeholder_54321">
+            <SelectItem value="_loading_">
               Cargando...
             </SelectItem>
           ) : safeLocations.length === 0 ? (
-            <SelectItem value="no_locations_placeholder_09876">
+            <SelectItem value="_no_locations_">
               No hay ubicaciones disponibles
             </SelectItem>
           ) : (
-            safeLocations.map((location) => (
-              <SelectItem key={`location_${location.id}`} value={location.id}>
-                {location.code} - {location.name}
-              </SelectItem>
-            ))
+            safeLocations
+              .filter(location => !!location.id && location.id !== "")
+              .map((location) => (
+                <SelectItem key={`location_${location.id}`} value={location.id}>
+                  {location.code} - {location.name}
+                </SelectItem>
+              ))
           )}
         </SelectContent>
       </Select>

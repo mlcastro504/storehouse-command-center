@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -117,25 +116,32 @@ export function ProductSelector({
   );
 
   return (
-    <Select onValueChange={handleValueChange} defaultValue={value} disabled={disabled}>
+    <Select 
+      onValueChange={handleValueChange} 
+      // Use undefined if value is empty string
+      value={value && value !== "" ? value : undefined}
+      disabled={disabled}
+    >
       <SelectTrigger>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
         {isLoading ? (
-          <SelectItem value="loading_placeholder_12345">
+          <SelectItem value="_loading_">
             Cargando...
           </SelectItem>
         ) : safeProducts.length === 0 ? (
-          <SelectItem value="no_products_placeholder_67890">
+          <SelectItem value="_no_products_">
             No hay productos disponibles
           </SelectItem>
         ) : (
-          safeProducts.map((product) => (
-            <SelectItem key={`product_${product.id}`} value={product.id}>
-              {product.name} ({product.sku})
-            </SelectItem>
-          ))
+          safeProducts
+            .filter(product => !!product.id && product.id !== "")
+            .map((product) => (
+              <SelectItem key={`product_${product.id}`} value={product.id}>
+                {product.name} ({product.sku})
+              </SelectItem>
+            ))
         )}
       </SelectContent>
     </Select>
