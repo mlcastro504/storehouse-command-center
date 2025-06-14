@@ -40,13 +40,29 @@ export function LocationSelector({
       
       const locationsData = await db.collection('locations')
         .find()
-        .sort()
+        .sort({ code: 1 })
         .toArray();
 
       console.log('LocationSelector: Fetched locations from MongoDB:', locationsData.length);
       
+      // Convert MongoDB documents to Location interfaces
+      const locations = locationsData.map(doc => ({
+        id: doc._id.toString(),
+        code: doc.code,
+        name: doc.name,
+        warehouse_id: doc.warehouse_id,
+        type: doc.type,
+        level: doc.level,
+        capacity: doc.capacity,
+        current_stock: doc.current_stock,
+        confirmation_code: doc.confirmation_code,
+        is_active: doc.is_active,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at
+      })) as Location[];
+      
       // Apply filtering after fetching
-      let filteredData = locationsData as Location[];
+      let filteredData = locations;
       
       if (warehouseId) {
         filteredData = filteredData.filter(location => 
@@ -55,9 +71,6 @@ export function LocationSelector({
       } else {
         filteredData = filteredData.filter(location => location.is_active);
       }
-      
-      // Sort by code in JavaScript
-      filteredData.sort((a, b) => a.code.localeCompare(b.code));
       
       return filteredData;
     }

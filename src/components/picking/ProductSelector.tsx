@@ -34,16 +34,37 @@ export function ProductSelector({
       
       const productsData = await db.collection('products')
         .find()
-        .sort()
+        .sort({ name: 1 })
         .toArray();
 
       console.log('ProductSelector: Fetched products from MongoDB:', productsData.length);
       
-      // Apply filtering after fetching
-      const filteredData = (productsData as Product[]).filter(product => product.is_active);
+      // Convert MongoDB documents to Product interfaces
+      const products = productsData.map(doc => ({
+        id: doc._id.toString(),
+        sku: doc.sku,
+        name: doc.name,
+        description: doc.description,
+        category_id: doc.category_id,
+        supplier_id: doc.supplier_id,
+        unit_of_measure: doc.unit_of_measure,
+        weight: doc.weight,
+        dimensions: doc.dimensions,
+        barcode: doc.barcode,
+        is_active: doc.is_active,
+        minimum_stock: doc.minimum_stock,
+        maximum_stock: doc.maximum_stock,
+        reorder_point: doc.reorder_point,
+        cost_price: doc.cost_price,
+        sale_price: doc.sale_price,
+        tax_rate: doc.tax_rate,
+        location_id: doc.location_id,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at
+      })) as Product[];
       
-      // Sort by name in JavaScript
-      filteredData.sort((a, b) => a.name.localeCompare(b.name));
+      // Apply filtering after fetching
+      const filteredData = products.filter(product => product.is_active);
       
       return filteredData;
     }
