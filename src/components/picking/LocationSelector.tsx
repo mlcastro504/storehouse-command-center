@@ -22,47 +22,31 @@ interface LocationSelectorProps {
   filterTypes?: string[];
 }
 
-// Enhanced helper function to validate and generate safe IDs
-const generateSafeId = (doc: any): string => {
-  console.log('LocationSelector: Generating ID for doc:', doc);
-  
-  // Try multiple ID sources with additional validation
+// Helper function to generate safe IDs
+const generateSafeId = (doc: any, index: number): string => {
+  // Try multiple ID sources
   const possibleIds = [
     doc._id?.toString?.(),
     doc.id,
     doc.location_id,
     doc.code ? `loc_${doc.code}` : null,
-    doc.name ? `name_${doc.name.replace(/\s+/g, '_').toLowerCase()}` : null
-  ].filter(id => id && typeof id === 'string' && id.trim().length > 0 && id !== 'undefined' && id !== 'null');
+  ].filter(id => id && typeof id === 'string' && id.trim().length > 0);
 
   if (possibleIds.length > 0) {
-    const finalId = possibleIds[0].trim();
-    console.log('LocationSelector: Using ID:', finalId);
-    return finalId;
+    return possibleIds[0].trim();
   }
 
-  // Enhanced fallback with more randomness
-  const fallbackId = `loc_${Date.now()}_${Math.random().toString(36).substr(2, 12)}`;
-  console.log('LocationSelector: Generated fallback ID:', fallbackId);
-  return fallbackId;
+  // Fallback with guaranteed uniqueness
+  return `location_${index}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-// Stricter helper function to validate if an ID is safe for SelectItem
-const isValidSelectId = (id: any): id is string => {
-  const isValid = typeof id === 'string' && 
-         id.trim().length > 0 && 
-         id !== '' && 
-         id !== 'undefined' && 
-         id !== 'null' &&
-         id !== 'NaN' &&
-         !id.includes('undefined') &&
-         !id.includes('null');
-  
-  if (!isValid) {
-    console.warn('LocationSelector: Invalid ID detected:', id);
-  }
-  
-  return isValid;
+// Strict validation for SelectItem values
+const isValidSelectValue = (value: any): value is string => {
+  return typeof value === 'string' && 
+         value.trim().length > 0 && 
+         value !== 'undefined' && 
+         value !== 'null' &&
+         value !== '';
 };
 
 export function LocationSelector({ 
@@ -78,7 +62,6 @@ export function LocationSelector({
   const { data: locations, isLoading } = useQuery({
     queryKey: ['locations-selector', warehouseId],
     queryFn: async () => {
-      console.log('LocationSelector: Connecting to MongoDB...');
       const db = await connectToDatabase();
       
       const locationsData = await db.collection('locations')
@@ -86,12 +69,9 @@ export function LocationSelector({
         .sort({ code: 1 })
         .toArray();
 
-      console.log('LocationSelector: Fetched locations from MongoDB:', locationsData.length);
-      
-      // Convert MongoDB documents to Location interfaces with enhanced safe ID generation
+      // Convert MongoDB documents to Location interfaces
       const locations: Location[] = locationsData.map((doc, index) => {
-        const safeId = generateSafeId(doc);
-        console.log(`LocationSelector: Location ${index} - Generated ID:`, safeId, 'for doc:', doc);
+        const safeId = generateSafeId(doc, index);
         
         return {
           id: safeId,
@@ -112,46 +92,26 @@ export function LocationSelector({
         };
       });
       
-      // Apply ultra-strict filtering with multiple validation layers
-      let validLocations = locations.filter((location, index) => {
-        const hasValidId = isValidSelectId(location.id);
-        const hasValidCode = location.code && typeof location.code === 'string' && location.code.trim().length > 0;
-        const isActive = location.is_active === true;
-        
-        const isValid = hasValidId && hasValidCode && isActive;
-        
-        if (!isValid) {
-          console.warn(`LocationSelector: Filtering out invalid location at index ${index}:`, {
-            location,
-            hasValidId,
-            hasValidCode,
-            isActive,
-            reasons: {
-              invalidId: !hasValidId,
-              invalidCode: !hasValidCode,
-              inactive: !isActive
-            }
-          });
-        }
-        
-        return isValid;
+      // Filter valid locations with strict validation
+      let validLocations = locations.filter((location) => {
+        return isValidSelectValue(location.id) && 
+               location.code && 
+               location.code.trim().length > 0 && 
+               location.is_active === true;
       });
       
+      // Apply warehouse filter if provided
       if (warehouseId) {
         validLocations = validLocations.filter(location => 
           location.warehouse_id === warehouseId
         );
       }
       
-      console.log('LocationSelector: Valid locations after filtering:', validLocations.length);
-      console.log('LocationSelector: Valid location IDs:', validLocations.map(l => l.id));
-      
       return validLocations;
     }
   });
 
   const handleValueChange = (newValue: string) => {
-    console.log('LocationSelector: Value changed to:', newValue);
     if (onValueChange) onValueChange(newValue);
     if (onChange) onChange(newValue);
   };
@@ -161,16 +121,10 @@ export function LocationSelector({
     ? locations?.filter(location => filterTypes.includes(location.type || ''))
     : locations;
 
-  // Triple safety check before rendering
-  const safeLocations = (filteredLocations || []).filter(location => {
-    const isSafe = isValidSelectId(location.id) && location.code && location.code.trim().length > 0;
-    if (!isSafe) {
-      console.error('LocationSelector: Unsafe location detected before render:', location);
-    }
-    return isSafe;
-  });
-
-  console.log('LocationSelector: Final safe locations for rendering:', safeLocations.length);
+  // Final safety check before rendering
+  const safeLocations = (filteredLocations || []).filter(location => 
+    isValidSelectValue(location.id) && location.code && location.code.trim().length > 0
+  );
 
   return (
     <div className="space-y-2">
@@ -181,29 +135,19 @@ export function LocationSelector({
         </SelectTrigger>
         <SelectContent>
           {isLoading ? (
-            <SelectItem value="loading-placeholder-unique-id" disabled>
+            <SelectItem value="loading_placeholder_54321">
               Cargando...
             </SelectItem>
           ) : safeLocations.length === 0 ? (
-            <SelectItem value="no-locations-placeholder-unique-id" disabled>
+            <SelectItem value="no_locations_placeholder_09876">
               No hay ubicaciones disponibles
             </SelectItem>
           ) : (
-            safeLocations.map((location) => {
-              // Final per-item safety validation
-              if (!isValidSelectId(location.id)) {
-                console.error('LocationSelector: CRITICAL - Invalid ID at render time:', location);
-                return null;
-              }
-              
-              console.log('LocationSelector: Rendering item with ID:', location.id);
-              
-              return (
-                <SelectItem key={`location_${location.id}`} value={location.id}>
-                  {location.code} - {location.name}
-                </SelectItem>
-              );
-            }).filter(Boolean)
+            safeLocations.map((location) => (
+              <SelectItem key={`location_${location.id}`} value={location.id}>
+                {location.code} - {location.name}
+              </SelectItem>
+            ))
           )}
         </SelectContent>
       </Select>

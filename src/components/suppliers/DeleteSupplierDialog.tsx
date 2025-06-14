@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useAuth } from '@/hooks/useAuth';
 
 interface DeleteSupplierDialogProps {
   open: boolean;
@@ -23,27 +24,55 @@ interface DeleteSupplierDialogProps {
 
 export function DeleteSupplierDialog({ open, onOpenChange, supplier }: DeleteSupplierDialogProps) {
   const queryClient = useQueryClient();
+  const { hasPermission } = useAuth();
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!supplier) return;
       
+      // Verificación de permisos de seguridad
+      if (!hasPermission('delete', 'suppliers')) {
+        throw new Error('No tienes permisos para eliminar proveedores');
+      }
+      
       console.log('Deleting supplier:', supplier.id);
       const db = await connectToDatabase();
       
-      // Use our mock MongoDB service - filter by the string ID directly
-      await db.collection('suppliers').deleteOne({ _id: { toString: () => supplier.id } });
+      // Verificar si el proveedor tiene productos asociados antes de eliminar
+      const productsCount = await db.collection('products')
+        .find({ supplier_id: supplier.id })
+        .toArray();
+        
+      if (productsCount.length > 0) {
+        throw new Error(`No se puede eliminar el proveedor porque tiene ${productsCount.length} productos asociados`);
+      }
+      
+      // Proceder con la eliminación
+      const result = await db.collection('suppliers').deleteOne({ 
+        _id: { toString: () => supplier.id } 
+      });
+      
+      if (result.deletedCount === 0) {
+        throw new Error('No se pudo eliminar el proveedor');
+      }
+      
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       toast.success('Proveedor eliminado correctamente');
       onOpenChange(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error deleting supplier:', error);
-      toast.error('Error al eliminar el proveedor');
+      toast.error(error.message || 'Error al eliminar el proveedor');
     },
   });
+
+  // Verificar permisos antes de mostrar el diálogo
+  if (!hasPermission('delete', 'suppliers')) {
+    return null;
+  }
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -53,6 +82,11 @@ export function DeleteSupplierDialog({ open, onOpenChange, supplier }: DeleteSup
           <AlertDialogDescription>
             Esta acción no se puede deshacer. Se eliminará permanentemente el proveedor{' '}
             <strong>{supplier?.name}</strong> del sistema.
+            {supplier && (
+              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                <strong>Advertencia:</strong> Se verificará si el proveedor tiene productos asociados antes de la eliminación.
+              </div>
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
