@@ -1,4 +1,3 @@
-
 import { BrowserStorage } from '@/lib/browserStorage';
 import { Pallet, PutAwayTask, PutAwayRule, OperatorPerformance, PutAwayMetrics } from '@/types/putaway';
 
@@ -7,11 +6,17 @@ export async function populateTaskDetails(task: any): Promise<PutAwayTask> {
 
   if (task.pallet_id) {
       const pallet = await BrowserStorage.findOne('pallets', { id: task.pallet_id });
-      if (pallet && pallet.product_id) {
-          const product = await BrowserStorage.findOne('products', { id: pallet.product_id });
-          pallet.product = product;
+      if (pallet) {
+          populatedTask.pallet = pallet;
+          if (pallet.product_id) {
+              const product = await BrowserStorage.findOne('products', { id: pallet.product_id });
+              if (product) {
+                  // @ts-ignore
+                  pallet.product = product;
+                  populatedTask.product = product;
+              }
+          }
       }
-      populatedTask.pallet = pallet;
   }
   
   if (task.product_id && !populatedTask.product) {
