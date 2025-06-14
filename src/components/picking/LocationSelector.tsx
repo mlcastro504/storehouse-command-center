@@ -22,6 +22,33 @@ interface LocationSelectorProps {
   filterTypes?: string[];
 }
 
+// Helper function to validate and generate safe IDs
+const generateSafeId = (doc: any): string => {
+  // Try multiple ID sources
+  const possibleIds = [
+    doc._id?.toString?.(),
+    doc.id,
+    doc.location_id,
+    doc.code ? `loc_${doc.code}` : null
+  ].filter(id => id && typeof id === 'string' && id.trim().length > 0);
+
+  if (possibleIds.length > 0) {
+    return possibleIds[0];
+  }
+
+  // Fallback to timestamp-based ID
+  return `loc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Helper function to validate if an ID is safe for SelectItem
+const isValidSelectId = (id: any): id is string => {
+  return typeof id === 'string' && 
+         id.trim().length > 0 && 
+         id !== '' && 
+         id !== 'undefined' && 
+         id !== 'null';
+};
+
 export function LocationSelector({ 
   value, 
   onValueChange,
@@ -45,41 +72,52 @@ export function LocationSelector({
 
       console.log('LocationSelector: Fetched locations from MongoDB:', locationsData.length);
       
-      // Convert MongoDB documents to Location interfaces with all required fields
-      const locations: Location[] = locationsData.map(doc => ({
-        id: doc._id?.toString() || doc.id || `loc_${Date.now()}_${Math.random()}`,
-        code: doc.code || '',
-        name: doc.name || '',
-        warehouse_id: doc.warehouse_id || '',
-        type: doc.type || 'bin',
-        level: doc.level || 0,
-        capacity: doc.capacity || 0,
-        current_stock: doc.current_stock || 0,
-        current_occupancy: doc.current_occupancy || 0,
-        occupancy_status: doc.occupancy_status || 'available',
-        confirmation_code: doc.confirmation_code || '',
-        is_active: doc.is_active !== false,
-        user_id: doc.user_id || 'system',
-        created_at: doc.created_at || new Date(),
-        updated_at: doc.updated_at || new Date()
-      }));
+      // Convert MongoDB documents to Location interfaces with safe ID generation
+      const locations: Location[] = locationsData.map(doc => {
+        const safeId = generateSafeId(doc);
+        console.log('LocationSelector: Generated ID for location:', { original: doc, safeId });
+        
+        return {
+          id: safeId,
+          code: doc.code || '',
+          name: doc.name || '',
+          warehouse_id: doc.warehouse_id || '',
+          type: doc.type || 'bin',
+          level: doc.level || 0,
+          capacity: doc.capacity || 0,
+          current_stock: doc.current_stock || 0,
+          current_occupancy: doc.current_occupancy || 0,
+          occupancy_status: doc.occupancy_status || 'available',
+          confirmation_code: doc.confirmation_code || '',
+          is_active: doc.is_active !== false,
+          user_id: doc.user_id || 'system',
+          created_at: doc.created_at || new Date(),
+          updated_at: doc.updated_at || new Date()
+        };
+      });
       
-      // Apply filtering after fetching - ensure only active locations with valid IDs
-      let filteredData = locations.filter(location => 
-        location.is_active && 
-        location.id && 
-        location.id.trim() !== '' && 
-        typeof location.id === 'string' &&
-        location.id.length > 0
-      );
+      // Apply strict filtering - only active locations with valid IDs
+      let validLocations = locations.filter(location => {
+        const isValid = location.is_active && 
+                       isValidSelectId(location.id) && 
+                       location.code && 
+                       location.code.trim().length > 0;
+        
+        if (!isValid) {
+          console.log('LocationSelector: Filtering out invalid location:', location);
+        }
+        
+        return isValid;
+      });
       
       if (warehouseId) {
-        filteredData = filteredData.filter(location => 
+        validLocations = validLocations.filter(location => 
           location.warehouse_id === warehouseId
         );
       }
       
-      return filteredData;
+      console.log('LocationSelector: Valid locations after filtering:', validLocations.length);
+      return validLocations;
     }
   });
 
@@ -93,13 +131,10 @@ export function LocationSelector({
     ? locations?.filter(location => filterTypes.includes(location.type || ''))
     : locations;
 
-  // Additional safety check - ensure no empty values make it to SelectItem
-  const safeLocations = filteredLocations?.filter(location => 
-    location.id && 
-    location.id.trim() !== '' && 
-    typeof location.id === 'string' &&
-    location.id.length > 0
-  ) || [];
+  // Final safety check before rendering - ensure no empty values
+  const safeLocations = (filteredLocations || []).filter(location => isValidSelectId(location.id));
+
+  console.log('LocationSelector: Rendering with locations:', safeLocations.length);
 
   return (
     <div className="space-y-2">
@@ -118,11 +153,19 @@ export function LocationSelector({
               No hay ubicaciones disponibles
             </SelectItem>
           ) : (
-            safeLocations.map((location) => (
-              <SelectItem key={location.id} value={location.id}>
-                {location.code} - {location.name}
-              </SelectItem>
-            ))
+            safeLocations.map((location) => {
+              // Additional safety check per item
+              if (!isValidSelectId(location.id)) {
+                console.error('LocationSelector: Skipping location with invalid ID:', location);
+                return null;
+              }
+              
+              return (
+                <SelectItem key={location.id} value={location.id}>
+                  {location.code} - {location.name}
+                </SelectItem>
+              );
+            }).filter(Boolean)
           )}
         </SelectContent>
       </Select>
