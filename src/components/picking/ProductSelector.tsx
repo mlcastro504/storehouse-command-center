@@ -39,29 +39,32 @@ export function ProductSelector({
 
       console.log('ProductSelector: Fetched products from MongoDB:', productsData.length);
       
-      // Convert MongoDB documents to Product interfaces
-      const products = productsData.map(doc => ({
-        id: doc._id.toString(),
-        sku: doc.sku,
-        name: doc.name,
-        description: doc.description,
-        category_id: doc.category_id,
-        supplier_id: doc.supplier_id,
-        unit_of_measure: doc.unit_of_measure,
-        weight: doc.weight,
-        dimensions: doc.dimensions,
-        barcode: doc.barcode,
-        is_active: doc.is_active,
-        minimum_stock: doc.minimum_stock,
-        maximum_stock: doc.maximum_stock,
-        reorder_point: doc.reorder_point,
-        cost_price: doc.cost_price,
-        sale_price: doc.sale_price,
-        tax_rate: doc.tax_rate,
-        location_id: doc.location_id,
-        created_at: doc.created_at,
-        updated_at: doc.updated_at
-      })) as Product[];
+      // Convert MongoDB documents to Product interfaces with all required fields
+      const products: Product[] = productsData.map(doc => ({
+        id: doc._id?.toString() || doc.id || `prod_${Date.now()}`,
+        sku: doc.sku || '',
+        name: doc.name || '',
+        description: doc.description || '',
+        category_id: doc.category_id || '',
+        supplier_id: doc.supplier_id || '',
+        unit_of_measure: doc.unit_of_measure || 'unit',
+        weight: doc.weight || 0,
+        dimensions: doc.dimensions || '',
+        barcode: doc.barcode || '',
+        is_active: doc.is_active !== false,
+        minimum_stock: doc.minimum_stock || 0,
+        maximum_stock: doc.maximum_stock || 0,
+        min_stock_level: doc.min_stock_level || doc.minimum_stock || 0,
+        max_stock_level: doc.max_stock_level || doc.maximum_stock || 0,
+        reorder_point: doc.reorder_point || 0,
+        cost_price: doc.cost_price || 0,
+        sale_price: doc.sale_price || 0,
+        tax_rate: doc.tax_rate || 0,
+        location_id: doc.location_id || '',
+        user_id: doc.user_id || 'system',
+        created_at: doc.created_at || new Date(),
+        updated_at: doc.updated_at || new Date()
+      }));
       
       // Apply filtering after fetching
       const filteredData = products.filter(product => product.is_active);

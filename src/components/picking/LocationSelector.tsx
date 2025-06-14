@@ -45,21 +45,24 @@ export function LocationSelector({
 
       console.log('LocationSelector: Fetched locations from MongoDB:', locationsData.length);
       
-      // Convert MongoDB documents to Location interfaces
-      const locations = locationsData.map(doc => ({
-        id: doc._id.toString(),
-        code: doc.code,
-        name: doc.name,
-        warehouse_id: doc.warehouse_id,
-        type: doc.type,
-        level: doc.level,
-        capacity: doc.capacity,
-        current_stock: doc.current_stock,
-        confirmation_code: doc.confirmation_code,
-        is_active: doc.is_active,
-        created_at: doc.created_at,
-        updated_at: doc.updated_at
-      })) as Location[];
+      // Convert MongoDB documents to Location interfaces with all required fields
+      const locations: Location[] = locationsData.map(doc => ({
+        id: doc._id?.toString() || doc.id || `loc_${Date.now()}`,
+        code: doc.code || '',
+        name: doc.name || '',
+        warehouse_id: doc.warehouse_id || '',
+        type: doc.type || 'bin',
+        level: doc.level || 0,
+        capacity: doc.capacity || 0,
+        current_stock: doc.current_stock || 0,
+        current_occupancy: doc.current_occupancy || 0,
+        occupancy_status: doc.occupancy_status || 'available',
+        confirmation_code: doc.confirmation_code || '',
+        is_active: doc.is_active !== false,
+        user_id: doc.user_id || 'system',
+        created_at: doc.created_at || new Date(),
+        updated_at: doc.updated_at || new Date()
+      }));
       
       // Apply filtering after fetching
       let filteredData = locations;

@@ -30,25 +30,25 @@ export class ChatService {
         .toArray();
 
       // Convert MongoDB documents to ChatChannel interfaces
-      const channels = channelsData.map(doc => ({
-        id: doc._id.toString(),
-        name: doc.name,
-        description: doc.description,
-        type: doc.type,
+      const channels: ChatChannel[] = channelsData.map(doc => ({
+        id: doc._id?.toString() || doc.id || `channel_${Date.now()}`,
+        name: doc.name || '',
+        description: doc.description || '',
+        type: doc.type || 'public',
         context_type: doc.context_type,
         context_id: doc.context_id,
-        created_by: doc.created_by,
-        created_at: doc.created_at,
-        updated_at: doc.updated_at,
-        members: doc.members,
+        created_by: doc.created_by || 'system',
+        created_at: doc.created_at || new Date().toISOString(),
+        updated_at: doc.updated_at || new Date().toISOString(),
+        members: doc.members || [],
         last_message: doc.last_message,
-        unread_count: doc.unread_count,
-        is_archived: doc.is_archived,
+        unread_count: doc.unread_count || 0,
+        is_archived: doc.is_archived || false,
         department: doc.department,
         module: doc.module,
         priority: doc.priority,
         auto_archive_after_days: doc.auto_archive_after_days
-      })) as ChatChannel[];
+      }));
 
       return channels;
     } catch (error) {
@@ -90,38 +90,47 @@ export class ChatService {
       const paginatedMessages = messagesData.slice(offset, offset + limit);
 
       // Convert MongoDB documents to ChatMessage interfaces
-      const messages = paginatedMessages.map(doc => ({
-        id: doc._id.toString(),
-        channel_id: doc.channel_id,
-        sender_id: doc.sender_id,
-        message_type: doc.message_type,
-        content: doc.content,
+      const messages: ChatMessage[] = paginatedMessages.map(doc => ({
+        id: doc._id?.toString() || doc.id || `msg_${Date.now()}`,
+        channel_id: doc.channel_id || '',
+        sender_id: doc.sender_id || '',
+        message_type: doc.message_type || 'text',
+        content: doc.content || '',
         reply_to_id: doc.reply_to_id,
         thread_id: doc.thread_id,
         edited_at: doc.edited_at,
         deleted_at: doc.deleted_at,
-        is_pinned: doc.is_pinned,
-        is_official: doc.is_official,
+        is_pinned: doc.is_pinned || false,
+        is_official: doc.is_official || false,
         priority: doc.priority,
-        reactions: doc.reactions,
-        attachments: doc.attachments,
-        mentions: doc.mentions,
-        quick_responses: doc.quick_responses,
+        reactions: doc.reactions || [],
+        attachments: doc.attachments || [],
+        mentions: doc.mentions || [],
+        quick_responses: doc.quick_responses || [],
         context_data: doc.context_data,
         voice_duration_seconds: doc.voice_duration_seconds,
-        sent_at: doc.sent_at,
+        sent_at: doc.sent_at || new Date().toISOString(),
         delivered_at: doc.delivered_at,
-        read_by: doc.read_by,
+        read_by: doc.read_by || [],
         sender: doc.sender,
         reply_to: doc.reply_to,
-        auto_generated: doc.auto_generated
-      })) as ChatMessage[];
+        auto_generated: doc.auto_generated || false
+      }));
 
-      // Populate sender information
+      // Populate sender information with proper typing
       for (const message of messages) {
-        const sender = await db.collection('users').findOne({ id: message.sender_id });
-        if (sender) {
-          message.sender = sender;
+        const senderDoc = await db.collection('users').findOne({ id: message.sender_id });
+        if (senderDoc) {
+          message.sender = {
+            id: senderDoc._id?.toString() || senderDoc.id || '',
+            email: senderDoc.email || '',
+            firstName: senderDoc.firstName || senderDoc.first_name || '',
+            lastName: senderDoc.lastName || senderDoc.last_name || '',
+            role: senderDoc.role || { name: 'user', permissions: [] },
+            department: senderDoc.department || '',
+            isActive: senderDoc.isActive !== false,
+            lastLoginAt: senderDoc.lastLoginAt || senderDoc.last_login_at
+          };
         }
       }
 
@@ -259,19 +268,19 @@ export class ChatService {
       if (!statusDoc) return null;
       
       // Convert MongoDB document to UserChatStatus interface
-      const status = {
-        id: statusDoc._id.toString(),
-        user_id: statusDoc.user_id,
-        status: statusDoc.status,
+      const status: UserChatStatus = {
+        id: statusDoc._id?.toString() || statusDoc.id || `status_${Date.now()}`,
+        user_id: statusDoc.user_id || '',
+        status: statusDoc.status || 'offline',
         custom_message: statusDoc.custom_message,
-        last_activity_at: statusDoc.last_activity_at,
-        auto_away_enabled: statusDoc.auto_away_enabled,
+        last_activity_at: statusDoc.last_activity_at || new Date().toISOString(),
+        auto_away_enabled: statusDoc.auto_away_enabled || false,
         do_not_disturb_until: statusDoc.do_not_disturb_until,
         current_location: statusDoc.current_location,
         current_module: statusDoc.current_module,
         device_type: statusDoc.device_type,
-        updated_at: statusDoc.updated_at
-      } as UserChatStatus;
+        updated_at: statusDoc.updated_at || new Date().toISOString()
+      };
       
       return status;
     } catch (error) {
@@ -303,16 +312,16 @@ export class ChatService {
         .toArray();
 
       // Convert MongoDB documents to QuickResponse interfaces
-      const responses = responsesData.map(doc => ({
-        id: doc._id.toString(),
-        text: doc.text,
-        category: doc.category,
-        is_active: doc.is_active,
-        role_specific: doc.role_specific,
-        module_specific: doc.module_specific,
-        created_by: doc.created_by,
-        created_at: doc.created_at
-      })) as QuickResponse[];
+      const responses: QuickResponse[] = responsesData.map(doc => ({
+        id: doc._id?.toString() || doc.id || `response_${Date.now()}`,
+        text: doc.text || '',
+        category: doc.category || '',
+        is_active: doc.is_active !== false,
+        role_specific: doc.role_specific || [],
+        module_specific: doc.module_specific || [],
+        created_by: doc.created_by || 'system',
+        created_at: doc.created_at || new Date().toISOString()
+      }));
 
       return responses;
     } catch (error) {
@@ -344,32 +353,32 @@ export class ChatService {
         .toArray();
 
       // Take only first 50 results and convert to ChatMessage interfaces
-      const messages = messagesData.slice(0, 50).map(doc => ({
-        id: doc._id.toString(),
-        channel_id: doc.channel_id,
-        sender_id: doc.sender_id,
-        message_type: doc.message_type,
-        content: doc.content,
+      const messages: ChatMessage[] = messagesData.slice(0, 50).map(doc => ({
+        id: doc._id?.toString() || doc.id || `msg_${Date.now()}`,
+        channel_id: doc.channel_id || '',
+        sender_id: doc.sender_id || '',
+        message_type: doc.message_type || 'text',
+        content: doc.content || '',
         reply_to_id: doc.reply_to_id,
         thread_id: doc.thread_id,
         edited_at: doc.edited_at,
         deleted_at: doc.deleted_at,
-        is_pinned: doc.is_pinned,
-        is_official: doc.is_official,
+        is_pinned: doc.is_pinned || false,
+        is_official: doc.is_official || false,
         priority: doc.priority,
-        reactions: doc.reactions,
-        attachments: doc.attachments,
-        mentions: doc.mentions,
-        quick_responses: doc.quick_responses,
+        reactions: doc.reactions || [],
+        attachments: doc.attachments || [],
+        mentions: doc.mentions || [],
+        quick_responses: doc.quick_responses || [],
         context_data: doc.context_data,
         voice_duration_seconds: doc.voice_duration_seconds,
-        sent_at: doc.sent_at,
+        sent_at: doc.sent_at || new Date().toISOString(),
         delivered_at: doc.delivered_at,
-        read_by: doc.read_by,
+        read_by: doc.read_by || [],
         sender: doc.sender,
         reply_to: doc.reply_to,
-        auto_generated: doc.auto_generated
-      })) as ChatMessage[];
+        auto_generated: doc.auto_generated || false
+      }));
 
       return messages;
     } catch (error) {
