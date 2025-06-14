@@ -1,10 +1,11 @@
+
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useCreatePutAwayRule, useUpdatePutAwayRule } from '@/hooks/usePutAway';
-import { PutAwayRule } from '@/types/putaway';
+import { PutAwayRule, PutAwayCondition } from '@/types/putaway';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -101,22 +102,29 @@ export const CreateOrEditRuleDialog = ({ open, onOpenChange, rule }: CreateOrEdi
 
   const onSubmit = async (data: RuleFormData) => {
     try {
-      const transformedData = {
-        ...data,
-        conditions: data.conditions.map(c => {
-          const isNumericField = ['weight', 'expiry_date_soon'].includes(c.field);
-          const numericValue = parseFloat(c.value);
-          return {
-            ...c,
-            value: isNumericField && !isNaN(numericValue) ? numericValue : c.value,
-          };
-        }),
-      };
+      const payloadConditions: PutAwayCondition[] = data.conditions.map(c => {
+        const isNumericField = ['weight', 'expiry_date_soon'].includes(c.field);
+        const numericValue = parseFloat(c.value);
+        return {
+          field: c.field,
+          operator: c.operator,
+          value: isNumericField && !isNaN(numericValue) ? numericValue : c.value,
+        };
+      });
 
       if (rule) {
-        await updateRule.mutateAsync({ ...rule, ...transformedData });
+        const payload: PutAwayRule = {
+          ...rule,
+          ...data,
+          conditions: payloadConditions,
+        };
+        await updateRule.mutateAsync(payload);
       } else {
-        await createRule.mutateAsync(transformedData);
+        const payload: Partial<PutAwayRule> = {
+          ...data,
+          conditions: payloadConditions,
+        };
+        await createRule.mutateAsync(payload);
       }
       onOpenChange(false);
     } catch (error) {
