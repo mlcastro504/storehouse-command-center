@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,7 +11,6 @@ import { LocationsList } from '@/components/inventory/LocationsList';
 import { CreateLocationDialog } from '@/components/inventory/CreateLocationDialog';
 import { StockLevelsList } from '@/components/inventory/StockLevelsList';
 import { StockMovementsList } from '@/components/inventory/StockMovementsList';
-import { ConnectionTest } from '@/components/inventory/ConnectionTest';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useProducts, useCategories, useWarehouses, useLocations } from '@/hooks/useInventory';
 import { Package, Warehouse, MapPin, TrendingDown, Tag } from 'lucide-react';
@@ -198,7 +196,8 @@ export default function Inventory() {
           </div>
 
           <div>
-            <ConnectionTest />
+            {/* Quitar ConnectionTest */}
+            {/* <ConnectionTest /> */}
           </div>
         </div>
       </div>

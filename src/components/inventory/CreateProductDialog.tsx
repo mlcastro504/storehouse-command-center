@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -80,10 +79,12 @@ export const CreateProductDialog = ({ children }: CreateProductDialogProps) => {
     },
   });
 
+  // Hacer que el modal siempre abra, y mostrar error adentro si no hay categorías, nunca impedir que se abra
   const onSubmit = async (data: ProductFormData) => {
     try {
       console.log('Creating product with data:', data);
-      
+
+      // Si no hay categorías, mostrar toast pero NO salirse ni bloquear el modal
       if (!categories || categories.length === 0) {
         toast.error('No hay categorías disponibles. Crea una categoría primero.');
         return;
@@ -106,15 +107,21 @@ export const CreateProductDialog = ({ children }: CreateProductDialogProps) => {
         barcode: data.barcode || '',
         is_active: true,
       });
-      
+
       setOpen(false);
       form.reset();
       console.log('Product created successfully');
     } catch (error) {
+      // Mostrar el modal aunque ocurra un error al crear producto
       console.error('Error creating product:', error);
       toast.error('Error al crear el producto');
     }
   };
+
+  // Si no hay categorías, mostrar advertencia dentro del formulario
+  const showCategoriesWarning =
+    !categoriesLoading &&
+    (!categories || categories.length === 0);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -130,6 +137,11 @@ export const CreateProductDialog = ({ children }: CreateProductDialogProps) => {
         <DialogHeader>
           <DialogTitle>Crear Nuevo Producto</DialogTitle>
         </DialogHeader>
+        {showCategoriesWarning && (
+          <div className="mb-3 p-3 rounded bg-yellow-100 text-yellow-800 border border-yellow-300 text-center">
+            No hay categorías disponibles. Por favor crea una categoría primero desde el módulo de categorías.
+          </div>
+        )}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -351,7 +363,7 @@ export const CreateProductDialog = ({ children }: CreateProductDialogProps) => {
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={createProduct.isPending}>
+              <Button type="submit" disabled={createProduct.isPending || showCategoriesWarning}>
                 {createProduct.isPending ? 'Creando...' : 'Crear Producto'}
               </Button>
             </div>
