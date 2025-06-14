@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -208,7 +207,6 @@ export function DatabaseSettings() {
               value={dbConfig.uri}
               onChange={(e) => setDbConfig({ ...dbConfig, uri: e.target.value })}
               placeholder="mongodb://user:pass@host:port/?authSource=admin"
-              className="bg-white"
               autoComplete="off"
               spellCheck={false}
             />
