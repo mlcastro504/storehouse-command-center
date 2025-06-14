@@ -1,4 +1,3 @@
-
 import { connectToDatabase } from '@/lib/mongodb';
 import type { 
   PickingTask, 
@@ -53,7 +52,7 @@ export class PickingService {
       created_by: userId,
       user_id: userId,
       created_at: now,
-      assigned_at: taskData.assigned_to ? now : null,
+      assigned_at: null, // always null when created
       status: "pending",
       task_number: Math.floor(Math.random() * 1000000).toString(),
     });
