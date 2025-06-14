@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -26,7 +27,13 @@ const generateSafeId = (doc: any, index: number): string => {
     doc.id,
     doc.product_id,
     doc.sku ? `sku_${doc.sku}` : null,
-  ].filter(id => id && typeof id === 'string' && id.trim().length > 0);
+  ].filter(
+    id =>
+      typeof id === 'string' &&
+      id.trim().length > 0 &&
+      id !== 'undefined' &&
+      id !== 'null'
+  );
 
   if (possibleIds.length > 0) {
     return possibleIds[0].trim();
@@ -36,27 +43,27 @@ const generateSafeId = (doc: any, index: number): string => {
   return `product_${index}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-// Strict validation for SelectItem values
 const isValidSelectValue = (value: any): value is string => {
-  return typeof value === 'string' && 
-         value.trim().length > 0 && 
-         value !== 'undefined' && 
-         value !== 'null' &&
-         value !== '';
+  return (
+    typeof value === 'string' &&
+    value.trim().length > 0 &&
+    value !== 'undefined' &&
+    value !== 'null'
+  );
 };
 
-export function ProductSelector({ 
-  value, 
+export function ProductSelector({
+  value,
   onValueChange,
   onChange,
   placeholder = "Seleccionar producto...",
-  disabled = false 
+  disabled = false
 }: ProductSelectorProps) {
   const { data: products, isLoading } = useQuery({
     queryKey: ['products-selector'],
     queryFn: async () => {
       const db = await connectToDatabase();
-      
+
       const productsData = await db.collection('products')
         .find()
         .sort({ name: 1 })
@@ -65,7 +72,7 @@ export function ProductSelector({
       // Convert MongoDB documents to Product interfaces
       const products: Product[] = productsData.map((doc, index) => {
         const safeId = generateSafeId(doc, index);
-        
+
         return {
           id: safeId,
           sku: doc.sku || `SKU${index}`,
@@ -92,16 +99,15 @@ export function ProductSelector({
           updated_at: doc.updated_at || new Date()
         };
       });
-      
-      // Filter valid products with strict validation
-      const validProducts = products.filter((product) => {
-        return isValidSelectValue(product.id) && 
-               product.name && 
-               product.name.trim().length > 0 && 
-               product.is_active === true;
-      });
-      
-      return validProducts;
+
+      // Filter valid products with strict validation - id and name must be non-blank!
+      return products.filter(
+        (product) =>
+          isValidSelectValue(product.id) &&
+          typeof product.name === 'string' &&
+          product.name.trim().length > 0 &&
+          product.is_active === true
+      );
     }
   });
 
@@ -110,15 +116,17 @@ export function ProductSelector({
     if (onChange) onChange(newValue);
   };
 
-  // Final safety check before rendering
-  const safeProducts = (products || []).filter(product => 
-    isValidSelectValue(product.id) && product.name && product.name.trim().length > 0
+  // Final safety check before rendering: ONLY valid product.id & product.name
+  const safeProducts = (products || []).filter(
+    product =>
+      isValidSelectValue(product.id) &&
+      typeof product.name === 'string' &&
+      product.name.trim().length > 0
   );
 
   return (
-    <Select 
-      onValueChange={handleValueChange} 
-      // Use undefined if value is empty string
+    <Select
+      onValueChange={handleValueChange}
       value={value && value !== "" ? value : undefined}
       disabled={disabled}
     >
@@ -127,18 +135,26 @@ export function ProductSelector({
       </SelectTrigger>
       <SelectContent>
         {isLoading ? (
-          <SelectItem value="_loading_">
+          <SelectItem value="_loading_" disabled>
             Cargando...
           </SelectItem>
         ) : safeProducts.length === 0 ? (
-          <SelectItem value="_no_products_">
+          <SelectItem value="_no_products_" disabled>
             No hay productos disponibles
           </SelectItem>
         ) : (
           safeProducts
-            .filter(product => !!product.id && product.id !== "")
+            .filter(
+              product =>
+                !!product.id &&
+                typeof product.id === "string" &&
+                product.id.trim().length > 0
+            )
             .map((product) => (
-              <SelectItem key={`product_${product.id}`} value={product.id}>
+              <SelectItem
+                key={`product_${product.id}`}
+                value={product.id}
+              >
                 {product.name} ({product.sku})
               </SelectItem>
             ))

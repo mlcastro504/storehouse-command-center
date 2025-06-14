@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -29,7 +30,13 @@ const generateSafeId = (doc: any, index: number): string => {
     doc.id,
     doc.location_id,
     doc.code ? `loc_${doc.code}` : null,
-  ].filter(id => id && typeof id === 'string' && id.trim().length > 0);
+  ].filter(
+    id =>
+      typeof id === 'string' &&
+      id.trim().length > 0 &&
+      id !== 'undefined' &&
+      id !== 'null'
+  );
 
   if (possibleIds.length > 0) {
     return possibleIds[0].trim();
@@ -41,15 +48,16 @@ const generateSafeId = (doc: any, index: number): string => {
 
 // Strict validation for SelectItem values
 const isValidSelectValue = (value: any): value is string => {
-  return typeof value === 'string' && 
-         value.trim().length > 0 && 
-         value !== 'undefined' && 
-         value !== 'null' &&
-         value !== '';
+  return (
+    typeof value === 'string' &&
+    value.trim().length > 0 &&
+    value !== 'undefined' &&
+    value !== 'null'
+  );
 };
 
-export function LocationSelector({ 
-  value, 
+export function LocationSelector({
+  value,
   onValueChange,
   onChange,
   placeholder = "Seleccionar ubicación...",
@@ -62,7 +70,7 @@ export function LocationSelector({
     queryKey: ['locations-selector', warehouseId],
     queryFn: async () => {
       const db = await connectToDatabase();
-      
+
       const locationsData = await db.collection('locations')
         .find()
         .sort({ code: 1 })
@@ -71,7 +79,7 @@ export function LocationSelector({
       // Convert MongoDB documents to Location interfaces
       const locations: Location[] = locationsData.map((doc, index) => {
         const safeId = generateSafeId(doc, index);
-        
+
         return {
           id: safeId,
           code: doc.code || `LOC${index}`,
@@ -90,22 +98,23 @@ export function LocationSelector({
           updated_at: doc.updated_at || new Date()
         };
       });
-      
+
       // Filter valid locations with strict validation
-      let validLocations = locations.filter((location) => {
-        return isValidSelectValue(location.id) && 
-               location.code && 
-               location.code.trim().length > 0 && 
-               location.is_active === true;
-      });
-      
+      let validLocations = locations.filter(
+        location =>
+          isValidSelectValue(location.id) &&
+          typeof location.code === 'string' &&
+          location.code.trim().length > 0 &&
+          location.is_active === true
+      );
+
       // Apply warehouse filter if provided
       if (warehouseId) {
-        validLocations = validLocations.filter(location => 
-          location.warehouse_id === warehouseId
+        validLocations = validLocations.filter(
+          location => location.warehouse_id === warehouseId
         );
       }
-      
+
       return validLocations;
     }
   });
@@ -115,23 +124,27 @@ export function LocationSelector({
     if (onChange) onChange(newValue);
   };
 
-  // Filter locations by type if filterTypes is provided
-  const filteredLocations = filterTypes 
-    ? locations?.filter(location => filterTypes.includes(location.type || ''))
+  // Apply type filter if needed
+  const filteredLocations = filterTypes
+    ? locations?.filter(
+        location => filterTypes.includes(location.type || '')
+      )
     : locations;
 
   // Final safety check before rendering
-  const safeLocations = (filteredLocations || []).filter(location => 
-    isValidSelectValue(location.id) && location.code && location.code.trim().length > 0
+  const safeLocations = (filteredLocations || []).filter(
+    location =>
+      isValidSelectValue(location.id) &&
+      typeof location.code === 'string' &&
+      location.code.trim().length > 0
   );
 
   return (
     <div className="space-y-2">
       {label && <label className="text-sm font-medium">{label}</label>}
-      <Select 
-        disabled={disabled} 
-        onValueChange={handleValueChange} 
-        // Use undefined if value is empty string
+      <Select
+        disabled={disabled}
+        onValueChange={handleValueChange}
         value={value && value !== "" ? value : undefined}
       >
         <SelectTrigger>
@@ -139,18 +152,26 @@ export function LocationSelector({
         </SelectTrigger>
         <SelectContent>
           {isLoading ? (
-            <SelectItem value="_loading_">
+            <SelectItem value="_loading_" disabled>
               Cargando...
             </SelectItem>
           ) : safeLocations.length === 0 ? (
-            <SelectItem value="_no_locations_">
+            <SelectItem value="_no_locations_" disabled>
               No hay ubicaciones disponibles
             </SelectItem>
           ) : (
             safeLocations
-              .filter(location => !!location.id && location.id !== "")
+              .filter(
+                location =>
+                  !!location.id &&
+                  typeof location.id === "string" &&
+                  location.id.trim().length > 0
+              )
               .map((location) => (
-                <SelectItem key={`location_${location.id}`} value={location.id}>
+                <SelectItem
+                  key={`location_${location.id}`}
+                  value={location.id}
+                >
                   {location.code} - {location.name}
                 </SelectItem>
               ))
