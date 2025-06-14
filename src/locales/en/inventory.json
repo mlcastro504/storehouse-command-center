@@ -1,0 +1,16 @@
+
+{
+  "title": "Inventory Management",
+  "description": "Manage your products, stock levels, and warehouses.",
+  "tabs": {
+    "products": "Products",
+    "categories": "Categories",
+    "warehouses": "Warehouses",
+    "stockLevels": "Stock Levels"
+  },
+  "buttons": {
+    "newProduct": "New Product",
+    "newCategory": "New Category",
+    "newWarehouse": "New Warehouse"
+  }
+}

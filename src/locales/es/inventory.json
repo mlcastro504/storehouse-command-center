@@ -1,0 +1,16 @@
+
+{
+  "title": "Gestión de Inventario",
+  "description": "Gestiona tus productos, niveles de stock y almacenes.",
+  "tabs": {
+    "products": "Productos",
+    "categories": "Categorías",
+    "warehouses": "Almacenes",
+    "stockLevels": "Niveles de Stock"
+  },
+  "buttons": {
+    "newProduct": "Nuevo Producto",
+    "newCategory": "Nueva Categoría",
+    "newWarehouse": "Nuevo Almacén"
+  }
+}

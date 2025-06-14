@@ -9,12 +9,14 @@ import authEN from '../locales/en/auth.json';
 import dashboardEN from '../locales/en/dashboard.json';
 import settingsEN from '../locales/en/settings.json';
 import systemEN from '../locales/en/system.json';
+import inventoryEN from '../locales/en/inventory.json';
 
 import commonES from '../locales/es/common.json';
 import authES from '../locales/es/auth.json';
 import dashboardES from '../locales/es/dashboard.json';
 import settingsES from '../locales/es/settings.json';
 import systemES from '../locales/es/system.json';
+import inventoryES from '../locales/es/inventory.json';
 
 const resources = {
   en: {
@@ -22,14 +24,16 @@ const resources = {
     auth: authEN,
     dashboard: dashboardEN,
     settings: settingsEN,
-    system: systemEN
+    system: systemEN,
+    inventory: inventoryEN
   },
   es: {
     common: commonES,
     auth: authES,
     dashboard: dashboardES,
     settings: settingsES,
-    system: systemES
+    system: systemES,
+    inventory: inventoryES
   }
 };
 
