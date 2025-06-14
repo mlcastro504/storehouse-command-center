@@ -1,3 +1,4 @@
+
 {
   "title": "System Configuration",
   "description": "Global control and administration center for WarehouseOS",
@@ -12,7 +13,8 @@
     "general": "General",
     "account": "Account",
     "notifications": "Notifications",
-    "integrations": "Integrations"
+    "integrations": "Integrations",
+    "language": "Language"
   },
   "company": {
     "title": "Company Information",
@@ -37,6 +39,52 @@
     "available": "Available Languages",
     "detectBrowser": "Detect browser language",
     "defaultSystem": "System default language",
-    "settingsSaved": "Language settings saved successfully"
+    "settingsSaved": "Language settings saved successfully",
+    "changed": {
+      "title": "Language changed",
+      "description": "Language changed to {{language}}",
+      "error": "Error changing language"
+    }
+  },
+  "api": {
+    "title": "Integrations and Synchronization",
+    "description": "Connect WarehouseOS with external platforms and manage your integrations",
+    "newIntegration": "New Integration",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "error": "Error"
+    },
+    "frequency": "Frequency",
+    "syncData": "Synced Data",
+    "lastSync": "Last Sync",
+    "test": "Test",
+    "syncNow": "Sync Now",
+    "configure": "Configure",
+    "activeMessage": "✓ Integration active and syncing correctly",
+    "errorMessage": "⚠ Connection error. Check API credentials.",
+    "syncLogs": "Synchronization Logs",
+    "toast": {
+      "enabled": {
+        "title": "Integration Enabled",
+        "description": "Integration with {{name}} has been enabled."
+      },
+      "disabled": {
+        "title": "Integration Disabled",
+        "description": "Integration with {{name}} has been disabled."
+      },
+      "testSuccess": {
+        "title": "Connection successful",
+        "description": "The integration connected successfully."
+      },
+      "syncStarted": {
+        "title": "Synchronization started",
+        "description": "Manual synchronization has been initiated."
+      },
+      "saved": {
+        "title": "Integration saved",
+        "description": "The integration configuration has been saved."
+      }
+    }
   }
 }

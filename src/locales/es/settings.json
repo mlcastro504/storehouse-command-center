@@ -1,3 +1,4 @@
+
 {
   "title": "Configuración del Sistema",
   "description": "Centro de control y administración global de WarehouseOS",
@@ -12,7 +13,8 @@
     "general": "General",
     "account": "Cuenta",
     "notifications": "Notificaciones",
-    "integrations": "Integraciones"
+    "integrations": "Integraciones",
+    "language": "Idioma"
   },
   "company": {
     "title": "Información de la Empresa",
@@ -37,6 +39,52 @@
     "available": "Idiomas Disponibles",
     "detectBrowser": "Detectar idioma del navegador",
     "defaultSystem": "Idioma por defecto del sistema",
-    "settingsSaved": "Configuración de idioma guardada exitosamente"
+    "settingsSaved": "Configuración de idioma guardada exitosamente",
+    "changed": {
+      "title": "Idioma cambiado",
+      "description": "Idioma cambiado a {{language}}",
+      "error": "Error al cambiar el idioma"
+    }
+  },
+  "api": {
+    "title": "Integraciones y Sincronización",
+    "description": "Conecta WarehouseOS con plataformas externas y gestiona tus integraciones",
+    "newIntegration": "Nueva Integración",
+    "status": {
+      "connected": "Conectado",
+      "disconnected": "Desconectado",
+      "error": "Error"
+    },
+    "frequency": "Frecuencia",
+    "syncData": "Datos Sincronizados",
+    "lastSync": "Última Sincronización",
+    "test": "Probar",
+    "syncNow": "Sincronizar",
+    "configure": "Configurar",
+    "activeMessage": "✓ Integración activa y sincronizando correctamente",
+    "errorMessage": "⚠ Error en la conexión. Verifica las credenciales de API.",
+    "syncLogs": "Logs de Sincronización",
+    "toast": {
+      "enabled": {
+        "title": "Integración Habilitada",
+        "description": "La integración con {{name}} ha sido habilitada."
+      },
+      "disabled": {
+        "title": "Integración Deshabilitada",
+        "description": "La integración con {{name}} ha sido deshabilitada."
+      },
+      "testSuccess": {
+        "title": "Conexión exitosa",
+        "description": "La integración se ha conectado correctamente."
+      },
+      "syncStarted": {
+        "title": "Sincronización iniciada",
+        "description": "La sincronización manual se ha iniciado."
+      },
+      "saved": {
+        "title": "Integración guardada",
+        "description": "La configuración de la integración se ha guardado."
+      }
+    }
   }
 }

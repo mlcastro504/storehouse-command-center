@@ -17,7 +17,7 @@ interface LanguageSelectorProps {
 }
 
 export function LanguageSelector({ variant = 'default', showFlag = true }: LanguageSelectorProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['settings', 'common']);
   const { toast } = useToast();
   const [isChanging, setIsChanging] = useState(false);
 
@@ -45,17 +45,19 @@ export function LanguageSelector({ variant = 'default', showFlag = true }: Langu
         }
       }
 
-      toast({
-        title: languageCode === 'es' ? 'Idioma cambiado' : 'Language changed',
-        description: languageCode === 'es' 
-          ? `Idioma cambiado a ${currentLanguage.name}` 
-          : `Language changed to ${currentLanguage.name}`,
-      });
+      const newLanguage = languages.find(lang => lang.code === languageCode);
+      if (newLanguage) {
+        toast({
+          title: t('settings:language.changed.title'),
+          description: t('settings:language.changed.description', { language: newLanguage.name }),
+        });
+      }
+
     } catch (error) {
       console.error('Error changing language:', error);
       toast({
-        title: 'Error',
-        description: 'Error al cambiar el idioma / Error changing language',
+        title: t('common:error'),
+        description: t('settings:language.changed.error'),
         variant: 'destructive'
       });
     } finally {

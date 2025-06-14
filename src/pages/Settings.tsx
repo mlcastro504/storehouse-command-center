@@ -32,7 +32,7 @@ export default function Settings() {
             <TabsTrigger value="backup">{t('tabs.backup')}</TabsTrigger>
             <TabsTrigger value="api">{t('tabs.api')}</TabsTrigger>
             <TabsTrigger value="notifications">{t('tabs.notifications')}</TabsTrigger>
-            <TabsTrigger value="language">Language</TabsTrigger>
+            <TabsTrigger value="language">{t('tabs.language')}</TabsTrigger>
             <TabsTrigger value="security">{t('tabs.security')}</TabsTrigger>
             <TabsTrigger value="system">{t('tabs.system')}</TabsTrigger>
           </TabsList>
