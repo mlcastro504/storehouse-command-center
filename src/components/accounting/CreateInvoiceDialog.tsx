@@ -190,11 +190,13 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
               <SelectContent>
                 {contacts
                   ?.map((contact) => {
-                    // Try both id and _id, and ensure string and not empty
-                    let id = contact.id ?? contact._id ?? "";
-                    if (typeof id !== "string") id = String(id);
-                    id = id.trim();
-                    if (!id) return null; // skip empty/invalid id
+                    // Prefer contact.id, then _id, must be non-empty after trim
+                    let id = contact.id ?? contact._id;
+                    if (id == null) return null;
+                    id = String(id).trim();
+                    if (!id) return null;
+                    // Debug log, remove in production if desired
+                    // console.log('Rendered SelectItem for contact:', { id, name: contact.name });
                     return (
                       <SelectItem key={id} value={id}>
                         {contact.name}
@@ -203,6 +205,15 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                   })
                   .filter(Boolean)
                 }
+                {/* Show a filler if NO items provided */}
+                {contacts?.filter(contact => {
+                  let id = contact.id ?? contact._id;
+                  if (id == null) return false;
+                  id = String(id).trim();
+                  return !!id;
+                }).length === 0 && (
+                  <div className="px-2 py-1 text-sm text-gray-500">No hay contactos disponibles</div>
+                )}
               </SelectContent>
             </Select>
           </div>
