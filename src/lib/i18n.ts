@@ -1,4 +1,3 @@
-
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
@@ -14,7 +13,6 @@ import accountingEN from '../locales/en/accounting.json';
 import locationsEN from '../locales/en/locations.json';
 import suppliersEN from '../locales/en/suppliers.json';
 import pickingEN from '../locales/en/picking.json';
-import stockMovementsEN from '../locales/en/stock-movements.json';
 import stockMoveEN from '../locales/en/stock-move.json';
 import putawayEN from '../locales/en/putaway.json';
 import scannerEN from '../locales/en/scanner.json';
@@ -34,7 +32,6 @@ import accountingES from '../locales/es/accounting.json';
 import locationsES from '../locales/es/locations.json';
 import suppliersES from '../locales/es/suppliers.json';
 import pickingES from '../locales/es/picking.json';
-import stockMovementsES from '../locales/es/stock-movements.json';
 import stockMoveES from '../locales/es/stock-move.json';
 import putawayES from '../locales/es/putaway.json';
 import scannerES from '../locales/es/scanner.json';
@@ -57,7 +54,6 @@ const resources = {
     locations: locationsEN,
     suppliers: suppliersEN,
     picking: pickingEN,
-    'stock-movements': stockMovementsEN,
     'stock-move': stockMoveEN,
     putaway: putawayEN,
     scanner: scannerEN,
@@ -78,7 +74,6 @@ const resources = {
     locations: locationsES,
     suppliers: suppliersES,
     picking: pickingES,
-    'stock-movements': stockMovementsES,
     'stock-move': stockMoveES,
     putaway: putawayES,
     scanner: scannerES,

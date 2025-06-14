@@ -1,3 +1,4 @@
+
 import { Calendar, Home, Inbox, Search, Settings, LogOut, Moon, Sun } from "lucide-react"
 import * as LucideIcons from "lucide-react"
 import { useTheme } from "next-themes"
@@ -24,7 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 export function AppSidebar() {
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
-  const { t } = useTranslation(['common', 'settings', 'dashboard', 'inventory', 'locations', 'suppliers', 'picking', 'stock-movements', 'stock-move', 'putaway', 'scanner', 'loading', 'users', 'customers', 'ecommerce', 'accounting', 'chat']);
+  const { t } = useTranslation(['common', 'settings', 'dashboard', 'inventory', 'locations', 'suppliers', 'picking', 'stock-move', 'putaway', 'scanner', 'loading', 'users', 'customers', 'ecommerce', 'accounting', 'chat']);
   const [companyName, setCompanyName] = useState('WarehouseOS')
   const [companyLogo, setCompanyLogo] = useState('')
   

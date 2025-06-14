@@ -1,4 +1,3 @@
-
 import { 
   BarChart3, 
   Package, 
@@ -65,16 +64,6 @@ export const modules = [
     description: 'Gestión de tareas de recolección de productos',
     icon: 'ClipboardList',
     path: '/picking',
-    isActive: true,
-    requiredRoleLevel: 1
-  },
-  {
-    id: 'stock-movements',
-    name: 'StockMovements',
-    displayName: 'stock-movements:title',
-    description: 'Registro y seguimiento de movimientos de inventario',
-    icon: 'TruckIcon',
-    path: '/stock-movements',
     isActive: true,
     requiredRoleLevel: 1
   },
