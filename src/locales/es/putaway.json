@@ -84,7 +84,47 @@
     "conditions": "Condiciones",
     "suggested_location": "Ubicación Sugerida",
     "view_details_button": "Ver Detalles",
-    "edit_button": "Editar"
+    "edit_button": "Editar",
+    "delete_button": "Eliminar",
+    "no_rules_title": "No hay reglas configuradas",
+    "no_rules_description": "Crea tu primera regla para empezar a automatizar la ubicación de palets.",
+    "error": "Error al cargar las reglas",
+    "edit_rule_title": "Editar Regla",
+    "create_rule_title": "Crear Nueva Regla",
+    "field_rule_name": "Nombre de la Regla",
+    "field_rule_name_placeholder": "Ej: Productos pesados a nivel de suelo",
+    "field_description": "Descripción",
+    "field_description_placeholder": "Una breve descripción de lo que hace esta regla",
+    "field_priority": "Prioridad",
+    "field_priority_desc": "Números más bajos se ejecutan primero.",
+    "field_active": "Activa",
+    "add_condition_button": "Añadir Condición",
+    "field_condition_field": "Campo",
+    "field_condition_operator": "Operador",
+    "field_condition_value": "Valor",
+    "delete_confirm_title": "¿Estás seguro?",
+    "delete_confirm_text": "Esta acción no se puede deshacer. Esto eliminará permanentemente la regla '{{ruleName}}'.",
+    "operators": {
+      "equals": "Igual a",
+      "not_equals": "No es igual a",
+      "greater_than": "Mayor que",
+      "less_than": "Menor que",
+      "contains": "Contiene",
+      "in": "Está en"
+    },
+    "condition_fields": {
+      "product_category": "Categoría de Producto",
+      "weight": "Peso (kg)",
+      "special_requirement": "Requisito Especial",
+      "expiry_date_soon": "Vence Pronto (días)"
+    },
+    "location_preferences": {
+      "ground_level": "Nivel Suelo",
+      "upper_shelf": "Estante Superior",
+      "cold_zone": "Zona Fría",
+      "dry_zone": "Zona Seca",
+      "any": "Cualquiera"
+    }
   },
   "completeDialog": {
     "title": "Completar Tarea Put Away",

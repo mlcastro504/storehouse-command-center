@@ -84,7 +84,47 @@
     "conditions": "Conditions",
     "suggested_location": "Suggested Location",
     "view_details_button": "View Details",
-    "edit_button": "Edit"
+    "edit_button": "Edit",
+    "delete_button": "Delete",
+    "no_rules_title": "No rules configured",
+    "no_rules_description": "Create your first rule to start automating pallet placement.",
+    "error": "Error loading rules",
+    "edit_rule_title": "Edit Rule",
+    "create_rule_title": "Create New Rule",
+    "field_rule_name": "Rule Name",
+    "field_rule_name_placeholder": "e.g., Heavy Products to Ground Floor",
+    "field_description": "Description",
+    "field_description_placeholder": "A brief description of what this rule does",
+    "field_priority": "Priority",
+    "field_priority_desc": "Lower numbers run first.",
+    "field_active": "Active",
+    "add_condition_button": "Add Condition",
+    "field_condition_field": "Field",
+    "field_condition_operator": "Operator",
+    "field_condition_value": "Value",
+    "delete_confirm_title": "Are you sure?",
+    "delete_confirm_text": "This action cannot be undone. This will permanently delete the rule '{{ruleName}}'.",
+    "operators": {
+      "equals": "Equals",
+      "not_equals": "Not Equals",
+      "greater_than": "Greater than",
+      "less_than": "Less than",
+      "contains": "Contains",
+      "in": "In"
+    },
+    "condition_fields": {
+      "product_category": "Product Category",
+      "weight": "Weight (kg)",
+      "special_requirement": "Special Requirement",
+      "expiry_date_soon": "Expires Soon (days)"
+    },
+    "location_preferences": {
+      "ground_level": "Ground Level",
+      "upper_shelf": "Upper Shelf",
+      "cold_zone": "Cold Zone",
+      "dry_zone": "Dry Zone",
+      "any": "Any"
+    }
   },
   "completeDialog": {
     "title": "Complete Put Away Task",

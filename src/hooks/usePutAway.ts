@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PutAwayService } from '@/services/putAwayService';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
+import { PutAwayRule } from '@/types/putaway';
 
 export const usePendingPallets = () => {
   return useQuery({
@@ -114,6 +115,54 @@ export const usePutAwayRules = () => {
     queryFn: PutAwayService.getPutAwayRules,
   });
 };
+
+export const useCreatePutAwayRule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (newRule: Partial<PutAwayRule>) => PutAwayService.createPutAwayRule(newRule),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['putaway-rules'] });
+      toast.success('Rule created successfully.');
+    },
+    onError: (error: any) => {
+      console.error('Error creating rule:', error);
+      toast.error(error.message || 'Failed to create rule.');
+    },
+  });
+};
+
+export const useUpdatePutAwayRule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ruleToUpdate: PutAwayRule) => PutAwayService.updatePutAwayRule(ruleToUpdate),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['putaway-rules'] });
+      // Optimistically update the specific rule query if it exists
+      queryClient.setQueryData(['putaway-rules', variables.id], variables);
+      toast.success('Rule updated successfully.');
+    },
+    onError: (error: any) => {
+      console.error('Error updating rule:', error);
+      toast.error(error.message || 'Failed to update rule.');
+    },
+  });
+};
+
+export const useDeletePutAwayRule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ruleId: string) => PutAwayService.deletePutAwayRule(ruleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['putaway-rules'] });
+      toast.success('Rule deleted successfully.');
+    },
+    onError: (error: any) => {
+      console.error('Error deleting rule:', error);
+      toast.error(error.message || 'Failed to delete rule.');
+    },
+  });
+};
+
 
 export const useValidateLocationCode = () => {
   return useMutation({
