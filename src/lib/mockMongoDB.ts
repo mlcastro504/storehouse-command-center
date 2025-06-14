@@ -6,15 +6,19 @@ export interface MockCollection {
   insertOne(document: any): Promise<{ insertedId: string }>;
   updateOne(filter: any, update: any): Promise<{ matchedCount: number; modifiedCount: number }>;
   deleteOne(filter: any): Promise<{ deletedCount: number }>;
+  deleteMany(filter: any): Promise<{ deletedCount: number }>;
+  aggregate(pipeline: any[]): Promise<any[]>;
+  listIndexes(): Promise<any[]>;
 }
 
 export interface MockCursor {
   sort(sort: any): MockCursor;
+  limit(count: number): MockCursor;
   toArray(): Promise<any[]>;
 }
 
 class MockMongoCursor implements MockCursor {
-  constructor(private data: any[], private filter: any = {}) {}
+  constructor(private data: any[], private filter: any = {}, private limitCount?: number) {}
 
   sort(sortOptions: any): MockCursor {
     const sortedData = [...this.data].sort((a, b) => {
@@ -26,11 +30,19 @@ class MockMongoCursor implements MockCursor {
       }
       return 0;
     });
-    return new MockMongoCursor(sortedData, this.filter);
+    return new MockMongoCursor(sortedData, this.filter, this.limitCount);
+  }
+
+  limit(count: number): MockCursor {
+    return new MockMongoCursor(this.data, this.filter, count);
   }
 
   async toArray(): Promise<any[]> {
-    return this.data;
+    let result = this.data;
+    if (this.limitCount) {
+      result = result.slice(0, this.limitCount);
+    }
+    return result;
   }
 }
 
@@ -120,6 +132,58 @@ class MockMongoCollection implements MockCollection {
     this.setData(data);
     return { deletedCount: 1 };
   }
+
+  async deleteMany(filter: any): Promise<{ deletedCount: number }> {
+    const data = this.getData();
+    const initialLength = data.length;
+    const filteredData = data.filter(item => !this.matchesFilter(item, filter));
+    
+    this.setData(filteredData);
+    return { deletedCount: initialLength - filteredData.length };
+  }
+
+  async aggregate(pipeline: any[]): Promise<any[]> {
+    // Simple mock aggregation - just return the data for now
+    // In a real implementation, you'd process the pipeline stages
+    const data = this.getData();
+    
+    // Basic pipeline processing for common operations
+    let result = [...data];
+    
+    for (const stage of pipeline) {
+      if (stage.$match) {
+        result = result.filter(item => this.matchesFilter(item, stage.$match));
+      }
+      if (stage.$sort) {
+        result.sort((a, b) => {
+          for (const [key, direction] of Object.entries(stage.$sort)) {
+            const aVal = a[key];
+            const bVal = b[key];
+            if (aVal < bVal) return direction === 1 ? -1 : 1;
+            if (aVal > bVal) return direction === 1 ? 1 : -1;
+          }
+          return 0;
+        });
+      }
+      if (stage.$limit) {
+        result = result.slice(0, stage.$limit);
+      }
+      if (stage.$group) {
+        // Basic grouping mock - return simplified result
+        result = [{ _id: null, total: result.length, data: result }];
+      }
+    }
+    
+    return result;
+  }
+
+  async listIndexes(): Promise<any[]> {
+    // Mock indexes - return some basic index information
+    return [
+      { key: { _id: 1 }, name: '_id_' },
+      { key: { id: 1 }, name: 'id_1' }
+    ];
+  }
 }
 
 class MockMongoDatabase {
@@ -139,6 +203,14 @@ class MockMongoDatabase {
   admin() {
     return {
       ping: async () => ({ ok: 1 })
+    };
+  }
+
+  async listCollections() {
+    // Mock list collections - return some basic collection info
+    const collections = ['products', 'categories', 'warehouses', 'locations', 'stock_levels', 'users', 'suppliers'];
+    return {
+      toArray: async () => collections.map(name => ({ name, type: 'collection' }))
     };
   }
 }

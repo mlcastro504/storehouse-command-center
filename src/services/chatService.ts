@@ -84,13 +84,11 @@ export class ChatService {
       const messagesData = await db.collection('chat_messages')
         .find({ channel_id: channelId, deleted_at: null })
         .sort({ sent_at: -1 })
+        .limit(limit)
         .toArray();
 
-      // Take only the required slice for pagination simulation
-      const paginatedMessages = messagesData.slice(offset, offset + limit);
-
       // Convert MongoDB documents to ChatMessage interfaces
-      const messages: ChatMessage[] = paginatedMessages.map(doc => ({
+      const messages: ChatMessage[] = messagesData.map(doc => ({
         id: doc._id?.toString() || doc.id || `msg_${Date.now()}`,
         channel_id: doc.channel_id || '',
         sender_id: doc.sender_id || '',
@@ -127,7 +125,6 @@ export class ChatService {
             firstName: senderDoc.firstName || senderDoc.first_name || '',
             lastName: senderDoc.lastName || senderDoc.last_name || '',
             role: senderDoc.role || { name: 'user', permissions: [] },
-            department: senderDoc.department || '',
             isActive: senderDoc.isActive !== false,
             lastLoginAt: senderDoc.lastLoginAt || senderDoc.last_login_at
           };
