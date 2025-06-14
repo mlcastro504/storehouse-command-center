@@ -22,9 +22,8 @@ interface LocationSelectorProps {
   filterTypes?: string[];
 }
 
-// Helper function to generate safe IDs
+// Helper function to generate safe IDs and guarantee it's never an empty string
 const generateSafeId = (doc: any, index: number): string => {
-  // Try multiple ID sources
   const possibleIds = [
     doc._id?.toString?.(),
     doc.id,
@@ -33,16 +32,14 @@ const generateSafeId = (doc: any, index: number): string => {
   ].filter(
     id =>
       typeof id === 'string' &&
-      id.trim().length > 0 &&
+      !!id.trim() &&
       id !== 'undefined' &&
       id !== 'null'
   );
-
-  if (possibleIds.length > 0) {
+  if (possibleIds.length > 0 && possibleIds[0].trim()) {
     return possibleIds[0].trim();
   }
-
-  // Fallback with guaranteed uniqueness
+  // Fallback: always return a string that couldn't collide with an empty string!
   return `location_${index}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
@@ -50,7 +47,7 @@ const generateSafeId = (doc: any, index: number): string => {
 const isValidSelectValue = (value: any): value is string => {
   return (
     typeof value === 'string' &&
-    value.trim().length > 0 &&
+    !!value.trim() &&
     value !== 'undefined' &&
     value !== 'null'
   );
@@ -79,7 +76,6 @@ export function LocationSelector({
       // Convert MongoDB documents to Location interfaces
       const locations: Location[] = locationsData.map((doc, index) => {
         const safeId = generateSafeId(doc, index);
-
         return {
           id: safeId,
           code: doc.code || `LOC${index}`,
@@ -131,26 +127,17 @@ export function LocationSelector({
       )
     : locations;
 
-  // Final safety check before rendering
-  const safeLocations = React.useMemo(
+  // Final safety filter before rendering
+  const renderableLocations = React.useMemo(
     () =>
       (filteredLocations || []).filter(
-        (location) => {
-          const valid =
-            isValidSelectValue(location.id) &&
-            typeof location.code === 'string' &&
-            location.code.trim().length > 0;
-          if (!valid) {
-            console.warn("Skipping location with invalid id/code:", location);
-          }
-          return valid;
-        }
+        (location) =>
+          isValidSelectValue(location.id) &&
+          typeof location.code === 'string' &&
+          location.code.trim().length > 0
       ),
     [filteredLocations]
   );
-
-  // Defensive filter before rendering
-  const renderableLocations = safeLocations.filter(l => isValidSelectValue(l.id));
 
   return (
     <div className="space-y-2">
@@ -175,7 +162,7 @@ export function LocationSelector({
           ) : (
             renderableLocations.map((location) => {
               if (!isValidSelectValue(location.id)) {
-                // Defensive: Don't render if ID is invalid.
+                // Defensive: Don't render if ID is invalid/empty.
                 console.error("Attempted to render SelectItem with invalid/empty id:", location);
                 return null;
               }
