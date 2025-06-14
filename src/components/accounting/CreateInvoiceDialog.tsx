@@ -188,14 +188,21 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                 <SelectValue placeholder="Seleccionar contacto" />
               </SelectTrigger>
               <SelectContent>
-                {contacts?.filter(contact => !!(contact.id || contact._id)).map((contact) => (
-                  <SelectItem
-                    key={contact.id || contact._id}
-                    value={String(contact.id || contact._id)}
-                  >
-                    {contact.name}
-                  </SelectItem>
-                ))}
+                {contacts
+                  ?.map((contact) => {
+                    // Try both id and _id, and ensure string and not empty
+                    let id = contact.id ?? contact._id ?? "";
+                    if (typeof id !== "string") id = String(id);
+                    id = id.trim();
+                    if (!id) return null; // skip empty/invalid id
+                    return (
+                      <SelectItem key={id} value={id}>
+                        {contact.name}
+                      </SelectItem>
+                    );
+                  })
+                  .filter(Boolean)
+                }
               </SelectContent>
             </Select>
           </div>
