@@ -4,6 +4,7 @@ export interface MockCollection {
   find(filter?: any): MockCursor;
   findOne(filter: any): Promise<any>;
   insertOne(document: any): Promise<{ insertedId: string }>;
+  insertMany(documents: any[]): Promise<{ insertedIds: string[] }>;
   updateOne(filter: any, update: any): Promise<{ matchedCount: number; modifiedCount: number }>;
   deleteOne(filter: any): Promise<{ deletedCount: number }>;
   deleteMany(filter: any): Promise<{ deletedCount: number }>;
@@ -102,6 +103,24 @@ class MockMongoCollection implements MockCollection {
     return { insertedId: id };
   }
 
+  async insertMany(documents: any[]): Promise<{ insertedIds: string[] }> {
+    const data = this.getData();
+    const insertedIds: string[] = [];
+    
+    for (const document of documents) {
+      const id = new Date().getTime().toString() + Math.random().toString(36).substr(2, 9);
+      const newDoc = {
+        ...document,
+        _id: { toString: () => id }
+      };
+      data.push(newDoc);
+      insertedIds.push(id);
+    }
+    
+    this.setData(data);
+    return { insertedIds };
+  }
+
   async updateOne(filter: any, update: any): Promise<{ matchedCount: number; modifiedCount: number }> {
     const data = this.getData();
     const index = data.findIndex(item => this.matchesFilter(item, filter));
@@ -143,11 +162,7 @@ class MockMongoCollection implements MockCollection {
   }
 
   async aggregate(pipeline: any[]): Promise<any[]> {
-    // Simple mock aggregation - just return the data for now
-    // In a real implementation, you'd process the pipeline stages
     const data = this.getData();
-    
-    // Basic pipeline processing for common operations
     let result = [...data];
     
     for (const stage of pipeline) {
@@ -169,7 +184,6 @@ class MockMongoCollection implements MockCollection {
         result = result.slice(0, stage.$limit);
       }
       if (stage.$group) {
-        // Basic grouping mock - return simplified result
         result = [{ _id: null, total: result.length, data: result }];
       }
     }
@@ -178,7 +192,6 @@ class MockMongoCollection implements MockCollection {
   }
 
   async listIndexes(): Promise<any[]> {
-    // Mock indexes - return some basic index information
     return [
       { key: { _id: 1 }, name: '_id_' },
       { key: { id: 1 }, name: 'id_1' }
@@ -207,11 +220,8 @@ class MockMongoDatabase {
   }
 
   async listCollections() {
-    // Mock list collections - return some basic collection info
     const collections = ['products', 'categories', 'warehouses', 'locations', 'stock_levels', 'users', 'suppliers'];
-    return {
-      toArray: async () => collections.map(name => ({ name, type: 'collection' }))
-    };
+    return collections.map(name => ({ name, type: 'collection' }));
   }
 }
 

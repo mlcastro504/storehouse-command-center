@@ -1,3 +1,4 @@
+
 import { connectToDatabase } from '@/lib/mongodb';
 import { 
   ChatChannel, 
@@ -115,7 +116,7 @@ export class ChatService {
         auto_generated: doc.auto_generated || false
       }));
 
-      // Populate sender information with proper typing
+      // Populate sender information with proper typing including createdAt
       for (const message of messages) {
         const senderDoc = await db.collection('users').findOne({ id: message.sender_id });
         if (senderDoc) {
@@ -126,7 +127,8 @@ export class ChatService {
             lastName: senderDoc.lastName || senderDoc.last_name || '',
             role: senderDoc.role || { name: 'user', permissions: [] },
             isActive: senderDoc.isActive !== false,
-            lastLoginAt: senderDoc.lastLoginAt || senderDoc.last_login_at
+            lastLoginAt: senderDoc.lastLoginAt || senderDoc.last_login_at,
+            createdAt: senderDoc.createdAt || new Date()
           };
         }
       }

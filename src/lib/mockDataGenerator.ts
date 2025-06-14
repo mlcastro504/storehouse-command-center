@@ -1,3 +1,4 @@
+
 import { connectToDatabase } from './mongodb';
 
 export async function hasExistingData(): Promise<boolean> {
@@ -11,7 +12,7 @@ export async function hasExistingData(): Promise<boolean> {
   }
 }
 
-export async function clearAllData(): Promise<void> {
+export async function clearAllData(): Promise<boolean> {
   try {
     const db = await connectToDatabase();
     const collections = ['users', 'products', 'categories', 'warehouses', 'locations', 'stock_levels', 'suppliers'];
@@ -21,21 +22,22 @@ export async function clearAllData(): Promise<void> {
     }
     
     console.log('All data cleared successfully');
+    return true;
   } catch (error) {
     console.error('Error clearing data:', error);
-    throw error;
+    return false;
   }
 }
 
-export async function generateMockData(): Promise<void> {
+export async function generateMockData(): Promise<boolean> {
   try {
     const db = await connectToDatabase();
 
     // Mock Users
     const users = [
-      { id: 'user1', email: 'admin@example.com', firstName: 'Admin', lastName: 'User', role: { name: 'admin', permissions: [] }, isActive: true, lastLoginAt: new Date() },
-      { id: 'user2', email: 'manager@example.com', firstName: 'Manager', lastName: 'User', role: { name: 'manager', permissions: [] }, isActive: true, lastLoginAt: new Date() },
-      { id: 'user3', email: 'employee@example.com', firstName: 'Employee', lastName: 'User', role: { name: 'employee', permissions: [] }, isActive: true, lastLoginAt: new Date() }
+      { id: 'user1', email: 'admin@example.com', firstName: 'Admin', lastName: 'User', role: { name: 'admin', permissions: [] }, isActive: true, lastLoginAt: new Date(), createdAt: new Date() },
+      { id: 'user2', email: 'manager@example.com', firstName: 'Manager', lastName: 'User', role: { name: 'manager', permissions: [] }, isActive: true, lastLoginAt: new Date(), createdAt: new Date() },
+      { id: 'user3', email: 'employee@example.com', firstName: 'Employee', lastName: 'User', role: { name: 'employee', permissions: [] }, isActive: true, lastLoginAt: new Date(), createdAt: new Date() }
     ];
     await db.collection('users').insertMany(users);
 
@@ -82,8 +84,23 @@ export async function generateMockData(): Promise<void> {
     await db.collection('stock_levels').insertMany(stockLevels);
 
     console.log('Mock data generated successfully');
+    return true;
   } catch (error) {
     console.error('Error generating mock data:', error);
-    throw error;
+    return false;
+  }
+}
+
+export class MockDataGenerator {
+  static async hasExistingData(): Promise<boolean> {
+    return await hasExistingData();
+  }
+
+  static async clearAllData(): Promise<boolean> {
+    return await clearAllData();
+  }
+
+  static async generateAllMockData(): Promise<boolean> {
+    return await generateMockData();
   }
 }
