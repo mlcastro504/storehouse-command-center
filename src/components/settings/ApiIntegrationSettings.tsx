@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -269,8 +268,8 @@ export function ApiIntegrationSettings() {
 
         <div className="space-y-4">
           <Label className="text-sm font-medium">Logs de Sincronización</Label>
-          <div className="max-h-40 overflow-y-auto border rounded p-3 bg-gray-50">
-            <div className="space-y-1 text-xs font-mono">
+          <div className="max-h-40 overflow-y-auto border rounded p-3 bg-muted">
+            <div className="space-y-1 text-xs font-mono text-muted-foreground">
               <p>[2024-01-15 14:30:15] WooCommerce: Sincronización completada - 125 productos actualizados</p>
               <p>[2024-01-15 13:30:12] WooCommerce: Iniciando sincronización de productos</p>
               <p>[2024-01-15 12:30:08] WooCommerce: Sincronización completada - 23 órdenes importadas</p>
