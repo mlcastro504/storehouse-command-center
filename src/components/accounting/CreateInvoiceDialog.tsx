@@ -1,8 +1,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { connectToDatabase } from '@/lib/mongodb';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 
 interface CreateInvoiceDialogProps {
   open: boolean;
@@ -24,8 +22,6 @@ interface CreateInvoiceDialogProps {
 }
 
 export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInvoiceDialogProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     invoice_number: '',
@@ -38,45 +34,48 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
     total_amount: 0,
     notes: ''
   });
+  const [toastMsg, setToastMsg] = useState<{ title: string; description: string; variant?: string }|null>(null);
 
-  const { data: contacts } = useQuery({
+  const { data: contacts = [], refetch } = useQuery({
     queryKey: ['contacts'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('contacts')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-      
-      if (error) throw error;
-      return data;
+      const db = await connectToDatabase();
+      const results = await db.collection('contacts').find({ is_active: true }).sort({ name: 1 }).toArray();
+      return results;
     }
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
 
     setLoading(true);
+    setToastMsg(null);
     try {
-      const { error } = await supabase
-        .from('invoices')
-        .insert({
-          ...formData,
-          user_id: user.id
-        });
+      const db = await connectToDatabase();
+      await db.collection('invoices').insertOne({
+        ...formData,
+        created_at: new Date(),
+        updated_at: new Date()
+      });
 
-      if (error) throw error;
-
-      toast({
+      setToastMsg({
         title: "Factura creada",
         description: "La factura ha sido creada exitosamente.",
       });
 
       onSuccess();
+      refetch?.();
+      // Limpiar formulario (opcional)
+      setFormData(prev => ({
+        ...prev,
+        invoice_number: '',
+        subtotal: 0,
+        tax_amount: 0,
+        total_amount: 0,
+        notes: ''
+      }));
     } catch (error) {
-      console.error('Error creating invoice:', error);
-      toast({
+      setToastMsg({
         title: "Error",
         description: "No se pudo crear la factura.",
         variant: "destructive",
@@ -92,7 +91,6 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    
     setFormData({
       ...formData,
       invoice_number: `${type}-${year}${month}-${random}`
@@ -100,7 +98,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
   };
 
   const calculateTotal = () => {
-    const total = formData.subtotal + formData.tax_amount;
+    const total = Number(formData.subtotal) + Number(formData.tax_amount);
     setFormData({
       ...formData,
       total_amount: total
@@ -116,6 +114,15 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
             Crear una nueva factura de venta o compra
           </DialogDescription>
         </DialogHeader>
+
+        {toastMsg && (
+          <div
+            className={`rounded px-3 py-2 mb-2 text-sm ${toastMsg.variant === "destructive" ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}
+          >
+            <strong>{toastMsg.title}</strong>
+            <div>{toastMsg.description}</div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -165,7 +172,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
               </SelectTrigger>
               <SelectContent>
                 {contacts?.map((contact) => (
-                  <SelectItem key={contact.id} value={contact.id}>
+                  <SelectItem key={contact.id || contact._id} value={String(contact.id || contact._id)}>
                     {contact.name}
                   </SelectItem>
                 ))}
@@ -264,3 +271,4 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
     </Dialog>
   );
 }
+// SUGERENCIA: Este archivo es largo, conviene refactorizarlo pronto dividiéndolo en componentes más pequeños.

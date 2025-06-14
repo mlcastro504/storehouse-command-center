@@ -1,5 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { connectToDatabase } from '@/lib/mongodb';
 import type { 
   PickingTask, 
   CreatePickingTaskRequest, 
@@ -12,45 +12,24 @@ import type {
 
 export class PickingService {
   // Obtener tareas de picking con filtros
-  static async getPickingTasks(filters?: PickingTaskFilter): Promise<PickingTask[]> {
-    let query = supabase
-      .from('picking_tasks')
-      .select(`
-        *,
-        product:products(id, name, sku, barcode),
-        source_location:locations!picking_tasks_source_location_id_fkey(id, code, name, confirmation_code),
-        destination_location:locations!picking_tasks_destination_location_id_fkey(id, code, name, confirmation_code),
-        assigned_user:user_profiles!picking_tasks_assigned_to_fkey(id, first_name, last_name)
-      `)
-      .order('created_at', { ascending: false });
+  static async getPickingTasks(filters?: any): Promise<any[]> {
+    const db = await connectToDatabase();
+    let query: any = {};
 
     if (filters) {
-      if (filters.status?.length) {
-        query = query.in('status', filters.status);
+      if (filters.status?.length) query.status = { $in: filters.status };
+      if (filters.priority?.length) query.priority = { $in: filters.priority };
+      if (filters.task_type?.length) query.task_type = { $in: filters.task_type };
+      if (filters.assigned_to) query.assigned_to = filters.assigned_to;
+      if (filters.created_from || filters.created_to) {
+        query.created_at = {};
+        if (filters.created_from) query.created_at.$gte = filters.created_from;
+        if (filters.created_to) query.created_at.$lte = filters.created_to;
       }
-      if (filters.priority?.length) {
-        query = query.in('priority', filters.priority);
-      }
-      if (filters.task_type?.length) {
-        query = query.in('task_type', filters.task_type);
-      }
-      if (filters.assigned_to) {
-        query = query.eq('assigned_to', filters.assigned_to);
-      }
-      if (filters.created_from) {
-        query = query.gte('created_at', filters.created_from);
-      }
-      if (filters.created_to) {
-        query = query.lte('created_at', filters.created_to);
-      }
-      if (filters.channel_origin) {
-        query = query.eq('channel_origin', filters.channel_origin);
-      }
+      if (filters.channel_origin) query.channel_origin = filters.channel_origin;
     }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return (data || []) as unknown as PickingTask[];
+    const result = await db.collection('picking_tasks').find(query).sort({ created_at: -1 }).toArray();
+    return result;
   }
 
   // Obtener tareas disponibles para asignar
@@ -73,22 +52,13 @@ export class PickingService {
   }
 
   // Obtener tareas asignadas a un usuario
-  static async getMyTasks(userId: string): Promise<PickingTask[]> {
-    const { data, error } = await supabase
-      .from('picking_tasks')
-      .select(`
-        *,
-        product:products(id, name, sku, barcode),
-        source_location:locations!picking_tasks_source_location_id_fkey(id, code, name, confirmation_code),
-        destination_location:locations!picking_tasks_destination_location_id_fkey(id, code, name, confirmation_code)
-      `)
-      .eq('assigned_to', userId)
-      .in('status', ['assigned', 'in_progress'])
-      .order('priority', { ascending: false })
-      .order('assigned_at', { ascending: true });
-
-    if (error) throw error;
-    return (data || []) as unknown as PickingTask[];
+  static async getMyTasks(userId: string): Promise<any[]> {
+    const db = await connectToDatabase();
+    const tasks = await db.collection('picking_tasks')
+      .find({ assigned_to: userId, status: { $in: ['assigned', 'in_progress'] } })
+      .sort({ priority: -1, assigned_at: 1 })
+      .toArray();
+    return tasks;
   }
 
   // Crear nueva tarea de picking
@@ -166,10 +136,13 @@ export class PickingService {
   }
 
   // Iniciar tarea
-  static async startTask(taskId: string): Promise<PickingTask> {
-    return this.updatePickingTask(taskId, {
-      status: 'in_progress'
-    });
+  static async startTask(taskId: string): Promise<boolean> {
+    const db = await connectToDatabase();
+    const updateResult = await db.collection('picking_tasks').updateOne(
+      { id: taskId },
+      { $set: { status: 'in_progress', started_at: new Date().toISOString() } }
+    );
+    return !!updateResult;
   }
 
   // Completar tarea
