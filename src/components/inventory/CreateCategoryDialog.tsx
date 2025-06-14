@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,6 +34,30 @@ type CategoryFormData = z.infer<typeof categorySchema>;
 export const CreateCategoryDialog = () => {
   const [open, setOpen] = React.useState(false);
   const createCategory = useCreateCategory();
+  const [autoCode, setAutoCode] = React.useState<string>("");
+  const [allCategories, setAllCategories] = React.useState<any[]>([]);
+  const [nameError, setNameError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (open) {
+      (async () => {
+        const categories = await (await fetch('/api/categories')).json();
+        setAllCategories(categories);
+
+        let maxNumber = 0;
+        categories.forEach((c: any) => {
+          const number = parseInt((c.code || '').replace(/^\D+/g, '')) || 0;
+          if (number > maxNumber) maxNumber = number;
+        });
+        setAutoCode(`CAT-${String(maxNumber + 1).padStart(4, '0')}`);
+      })();
+      setNameError(null);
+    } else {
+      setAutoCode('');
+      setNameError(null);
+      setAllCategories([]);
+    }
+  }, [open]);
 
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
@@ -46,11 +69,20 @@ export const CreateCategoryDialog = () => {
   });
 
   const onSubmit = async (data: CategoryFormData) => {
+    setNameError(null);
+    // Validación único nombre
+    const nameExists = allCategories.some(
+      (c) => c.name.trim().toLowerCase() === data.name.trim().toLowerCase()
+    );
+    if (nameExists) {
+      setNameError("El nombre ya existe, elija uno diferente.");
+      return;
+    }
     try {
       await createCategory.mutateAsync({
         name: data.name,
         description: data.description,
-        code: data.code,
+        code: autoCode,
         is_active: true,
       });
       setOpen(false);
@@ -72,6 +104,11 @@ export const CreateCategoryDialog = () => {
         <DialogHeader>
           <DialogTitle>Crear Nueva Categoría</DialogTitle>
         </DialogHeader>
+        {/* Código autogenerado solo lectura */}
+        <div className="mb-2">
+          <FormLabel>Código</FormLabel>
+          <Input value={autoCode} readOnly disabled className="font-mono" placeholder="Código automático" />
+        </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -83,25 +120,12 @@ export const CreateCategoryDialog = () => {
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
+                  {nameError && <FormMessage>{nameError}</FormMessage>}
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
-              name="code"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Código</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+            {/* Eliminamos field de code editable */}
             <FormField
               control={form.control}
               name="description"

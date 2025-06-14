@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -48,6 +47,31 @@ export const CreateLocationDialog = () => {
   const { data: warehouses } = useWarehouses();
   const createLocation = useCreateLocation();
 
+  const [autoCode, setAutoCode] = React.useState<string>('');
+  const [allLocations, setAllLocations] = React.useState<any[]>([]);
+  const [nameError, setNameError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (open) {
+      (async () => {
+        const locations = await (await fetch('/api/locations')).json();
+        setAllLocations(locations);
+
+        let maxNumber = 0;
+        locations.forEach((loc: any) => {
+          const number = parseInt((loc.code || '').replace(/^\D+/g, '')) || 0;
+          if (number > maxNumber) maxNumber = number;
+        });
+        setAutoCode(`LOC-${String(maxNumber + 1).padStart(6, '0')}`);
+      })();
+      setNameError(null);
+    } else {
+      setAutoCode('');
+      setNameError(null);
+      setAllLocations([]);
+    }
+  }, [open]);
+
   const form = useForm<LocationFormData>({
     resolver: zodResolver(locationSchema),
     defaultValues: {
@@ -63,9 +87,18 @@ export const CreateLocationDialog = () => {
   });
 
   const onSubmit = async (data: LocationFormData) => {
+    setNameError(null);
+    // Validar único nombre
+    const nameExists = allLocations.some(
+      (loc) => loc.name.trim().toLowerCase() === data.name.trim().toLowerCase()
+    );
+    if (nameExists) {
+      setNameError('El nombre ya existe, elija uno diferente.');
+      return;
+    }
     try {
       await createLocation.mutateAsync({
-        code: data.code,
+        code: autoCode,
         name: data.name,
         type: data.type as any,
         warehouse_id: data.warehouse_id,
@@ -97,22 +130,15 @@ export const CreateLocationDialog = () => {
         <DialogHeader>
           <DialogTitle>Crear Nueva Ubicación</DialogTitle>
         </DialogHeader>
+        {/* Código autogenerado solo lectura */}
+        <div className="mb-2">
+          <FormLabel>Código</FormLabel>
+          <Input value={autoCode} readOnly disabled className="font-mono" placeholder="Código automático" />
+        </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Eliminamos el input edit para 'code' */}
               <FormField
                 control={form.control}
                 name="name"
@@ -122,13 +148,11 @@ export const CreateLocationDialog = () => {
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
+                    {nameError && <FormMessage>{nameError}</FormMessage>}
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="type"
@@ -154,6 +178,9 @@ export const CreateLocationDialog = () => {
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="warehouse_id"
@@ -178,9 +205,6 @@ export const CreateLocationDialog = () => {
                   </FormItem>
                 )}
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="capacity"
@@ -194,6 +218,9 @@ export const CreateLocationDialog = () => {
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="barcode"
@@ -207,9 +234,6 @@ export const CreateLocationDialog = () => {
                   </FormItem>
                 )}
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="x"
@@ -223,6 +247,9 @@ export const CreateLocationDialog = () => {
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="y"

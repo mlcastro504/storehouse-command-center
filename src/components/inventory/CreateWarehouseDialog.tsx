@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -40,6 +39,33 @@ type WarehouseFormData = z.infer<typeof warehouseSchema>;
 export const CreateWarehouseDialog = () => {
   const [open, setOpen] = React.useState(false);
   const createWarehouse = useCreateWarehouse();
+  const [autoCode, setAutoCode] = React.useState<string>('');
+  const [nameError, setNameError] = React.useState<string | null>(null);
+
+  // Obtener todos los almacenes para validador único
+  const [allWarehouses, setAllWarehouses] = React.useState<any[]>([]);
+  React.useEffect(() => {
+    if (open) {
+      // Generar nuevo código
+      (async () => {
+        // Simulación: Usaremos un prefijo (WH-000001) y buscamos el mayor
+        const warehouses = await (await fetch('/api/warehouses')).json();
+        setAllWarehouses(warehouses);
+
+        let maxNumber = 0;
+        warehouses.forEach((w: any) => {
+          const number = parseInt((w.code || '').replace(/^\D+/g, '')) || 0;
+          if (number > maxNumber) maxNumber = number;
+        });
+        setAutoCode(`WH-${String(maxNumber + 1).padStart(6, '0')}`);
+      })();
+      setNameError(null);
+    } else {
+      setAutoCode('');
+      setNameError(null);
+      setAllWarehouses([]);
+    }
+  }, [open]);
 
   const form = useForm<WarehouseFormData>({
     resolver: zodResolver(warehouseSchema),
@@ -57,9 +83,18 @@ export const CreateWarehouseDialog = () => {
   });
 
   const onSubmit = async (data: WarehouseFormData) => {
+    setNameError(null);
+    // Validar único nombre (ignorando mayúsculas/minúsculas y espacios)
+    const nameExists = allWarehouses.some(
+      (w) => w.name.trim().toLowerCase() === data.name.trim().toLowerCase()
+    );
+    if (nameExists) {
+      setNameError('El nombre ya existe, elija uno diferente.');
+      return;
+    }
     try {
       await createWarehouse.mutateAsync({
-        code: data.code,
+        code: autoCode,
         name: data.name,
         address: data.address,
         city: data.city,
@@ -89,22 +124,17 @@ export const CreateWarehouseDialog = () => {
         <DialogHeader>
           <DialogTitle>Crear Nuevo Almacén</DialogTitle>
         </DialogHeader>
+
+        {/* Código autogenerado solo lectura */}
+        <div className="mb-2">
+          <FormLabel>Código</FormLabel>
+          <Input value={autoCode} readOnly disabled className="font-mono" placeholder="Código automático" />
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Eliminamos el input edit para 'code' */}
               <FormField
                 control={form.control}
                 name="name"
@@ -114,25 +144,25 @@ export const CreateWarehouseDialog = () => {
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
+                    {nameError && <FormMessage>{nameError}</FormMessage>}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dirección</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Dirección</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <div className="grid grid-cols-3 gap-4">
               <FormField
