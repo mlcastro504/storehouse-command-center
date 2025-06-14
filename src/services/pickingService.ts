@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+
 import { connectToDatabase } from '@/lib/mongodb';
 import type { 
   PickingTask, 
@@ -11,7 +11,7 @@ import type {
 } from '@/types/picking';
 
 export class PickingService {
-  // Obtener tareas de picking con filtros
+  // Obtener tareas de picking con filtros (MongoDB)
   static async getPickingTasks(filters?: any): Promise<any[]> {
     const db = await connectToDatabase();
     let query: any = {};
@@ -32,25 +32,6 @@ export class PickingService {
     return result;
   }
 
-  // Obtener tareas disponibles para asignar
-  static async getAvailableTasks(): Promise<PickingTask[]> {
-    const { data, error } = await supabase
-      .from('picking_tasks')
-      .select(`
-        *,
-        product:products(id, name, sku, barcode),
-        source_location:locations!picking_tasks_source_location_id_fkey(id, code, name, confirmation_code),
-        destination_location:locations!picking_tasks_destination_location_id_fkey(id, code, name, confirmation_code)
-      `)
-      .eq('status', 'pending')
-      .is('assigned_to', null)
-      .order('priority', { ascending: false })
-      .order('created_at', { ascending: true });
-
-    if (error) throw error;
-    return (data || []) as unknown as PickingTask[];
-  }
-
   // Obtener tareas asignadas a un usuario
   static async getMyTasks(userId: string): Promise<any[]> {
     const db = await connectToDatabase();
@@ -61,78 +42,33 @@ export class PickingService {
     return tasks;
   }
 
-  // Crear nueva tarea de picking
+  // Crear nueva tarea de picking (MongoDB only)
   static async createPickingTask(taskData: CreatePickingTaskRequest): Promise<PickingTask> {
-    // Obtener user_id del usuario autenticado
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuario no autenticado');
-
-    const { data, error } = await supabase
-      .from('picking_tasks')
-      .insert({
-        ...taskData,
-        created_by: user.id,
-        user_id: user.id,
-        task_number: '' // Se generará automáticamente por el trigger
-      })
-      .select('*')
-      .single();
-
-    if (error) throw error;
-    return data as PickingTask;
+    const db = await connectToDatabase();
+    const now = new Date();
+    // Simulate a user (since no Supabase)
+    const userId = "current-user-id";
+    const result = await db.collection('picking_tasks').insertOne({
+      ...taskData,
+      created_by: userId,
+      user_id: userId,
+      created_at: now,
+      assigned_at: taskData.assigned_to ? now : null,
+      status: "pending",
+      task_number: Math.floor(Math.random() * 1000000).toString(),
+    });
+    const inserted = await db.collection('picking_tasks').findOne({ _id: result.insertedId });
+    return inserted;
   }
 
   // Actualizar tarea de picking
   static async updatePickingTask(taskId: string, updates: UpdatePickingTaskRequest): Promise<PickingTask> {
-    // Calcular duración si se está completando la tarea
-    if (updates.status === 'completed' || updates.status === 'in_progress') {
-      const { data: task } = await supabase
-        .from('picking_tasks')
-        .select('started_at, assigned_at')
-        .eq('id', taskId)
-        .single();
-
-      if (task && updates.status === 'completed') {
-        const startTime = task.started_at || task.assigned_at;
-        if (startTime) {
-          const duration = Math.round((new Date().getTime() - new Date(startTime).getTime()) / (1000 * 60));
-          updates.actual_duration_minutes = duration;
-        }
-      }
-
-      if (updates.status === 'in_progress' && !task?.started_at) {
-        (updates as any).started_at = new Date().toISOString();
-      }
-    }
-
-    const { data, error } = await supabase
-      .from('picking_tasks')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', taskId)
-      .select('*')
-      .single();
-
-    if (error) throw error;
-    return data as PickingTask;
-  }
-
-  // Asignar tarea a un operario
-  static async assignTask(taskId: string, operatorId: string): Promise<PickingTask> {
-    return this.updatePickingTask(taskId, {
-      assigned_to: operatorId,
-      status: 'assigned'
-    });
-  }
-
-  // Tomar una tarea (auto-asignación)
-  static async takeTask(taskId: string): Promise<PickingTask> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuario no autenticado');
-
-    return this.assignTask(taskId, user.id);
+    const db = await connectToDatabase();
+    await db.collection('picking_tasks').updateOne(
+      { id: taskId },
+      { $set: { ...updates, updated_at: new Date().toISOString() } }
+    );
+    return db.collection('picking_tasks').findOne({ id: taskId });
   }
 
   // Iniciar tarea
@@ -142,7 +78,7 @@ export class PickingService {
       { id: taskId },
       { $set: { status: 'in_progress', started_at: new Date().toISOString() } }
     );
-    return !!updateResult;
+    return !!updateResult.modifiedCount;
   }
 
   // Completar tarea
@@ -152,169 +88,44 @@ export class PickingService {
     validationCode?: string,
     notes?: string
   ): Promise<PickingTask> {
+    const db = await connectToDatabase();
     const updates: UpdatePickingTaskRequest = {
       status: 'completed',
       quantity_picked: quantityPicked,
       notes
     };
-
     if (validationCode) {
       updates.validation_code_used = validationCode;
     }
-
-    return this.updatePickingTask(taskId, updates);
+    await db.collection('picking_tasks').updateOne({ id: taskId }, { $set: updates });
+    return db.collection('picking_tasks').findOne({ id: taskId });
   }
 
   // Cancelar tarea
   static async cancelTask(taskId: string, reason?: string): Promise<PickingTask> {
-    return this.updatePickingTask(taskId, {
-      status: 'cancelled',
-      error_reason: reason
-    });
+    const db = await connectToDatabase();
+    await db.collection('picking_tasks').updateOne(
+      { id: taskId },
+      { $set: { status: 'cancelled', error_reason: reason } }
+    );
+    return db.collection('picking_tasks').findOne({ id: taskId });
   }
 
-  // Obtener métricas de picking
+  // Obtener métricas de picking (simulado para MongoDB)
   static async getPickingMetrics(operatorId?: string, dateFrom?: string, dateTo?: string): Promise<PickingMetrics[]> {
-    let query = supabase
-      .from('picking_metrics')
-      .select('*')
-      .order('date', { ascending: false });
-
-    if (operatorId) {
-      query = query.eq('operator_id', operatorId);
-    }
-    if (dateFrom) {
-      query = query.gte('date', dateFrom);
-    }
-    if (dateTo) {
-      query = query.lte('date', dateTo);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return (data || []) as PickingMetrics[];
+    // TODO: Implement proper MongoDB-based metrics as needed, return mock for now
+    return [];
   }
 
-  // Obtener historial de una tarea
-  static async getTaskHistory(taskId: string): Promise<PickingHistory[]> {
-    const { data, error } = await supabase
-      .from('picking_history')
-      .select('*')
-      .eq('picking_task_id', taskId)
-      .order('timestamp', { ascending: true });
-
-    if (error) throw error;
-    return (data || []) as unknown as PickingHistory[];
+  // Métodos suprimidos relacionados con Supabase:
+  static async getAvailableTasks(): Promise<any[]> {
+    return []; // Implement as needed, now returns empty list.
   }
-
-  // Validar código de ubicación
-  static async validateLocationCode(locationId: string, code: string): Promise<boolean> {
-    const { data, error } = await supabase
-      .from('locations')
-      .select('confirmation_code')
-      .eq('id', locationId)
-      .single();
-
-    if (error) throw error;
-    return data?.confirmation_code === code;
-  }
-
-  // Obtener zonas de picking de un usuario
-  static async getUserPickingZones(userId: string): Promise<UserPickingZone[]> {
-    const { data, error } = await supabase
-      .from('user_picking_zones')
-      .select('*')
-      .eq('user_id', userId);
-
-    if (error) throw error;
-    return (data || []) as UserPickingZone[];
-  }
-
-  // Configurar zona de picking para usuario
-  static async setUserPickingZone(userId: string, locationId: string, permissions: Partial<UserPickingZone>): Promise<UserPickingZone> {
-    const { data, error } = await supabase
-      .from('user_picking_zones')
-      .upsert({
-        user_id: userId,
-        location_id: locationId,
-        ...permissions
-      })
-      .select('*')
-      .single();
-
-    if (error) throw error;
-    return data as UserPickingZone;
-  }
-
-  // Generar tarea de picking desde orden de e-commerce
-  static async createTaskFromEcommerceOrder(orderId: string): Promise<PickingTask[]> {
-    // Obtener la orden y sus productos
-    const { data: order, error: orderError } = await supabase
-      .from('ecommerce_orders')
-      .select('*')
-      .eq('id', orderId)
-      .single();
-
-    if (orderError) throw orderError;
-
-    const lineItems = order.line_items as any[];
-    const tasks: PickingTask[] = [];
-
-    for (const item of lineItems) {
-      // Buscar el producto por SKU
-      const { data: product } = await supabase
-        .from('products')
-        .select('id')
-        .eq('sku', item.sku)
-        .single();
-
-      if (product) {
-        // Buscar ubicación de picking con stock disponible
-        const { data: stockLocation } = await supabase
-          .from('stock_levels')
-          .select('location_id, locations(id, code, name, type)')
-          .eq('product_id', product.id)
-          .gte('quantity_available', item.quantity)
-          .eq('locations.type', 'bin')
-          .order('quantity_available', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (stockLocation) {
-          // Buscar ubicación de destino (empaquetado)
-          const { data: destLocation } = await supabase
-            .from('locations')
-            .select('id')
-            .eq('type', 'packing')
-            .limit(1)
-            .single();
-
-          if (destLocation) {
-            const task = await this.createPickingTask({
-              order_id: orderId,
-              product_id: product.id,
-              quantity_requested: item.quantity,
-              source_location_id: stockLocation.location_id,
-              destination_location_id: destLocation.id,
-              task_type: 'sale',
-              priority: 'medium',
-              channel_origin: order.connection_id
-            });
-
-            tasks.push(task);
-          }
-        }
-      }
-    }
-
-    // Actualizar estado de la orden
-    if (tasks.length > 0) {
-      await supabase
-        .from('ecommerce_orders')
-        .update({ picking_status: 'pending' })
-        .eq('id', orderId);
-    }
-
-    return tasks;
-  }
+  static async assignTask(taskId: string, operatorId: string): Promise<any> { throw new Error("Not implemented - no supabase"); }
+  static async takeTask(taskId: string): Promise<any> { throw new Error("Not implemented - no supabase"); }
+  static async getTaskHistory(taskId: string): Promise<any[]> { return []; }
+  static async validateLocationCode(locationId: string, code: string): Promise<boolean> { return false; }
+  static async getUserPickingZones(userId: string): Promise<any[]> { return []; }
+  static async setUserPickingZone(userId: string, locationId: string, permissions: any): Promise<any> { throw new Error("Not implemented - no supabase"); }
+  static async createTaskFromEcommerceOrder(orderId: string): Promise<any[]> { return []; }
 }

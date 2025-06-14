@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -55,6 +54,19 @@ export const PickingDashboard = () => {
       totalToday: todayTasks.length
     };
   }, [allTasks, availableTasks]);
+
+  // For MyTasksList required props:
+  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
+  const [selectedTask, setSelectedTask] = React.useState<any>(null);
+
+  const handleTaskAction = (task: any, action: "execute" | "view") => {
+    setSelectedTask(task);
+    // Optionally open a modal or handle task execution.
+  };
+
+  const handleRefresh = () => {
+    setRefreshTrigger((prev) => prev + 1);
+  };
 
   return (
     <div className="space-y-6">
@@ -190,7 +202,11 @@ export const PickingDashboard = () => {
               <CardTitle>Mis Tareas Asignadas</CardTitle>
             </CardHeader>
             <CardContent>
-              <MyTasksList />
+              <MyTasksList
+                onTaskAction={handleTaskAction}
+                refreshTrigger={refreshTrigger}
+                onRefresh={handleRefresh}
+              />
             </CardContent>
           </Card>
         </TabsContent>
