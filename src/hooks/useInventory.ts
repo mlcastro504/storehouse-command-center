@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { InventoryService } from '@/services/inventoryService';
 import { toast } from 'sonner';
@@ -182,6 +181,22 @@ export const useCreateSupplier = () => {
     onError: (error) => {
       console.error('Error creating supplier:', error);
       toast.error('Error al crear el proveedor');
+    },
+  });
+};
+
+export const useDeleteProduct = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => InventoryService.deleteProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success('Producto eliminado exitosamente');
+    },
+    onError: (error) => {
+      console.error('Error deleting product:', error);
+      toast.error('Error al eliminar el producto');
     },
   });
 };

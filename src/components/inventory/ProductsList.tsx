@@ -1,13 +1,19 @@
-
 import React from 'react';
 import { useProducts } from '@/hooks/useInventory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Package, DollarSign, AlertTriangle } from 'lucide-react';
+import { Edit, Trash2 } from "lucide-react";
+import { EditProductDialog } from "./EditProductDialog";
+import { DeleteProductDialog } from "./DeleteProductDialog";
 
 export const ProductsList = () => {
   const { data: products, isLoading, error } = useProducts();
+
+  // Diálogo de edición y borrado:
+  const [editProduct, setEditProduct] = React.useState<any | null>(null);
+  const [deleteProduct, setDeleteProduct] = React.useState<any | null>(null);
 
   if (isLoading) {
     return (
@@ -63,6 +69,20 @@ export const ProductsList = () => {
                 ) : (
                   <Badge variant="secondary">Inactivo</Badge>
                 )}
+                <button
+                  className="ml-2 text-blue-600 hover:text-blue-800 p-1"
+                  onClick={() => setEditProduct(product)}
+                  title="Editar"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  className="ml-1 text-red-600 hover:text-red-800 p-1"
+                  onClick={() => setDeleteProduct(product)}
+                  title="Eliminar"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             </div>
           </CardHeader>
@@ -104,6 +124,20 @@ export const ProductsList = () => {
           </CardContent>
         </Card>
       ))}
+      {editProduct && (
+        <EditProductDialog
+          open={!!editProduct}
+          setOpen={(open) => !open && setEditProduct(null)}
+          product={editProduct}
+        />
+      )}
+      {deleteProduct && (
+        <DeleteProductDialog
+          open={!!deleteProduct}
+          setOpen={(open) => !open && setDeleteProduct(null)}
+          product={deleteProduct}
+        />
+      )}
     </div>
   );
 };
