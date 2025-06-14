@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,6 +73,9 @@ export const EcommerceOrdersManager = () => {
     }
   });
 
+  // New useState for sync loading
+  const [isSyncing, setIsSyncing] = useState(false);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'destructive';
@@ -105,6 +107,26 @@ export const EcommerceOrdersManager = () => {
       status: newStatus,
       trackingNumber
     });
+  };
+
+  // New helper: sync all channels to create sample orders
+  const handleSyncAllChannels = async () => {
+    setIsSyncing(true);
+    try {
+      if (channels && channels.length > 0) {
+        for (const channel of channels) {
+          await EcommerceAdvancedService.syncChannel(channel.id, 'orders');
+        }
+        queryClient.invalidateQueries({ queryKey: ['ecommerce-orders'] });
+        toast.success('Synchronized. Sample orders created!');
+      } else {
+        toast.error('No channels available to sync.');
+      }
+    } catch (e) {
+      toast.error('Could not sync channels.');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   if (isLoading) {
@@ -280,11 +302,23 @@ export const EcommerceOrdersManager = () => {
             </TableBody>
           </Table>
 
-          {orders?.length === 0 && (
+          {/* Updated "No orders" section */}
+          {(!orders || orders.length === 0) && (
             <div className="flex flex-col items-center justify-center py-12">
               <Package className="w-12 h-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold mb-2">No hay órdenes</h3>
-              <p className="text-gray-600">No se encontraron órdenes con los filtros aplicados</p>
+              <p className="text-gray-600 mb-4">No se encontraron órdenes con los filtros aplicados.</p>
+              <Button
+                loading={isSyncing}
+                disabled={isSyncing}
+                onClick={handleSyncAllChannels}
+                className="mt-2"
+              >
+                {isSyncing ? 'Sincronizando...' : 'Importar Pedidos de Canales'}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2 text-center max-w-xs">
+                Si aún no has sincronizado ningún canal, pulsa este botón para importar pedidos de prueba.
+              </p>
             </div>
           )}
         </CardContent>
