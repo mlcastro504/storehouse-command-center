@@ -1,4 +1,3 @@
-
 // Permite elegir entre modo MOCK y modo API REST real
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000'; // Pon dirección backend aquí si no está en prod
@@ -21,12 +20,61 @@ export function getDbMode() {
 
 import * as mock from './mockMongoDB';
 
+// --- Rest API Proxy Class ---
+class RestApiDatabaseProxy {
+  collection(name: string) {
+    return {
+      find: () => ({
+        sort: () => ({
+          toArray: async () => {
+            throw new Error(
+              `collection('${name}').find(...).sort(...).toArray() not implemented in REST API mode.
+              The backend API does not yet expose generic MongoDB queries.`
+            );
+          },
+          limit: () => ({
+            toArray: async () => {
+              throw new Error(
+                `collection('${name}').find(...).sort(...).limit(...).toArray() not implemented in REST API mode.`
+              );
+            },
+          }),
+        }),
+      }),
+      findOne: async () => {
+        throw new Error(`collection('${name}').findOne(...) not implemented in REST API mode.`);
+      },
+      insertOne: async () => {
+        throw new Error(`collection('${name}').insertOne(...) not implemented in REST API mode.`);
+      },
+      insertMany: async () => {
+        throw new Error(`collection('${name}').insertMany(...) not implemented in REST API mode.`);
+      },
+      updateOne: async () => {
+        throw new Error(`collection('${name}').updateOne(...) not implemented in REST API mode.`);
+      },
+      deleteOne: async () => {
+        throw new Error(`collection('${name}').deleteOne(...) not implemented in REST API mode.`);
+      },
+      deleteMany: async () => {
+        throw new Error(`collection('${name}').deleteMany(...) not implemented in REST API mode.`);
+      },
+      aggregate: async () => {
+        throw new Error(`collection('${name}').aggregate(...) not implemented in REST API mode.`);
+      },
+      listIndexes: async () => {
+        throw new Error(`collection('${name}').listIndexes(...) not implemented in REST API mode.`);
+      },
+    };
+  }
+}
+
 // --- Implementación REST (para producción) ---
 async function prod_connectToDatabase(uri?: string, database?: string) {
   // No es necesario para backend, asume siempre conectado si responde el healthcheck
   const res = await fetch(`${BACKEND_URL}/api/health`);
   if (!res.ok) throw new Error("Cannot connect to backend API");
-  return { dbApi: true }; // Dummy object
+  return new RestApiDatabaseProxy();
 }
 async function prod_closeDatabaseConnection() {
   return true;
