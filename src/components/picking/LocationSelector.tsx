@@ -132,11 +132,21 @@ export function LocationSelector({
     : locations;
 
   // Final safety check before rendering
-  const safeLocations = (filteredLocations || []).filter(
-    location =>
-      isValidSelectValue(location.id) &&
-      typeof location.code === 'string' &&
-      location.code.trim().length > 0
+  const safeLocations = React.useMemo(
+    () =>
+      (filteredLocations || []).filter(
+        (location) => {
+          const valid =
+            isValidSelectValue(location.id) &&
+            typeof location.code === 'string' &&
+            location.code.trim().length > 0;
+          if (!valid) {
+            console.warn("Skipping location with invalid id/code:", location);
+          }
+          return valid;
+        }
+      ),
+    [filteredLocations]
   );
 
   return (
@@ -160,24 +170,18 @@ export function LocationSelector({
               No hay ubicaciones disponibles
             </SelectItem>
           ) : (
-            safeLocations
-              .filter(
-                location =>
-                  !!location.id &&
-                  typeof location.id === "string" &&
-                  location.id.trim().length > 0
-              )
-              .map((location) => (
-                <SelectItem
-                  key={`location_${location.id}`}
-                  value={location.id}
-                >
-                  {location.code} - {location.name}
-                </SelectItem>
-              ))
+            safeLocations.map((location) => (
+              <SelectItem
+                key={`location_${location.id}`}
+                value={location.id}
+              >
+                {location.code} - {location.name}
+              </SelectItem>
+            ))
           )}
         </SelectContent>
       </Select>
     </div>
   );
 }
+

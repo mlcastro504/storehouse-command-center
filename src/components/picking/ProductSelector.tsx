@@ -117,11 +117,21 @@ export function ProductSelector({
   };
 
   // Final safety check before rendering: ONLY valid product.id & product.name
-  const safeProducts = (products || []).filter(
-    product =>
-      isValidSelectValue(product.id) &&
-      typeof product.name === 'string' &&
-      product.name.trim().length > 0
+  const safeProducts = React.useMemo(
+    () =>
+      (products || []).filter(
+        (product) => {
+          const valid =
+            isValidSelectValue(product.id) &&
+            typeof product.name === 'string' &&
+            product.name.trim().length > 0;
+          if (!valid) {
+            console.warn("Skipping product with invalid id/name:", product);
+          }
+          return valid;
+        }
+      ),
+    [products]
   );
 
   return (
@@ -143,23 +153,17 @@ export function ProductSelector({
             No hay productos disponibles
           </SelectItem>
         ) : (
-          safeProducts
-            .filter(
-              product =>
-                !!product.id &&
-                typeof product.id === "string" &&
-                product.id.trim().length > 0
-            )
-            .map((product) => (
-              <SelectItem
-                key={`product_${product.id}`}
-                value={product.id}
-              >
-                {product.name} ({product.sku})
-              </SelectItem>
-            ))
+          safeProducts.map((product) => (
+            <SelectItem
+              key={`product_${product.id}`}
+              value={product.id}
+            >
+              {product.name} ({product.sku})
+            </SelectItem>
+          ))
         )}
       </SelectContent>
     </Select>
   );
 }
+
