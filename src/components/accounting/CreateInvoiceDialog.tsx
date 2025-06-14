@@ -188,30 +188,41 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
               </SelectTrigger>
               <SelectContent>
                 {
-                  // 1. Pre-filter all contacts to only those with a valid string ID
+                  contacts &&
                   contacts
-                    ?.filter(contact => {
-                      let id = contact?.id ?? contact?._id;
-                      return !!(id && String(id).trim());
+                    .filter(contact => {
+                      // Only pass non-null/undefined and with valid id
+                      if (!contact) return false;
+                      let id = contact.id ?? contact._id;
+                      if (!id) return false;
+                      id = String(id).trim();
+                      if (!id) {
+                        // Optional debug: log invalid contact for diagnosis
+                        // eslint-disable-next-line no-console
+                        console.warn("Skipped contact due to missing id:", contact);
+                        return false;
+                      }
+                      return true;
                     })
                     .map(contact => {
                       let id = contact.id ?? contact._id;
                       id = String(id).trim();
-                      // Defensive: should never happen due to above filter
-                      if (!id) return null;
-                      // Remove debug logs for production
                       return (
                         <SelectItem key={id} value={id}>
-                          {contact.name}
+                          {contact.name ?? id}
                         </SelectItem>
                       );
                     })
                 }
                 {/* If, after filtering, there are zero contacts, show a placeholder */}
-                {(contacts?.filter(contact => {
-                  let id = contact?.id ?? contact?._id;
-                  return !!(id && String(id).trim());
-                }).length === 0) && (
+                {(!contacts ||
+                  contacts.filter(contact => {
+                    if (!contact) return false;
+                    let id = contact.id ?? contact._id;
+                    if (!id) return false;
+                    id = String(id).trim();
+                    return !!id;
+                  }).length === 0) && (
                   <div className="px-2 py-1 text-sm text-gray-500">No hay contactos disponibles</div>
                 )}
               </SelectContent>
