@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,45 +8,66 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Database, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { testConnection, getDatabaseStats } from '@/lib/mongodb';
 
 export function DatabaseSettings() {
   const [dbConfig, setDbConfig] = useState({
-    uri: 'mongodb://localhost:27017',
+    uri: 'mongodb://mlcastro:Futuro2025,@192.168.2.34:27017/?authSource=admin',
     database: 'warehouseos',
     replicationEnabled: false,
-    connectionStatus: 'connected'
+    connectionStatus: 'disconnected'
   });
 
   const [isConnecting, setIsConnecting] = useState(false);
+  const [dbStats, setDbStats] = useState<any>(null);
 
   const { toast } = useToast();
 
-  const testConnection = async () => {
+  useEffect(() => {
+    // Test connection on component mount
+    handleTestConnection();
+  }, []);
+
+  const handleTestConnection = async () => {
     setIsConnecting(true);
+    setDbConfig(prev => ({ ...prev, connectionStatus: 'connecting' }));
     
-    // Simulate connection test
-    setTimeout(() => {
-      setIsConnecting(false);
-      setDbConfig({ ...dbConfig, connectionStatus: 'connected' });
+    try {
+      const result = await testConnection();
+      
+      if (result.success) {
+        setDbConfig(prev => ({ ...prev, connectionStatus: 'connected' }));
+        
+        // Get database stats
+        const stats = await getDatabaseStats();
+        setDbStats(stats);
+        
+        toast({
+          title: "Conexión exitosa",
+          description: "La conexión a MongoDB se ha establecido correctamente.",
+        });
+      } else {
+        setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
+        toast({
+          title: "Error de conexión",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      setDbConfig(prev => ({ ...prev, connectionStatus: 'error' }));
       toast({
-        title: "Conexión exitosa",
-        description: "La conexión a MongoDB se ha establecido correctamente.",
+        title: "Error de conexión",
+        description: "No se pudo conectar a la base de datos MongoDB.",
+        variant: "destructive",
       });
-    }, 2000);
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const restartConnection = () => {
-    setIsConnecting(true);
-    setDbConfig({ ...dbConfig, connectionStatus: 'connecting' });
-    
-    setTimeout(() => {
-      setIsConnecting(false);
-      setDbConfig({ ...dbConfig, connectionStatus: 'connected' });
-      toast({
-        title: "Conexión reiniciada",
-        description: "La conexión a la base de datos se ha reiniciado correctamente.",
-      });
-    }, 3000);
+    handleTestConnection();
   };
 
   const saveConfiguration = () => {
@@ -78,7 +99,7 @@ export function DatabaseSettings() {
           Base de Datos MongoDB
         </CardTitle>
         <CardDescription>
-          Configura la conexión a tu base de datos MongoDB
+          Configuración de conexión a MongoDB en 192.168.2.34
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -90,14 +111,21 @@ export function DatabaseSettings() {
             </div>
             <p className="text-sm text-muted-foreground">
               {dbConfig.connectionStatus === 'connected' 
-                ? 'Base de datos conectada y funcionando correctamente'
+                ? 'Base de datos MongoDB conectada y funcionando correctamente'
                 : 'Verificando estado de la conexión...'}
             </p>
+            {dbStats && dbConfig.connectionStatus === 'connected' && (
+              <div className="text-xs text-muted-foreground mt-2">
+                <p>Colecciones: {dbStats.collections}</p>
+                <p>Tamaño de datos: {(dbStats.dataSize / 1024 / 1024).toFixed(2)} MB</p>
+                <p>Índices: {dbStats.indexes}</p>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <Button 
               variant="outline" 
-              onClick={testConnection}
+              onClick={handleTestConnection}
               disabled={isConnecting}
               className="flex items-center gap-2"
             >
@@ -120,12 +148,12 @@ export function DatabaseSettings() {
           <div className="space-y-2">
             <Label>URI de Conexión</Label>
             <Input
-              value={dbConfig.uri}
-              onChange={(e) => setDbConfig({ ...dbConfig, uri: e.target.value })}
-              placeholder="mongodb://username:password@host:port"
+              value={dbConfig.uri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')}
+              readOnly
+              className="bg-muted"
             />
             <p className="text-xs text-muted-foreground">
-              Formato: mongodb://[username:password@]host:port[/database][?options]
+              Conectado a: 192.168.2.34:27017 (solo lectura)
             </p>
           </div>
 
@@ -153,7 +181,7 @@ export function DatabaseSettings() {
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={testConnection} disabled={isConnecting}>
+          <Button variant="outline" onClick={handleTestConnection} disabled={isConnecting}>
             Probar Configuración
           </Button>
           <Button onClick={saveConfiguration} disabled={isConnecting}>

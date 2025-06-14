@@ -1,97 +1,47 @@
-import { BrowserStorage } from './browserStorage';
 
-// Browser compatibility check
-const isBrowser = typeof window !== 'undefined';
+import { MongoClient, Db } from 'mongodb';
 
-let isMongoAvailable = false;
+// MongoDB connection configuration
+const MONGODB_URI = 'mongodb://mlcastro:Futuro2025,@192.168.2.34:27017/?authSource=admin';
+const DATABASE_NAME = 'warehouseos';
 
-// Mock database interface for browser compatibility
+let client: MongoClient | null = null;
+let database: Db | null = null;
+
+// Connection function for real MongoDB
 export async function connectToDatabase() {
-  if (isBrowser) {
-    console.log('Running in browser - using localStorage as database');
-    
-    // Initialize sample data on first run
-    await BrowserStorage.initializeSampleData();
-    
-    return {
-      collection: (name: string) => ({
-        find: (filter: any = {}) => ({
-          sort: (sortOptions?: any) => ({
-            skip: (skipCount: number) => ({
-              limit: (limitCount: number) => ({
-                toArray: () => BrowserStorage.find(name, filter)
-              }),
-              toArray: () => BrowserStorage.find(name, filter)
-            }),
-            limit: (limitCount: number) => ({
-              toArray: () => BrowserStorage.find(name, filter)
-            }),
-            toArray: () => BrowserStorage.find(name, filter)
-          }),
-          skip: (skipCount: number) => ({
-            limit: (limitCount: number) => ({
-              toArray: () => BrowserStorage.find(name, filter)
-            }),
-            toArray: () => BrowserStorage.find(name, filter)
-          }),
-          limit: (limitCount: number) => ({
-            toArray: () => BrowserStorage.find(name, filter)
-          }),
-          toArray: () => BrowserStorage.find(name, filter)
-        }),
-        findOne: (filter: any) => BrowserStorage.findOne(name, filter),
-        insertOne: (doc: any) => BrowserStorage.insertOne(name, doc),
-        insertMany: (docs: any[]) => {
-          // Simulate insertMany by calling insertOne for each document
-          const results = docs.map(doc => BrowserStorage.insertOne(name, doc));
-          return Promise.resolve({ insertedIds: results.map((_, i) => i.toString()) });
-        },
-        updateOne: (filter: any, update: any, options?: any) => {
-          const updateData = update.$set || update;
-          return BrowserStorage.updateOne(name, filter, updateData);
-        },
-        deleteOne: (filter: any) => BrowserStorage.deleteOne(name, filter),
-        listIndexes: () => BrowserStorage.collection(name).listIndexes(),
-        aggregate: (pipeline: any[]) => ({
-          toArray: () => {
-            // Simple aggregation simulation for browser storage
-            console.log('Mock aggregate called with pipeline:', pipeline);
-            return BrowserStorage.find(name, {});
-          }
-        })
-      }),
-      listCollections: () => ({
-        toArray: () => Promise.resolve([
-          { name: 'products' }, { name: 'categories' }, { name: 'warehouses' },
-          { name: 'locations' }, { name: 'stock_levels' }, { name: 'stock_movements' },
-          { name: 'accounts' }, { name: 'transactions' }, { name: 'invoices' }, { name: 'contacts' },
-          { name: 'chat_channels' }, { name: 'chat_messages' }, { name: 'chat_notifications' },
-          { name: 'user_chat_status' }, { name: 'quick_responses' }
-        ])
-      }),
-      stats: () => BrowserStorage.getStats()
-    };
-  }
+  try {
+    if (!client) {
+      console.log('Connecting to MongoDB at:', MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'));
+      client = new MongoClient(MONGODB_URI);
+      await client.connect();
+      console.log('Successfully connected to MongoDB');
+    }
 
-  // For server-side or when MongoDB is available
-  throw new Error('MongoDB driver not available in browser environment');
+    if (!database) {
+      database = client.db(DATABASE_NAME);
+    }
+
+    return database;
+  } catch (error) {
+    console.error('Failed to connect to MongoDB:', error);
+    throw new Error('Database connection failed');
+  }
 }
 
 export async function closeDatabaseConnection() {
-  if (isBrowser) {
-    console.log('Browser storage - no connection to close');
-    return;
+  if (client) {
+    await client.close();
+    client = null;
+    database = null;
+    console.log('MongoDB connection closed');
   }
 }
 
 export async function getDatabaseStats() {
   try {
-    if (isBrowser) {
-      return await BrowserStorage.getStats();
-    }
-    
-    const database = await connectToDatabase();
-    const stats = await database.stats();
+    const db = await connectToDatabase();
+    const stats = await db.stats();
     return {
       collections: stats.collections,
       dataSize: stats.dataSize,
@@ -101,10 +51,22 @@ export async function getDatabaseStats() {
   } catch (error) {
     console.error('Error getting database stats:', error);
     return {
-      collections: 6,
-      dataSize: 1024 * 100,
-      storageSize: 1024 * 150,
-      indexes: 12
+      collections: 0,
+      dataSize: 0,
+      storageSize: 0,
+      indexes: 0
     };
+  }
+}
+
+// Test connection function
+export async function testConnection() {
+  try {
+    const db = await connectToDatabase();
+    await db.admin().ping();
+    return { success: true, message: 'Connection successful' };
+  } catch (error) {
+    console.error('Connection test failed:', error);
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
