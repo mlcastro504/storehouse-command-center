@@ -2,6 +2,7 @@
 import React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
 import { Supplier } from '@/types/suppliers';
 import {
   AlertDialog,
@@ -31,7 +32,7 @@ export function DeleteSupplierDialog({ open, onOpenChange, supplier }: DeleteSup
       console.log('Deleting supplier:', supplier.id);
       const db = await connectToDatabase();
       
-      await db.collection('suppliers').deleteOne({ _id: supplier.id });
+      await db.collection('suppliers').deleteOne({ _id: new ObjectId(supplier.id) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });

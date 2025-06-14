@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
 import { CreateSupplierData, Supplier } from '@/types/suppliers';
 import {
   Dialog,
@@ -70,13 +70,13 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
 
       if (isEditing) {
         await db.collection('suppliers').updateOne(
-          { _id: supplier!.id },
+          { _id: new ObjectId(supplier!.id) },
           { $set: supplierData }
         );
         return { ...supplierData, id: supplier!.id };
       } else {
         const result = await db.collection('suppliers').insertOne(supplierData);
-        return { ...supplierData, id: result.insertedId };
+        return { ...supplierData, id: result.insertedId.toString() };
       }
     },
     onSuccess: () => {

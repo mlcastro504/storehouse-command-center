@@ -61,7 +61,22 @@ export function CreateJournalEntryDialog({ open, onOpenChange, onSuccess }: Crea
         .find({ is_active: true })
         .sort({ code: 1 })
         .toArray();
-      return accountsData as Account[];
+      
+      // Convert MongoDB documents to Account interfaces
+      const accounts = accountsData.map(doc => ({
+        id: doc._id.toString(),
+        code: doc.code,
+        name: doc.name,
+        account_type: doc.account_type,
+        description: doc.description,
+        is_active: doc.is_active,
+        parent_id: doc.parent_id,
+        level: doc.level,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at
+      })) as Account[];
+      
+      return accounts;
     }
   });
 
@@ -82,6 +97,7 @@ export function CreateJournalEntryDialog({ open, onOpenChange, onSuccess }: Crea
       const lastEntry = await db.collection('journal_entries')
         .find({})
         .sort({ created_at: -1 })
+        .limit(1)
         .toArray();
       
       const nextNumber = lastEntry.length > 0 ? 

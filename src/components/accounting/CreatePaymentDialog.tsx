@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -63,9 +62,25 @@ export function CreatePaymentDialog({ open, onOpenChange, paymentType, onSuccess
           ],
           is_active: true 
         })
-        .sort()
+        .sort({ name: 1 })
         .toArray();
-      return contactsData as Contact[];
+      
+      // Convert MongoDB documents to Contact interfaces
+      const contacts = contactsData.map(doc => ({
+        id: doc._id.toString(),
+        contact_number: doc.contact_number,
+        name: doc.name,
+        contact_type: doc.contact_type,
+        email: doc.email,
+        phone: doc.phone,
+        address: doc.address,
+        tax_id: doc.tax_id,
+        is_active: doc.is_active,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at
+      })) as Contact[];
+      
+      return contacts;
     }
   });
 
@@ -79,6 +94,7 @@ export function CreatePaymentDialog({ open, onOpenChange, paymentType, onSuccess
       const lastPayment = await db.collection('payments')
         .find({ payment_type: paymentType })
         .sort({ created_at: -1 })
+        .limit(1)
         .toArray();
       
       const nextNumber = lastPayment.length > 0 ? 

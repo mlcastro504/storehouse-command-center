@@ -18,14 +18,26 @@ export function AccountsList() {
       
       const accountsData = await db.collection('accounts')
         .find()
-        .sort()
+        .sort({ code: 1 })
         .toArray();
 
       console.log('AccountsList: Fetched accounts from MongoDB:', accountsData.length);
       
-      // Sort by code in JavaScript
-      const sortedData = (accountsData as Account[]).sort((a, b) => a.code.localeCompare(b.code));
-      return sortedData;
+      // Convert MongoDB documents to Account interfaces
+      const accounts = accountsData.map(doc => ({
+        id: doc._id.toString(),
+        code: doc.code,
+        name: doc.name,
+        account_type: doc.account_type,
+        description: doc.description,
+        is_active: doc.is_active,
+        parent_id: doc.parent_id,
+        level: doc.level,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at
+      })) as Account[];
+      
+      return accounts;
     }
   });
 
@@ -64,18 +76,6 @@ export function AccountsList() {
   const getAccountLevel = (code: string) => {
     const cleanCode = code.replace(/\D/g, '');
     return cleanCode.length;
-  };
-
-  const getParentCode = (code: string) => {
-    const cleanCode = code.replace(/\D/g, '');
-    if (cleanCode.length <= 1) return null;
-    return cleanCode.slice(0, -1);
-  };
-
-  const formatAccountHierarchy = (account: Account) => {
-    const level = getAccountLevel(account.code);
-    const indent = '  '.repeat(Math.max(0, level - 1));
-    return indent + account.name;
   };
 
   if (isLoading) {

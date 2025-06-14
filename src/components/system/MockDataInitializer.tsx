@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,6 @@ import { Progress } from "@/components/ui/progress";
 import { Database, Play, CheckCircle, AlertTriangle, Trash2, RotateCcw } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { MockDataGenerator } from '@/lib/mockDataGenerator';
-import { BrowserStorage } from '@/lib/browserStorage';
 
 export function MockDataInitializer() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -19,11 +19,11 @@ export function MockDataInitializer() {
 
   // Clear all existing mock data when component loads
   useEffect(() => {
-    const clearExistingData = () => {
+    const clearExistingData = async () => {
       try {
-        const clearedCount = MockDataGenerator.clearAllData();
-        if (clearedCount > 0) {
-          console.log(`Cleared ${clearedCount} collections from previous sessions`);
+        const cleared = await MockDataGenerator.clearAllData();
+        if (cleared) {
+          console.log('Cleared existing data from previous sessions');
         }
       } catch (error) {
         console.error('Error clearing existing data on load:', error);
@@ -34,41 +34,9 @@ export function MockDataInitializer() {
   }, []);
 
   const checkExistingData = () => {
-    const collections = [
-      // Core entities
-      'roles', 'users', 'products', 'suppliers', 'categories', 'warehouses', 'locations', 
-      'pallets', 'stock_levels',
-      
-      // Operational tasks
-      'putaway_tasks', 'picking_tasks', 'stock_move_tasks', 
-      
-      // Customer and business
-      'customers', 'ecommerce_orders', 'ecommerce_connections',
-      
-      // Communication and devices
-      'chat_channels', 'chat_messages', 'scan_devices', 'scan_sessions',
-      
-      // Accounting
-      'accounts', 'contacts', 'invoices', 'journal_entries', 'payments',
-      
-      // Shipping and loading
-      'loading_docks', 'shipments', 'loading_appointments',
-      
-      // Additional systems
-      'stock_movements', 'sync_logs', 'audit_logs'
-    ];
-    
-    const stats: any = {};
-    let totalRecords = 0;
-    
-    collections.forEach(collection => {
-      const data = BrowserStorage.get(collection) || [];
-      const count = Array.isArray(data) ? data.length : 0;
-      stats[collection] = count;
-      totalRecords += count;
-    });
-    
-    return { stats, totalRecords, hasData: totalRecords > 0 };
+    // Since we're using MongoDB now, we'll need to actually query the database
+    // For now, return empty stats
+    return { stats: {}, totalRecords: 0, hasData: false };
   };
 
   const generateMockData = async () => {
@@ -98,20 +66,17 @@ export function MockDataInitializer() {
       }
       
       // Generate the actual comprehensive data
-      const generatedData = await MockDataGenerator.generateAllMockData();
+      const success = await MockDataGenerator.generateAllMockData();
       
-      setDataStats(generatedData);
-      setIsComplete(true);
-      
-      // Calculate total records
-      const totalRecords = Object.values(generatedData).reduce((total, collection) => {
-        return total + (Array.isArray(collection) ? collection.length : 0);
-      }, 0);
-      
-      toast({
-        title: "Complete Mock Dataset Generated!",
-        description: `Successfully generated ${totalRecords} records across ${Object.keys(generatedData).length} collections`,
-      });
+      if (success) {
+        setDataStats({ generated: true });
+        setIsComplete(true);
+        
+        toast({
+          title: "Complete Mock Dataset Generated!",
+          description: "Successfully generated comprehensive data across all MongoDB collections",
+        });
+      }
       
     } catch (error) {
       console.error('Error generating mock data:', error);
@@ -128,20 +93,22 @@ export function MockDataInitializer() {
   const clearAllData = async () => {
     setIsClearing(true);
     try {
-      const clearedCount = MockDataGenerator.clearAllData();
+      const cleared = await MockDataGenerator.clearAllData();
       
-      setDataStats(null);
-      setIsComplete(false);
-      
-      toast({
-        title: "All Mock Data Cleared",
-        description: `Removed ${clearedCount} collections and all related data from localStorage`,
-      });
-      
-      // Force refresh the page to ensure all components reload with empty data
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      if (cleared) {
+        setDataStats(null);
+        setIsComplete(false);
+        
+        toast({
+          title: "All Mock Data Cleared",
+          description: "Removed all collections and data from MongoDB",
+        });
+        
+        // Force refresh the page to ensure all components reload with empty data
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
       
     } catch (error) {
       console.error('Error clearing data:', error);
@@ -188,25 +155,6 @@ export function MockDataInitializer() {
                 <strong>No mock data detected.</strong> Generate complete test dataset to unlock all WarehouseOS functionality.
               </AlertDescription>
             </Alert>
-          )}
-          
-          {existingDataCheck.hasData && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {Object.entries(existingDataCheck.stats)
-                .filter(([, count]) => (count as number) > 0)
-                .slice(0, 12)
-                .map(([collection, count]) => (
-                <div key={collection} className="flex items-center justify-between p-2 bg-muted rounded">
-                  <span className="text-sm capitalize">{collection.replace(/_/g, ' ')}</span>
-                  <Badge variant="outline">{count as number}</Badge>
-                </div>
-              ))}
-              {Object.keys(existingDataCheck.stats).filter(key => (existingDataCheck.stats[key] as number) > 0).length > 12 && (
-                <div className="flex items-center justify-center p-2 bg-muted rounded text-sm text-muted-foreground">
-                  +{Object.keys(existingDataCheck.stats).filter(key => (existingDataCheck.stats[key] as number) > 0).length - 12} more...
-                </div>
-              )}
-            </div>
           )}
         </div>
 
@@ -265,52 +213,6 @@ export function MockDataInitializer() {
             <h3 className="text-lg font-semibold text-green-600">
               ✅ Complete Mock Dataset Generated Successfully!
             </h3>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold text-blue-600">{dataStats.users?.length || 0}</p>
-                  <p className="text-sm text-muted-foreground">Users & Roles</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold text-green-600">{dataStats.products?.length || 0}</p>
-                  <p className="text-sm text-muted-foreground">Products</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold text-purple-600">{dataStats.pallets?.length || 0}</p>
-                  <p className="text-sm text-muted-foreground">Pallets</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold text-orange-600">{dataStats.locations?.length || 0}</p>
-                  <p className="text-sm text-muted-foreground">Locations</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold text-red-600">
-                    {(dataStats.putaway_tasks?.length || 0) + (dataStats.picking_tasks?.length || 0) + (dataStats.stock_move_tasks?.length || 0)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Active Tasks</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold text-indigo-600">{dataStats.ecommerce_orders?.length || 0}</p>
-                  <p className="text-sm text-muted-foreground">E-commerce Orders</p>
-                </CardContent>
-              </Card>
-            </div>
             
             <Alert>
               <CheckCircle className="h-4 w-4" />
