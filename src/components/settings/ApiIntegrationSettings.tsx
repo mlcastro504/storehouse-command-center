@@ -43,6 +43,46 @@ export function ApiIntegrationSettings() {
       syncFrequency: 'daily',
       dataTypes: ['products', 'orders'],
       lastSync: 'Never'
+    },
+    {
+      id: '3',
+      name: 'Stripe',
+      type: 'stripe',
+      status: 'connected',
+      apiKey: 'sk_test_***',
+      syncFrequency: 'On event',
+      dataTypes: ['Payments'],
+      lastSync: 'Live'
+    },
+    {
+      id: '4',
+      name: 'Mailchimp',
+      type: 'mailchimp',
+      status: 'disconnected',
+      apiKey: '',
+      syncFrequency: 'manual',
+      dataTypes: ['Contacts'],
+      lastSync: 'Never'
+    },
+    {
+      id: '5',
+      name: 'Zapier',
+      type: 'zapier',
+      status: 'disconnected',
+      apiKey: '',
+      syncFrequency: 'manual',
+      dataTypes: ['Workflows'],
+      lastSync: 'Never'
+    },
+    {
+      id: '6',
+      name: 'Slack',
+      type: 'slack',
+      status: 'connected',
+      apiKey: 'https://hooks.slack.com/***',
+      syncFrequency: 'On event',
+      dataTypes: ['Notifications'],
+      lastSync: 'Live'
     }
   ]);
 
@@ -57,7 +97,27 @@ export function ApiIntegrationSettings() {
     odoo: { name: 'Odoo ERP', icon: 'O' },
     netsuite: { name: 'NetSuite', icon: 'N' },
     dhl: { name: 'DHL', icon: 'D' },
-    ups: { name: 'UPS', icon: 'U' }
+    ups: { name: 'UPS', icon: 'U' },
+    stripe: { name: 'Stripe', icon: 'S' },
+    mailchimp: { name: 'Mailchimp', icon: 'M' },
+    zapier: { name: 'Zapier', icon: 'Z' },
+    slack: { name: 'Slack', icon: 'S' }
+  };
+
+  const handleToggleIntegration = (integrationId: string, enabled: boolean) => {
+    const integration = integrations.find(int => int.id === integrationId);
+    if (!integration) return;
+
+    setIntegrations(integrations.map(int => 
+      int.id === integrationId 
+        ? { ...int, status: enabled ? 'connected' : 'disconnected' as const }
+        : int
+    ));
+    
+    toast({
+      title: enabled ? "Integración Habilitada" : "Integración Deshabilitada",
+      description: `La integración con ${integration.name} ha sido ${enabled ? 'habilitada' : 'deshabilitada'}.`,
+    });
   };
 
   const testConnection = (integrationId: string) => {
@@ -103,10 +163,10 @@ export function ApiIntegrationSettings() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <RefreshCw className="w-5 h-5" />
-          Sincronización por API
+          Integraciones y Sincronización
         </CardTitle>
         <CardDescription>
-          Conecta WarehouseOS con plataformas externas
+          Conecta WarehouseOS con plataformas externas y gestiona tus integraciones
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -136,9 +196,10 @@ export function ApiIntegrationSettings() {
                 </div>
                 <div className="flex items-center gap-2">
                   {getStatusBadge(integration.status)}
-                  <Button variant="outline" size="sm">
-                    <Settings className="w-4 h-4" />
-                  </Button>
+                   <Switch
+                    checked={integration.status === 'connected'}
+                    onCheckedChange={(checked) => handleToggleIntegration(integration.id, checked)}
+                  />
                 </div>
               </div>
 
@@ -159,23 +220,31 @@ export function ApiIntegrationSettings() {
                   <Label className="text-xs text-muted-foreground">Última Sincronización</Label>
                   <p className="font-medium">{integration.lastSync}</p>
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => testConnection(integration.id)}
-                    disabled={integration.status === 'connected'}
-                  >
-                    Probar
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => syncNow(integration.id)}
-                    disabled={integration.status !== 'connected'}
-                  >
-                    Sincronizar
-                  </Button>
+                <div className="flex items-end gap-2">
+                  {['woocommerce', 'shopify', 'amazon', 'odoo', 'netsuite'].includes(integration.type) ? (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => testConnection(integration.id)}
+                        disabled={integration.status === 'connected'}
+                      >
+                        Probar
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => syncNow(integration.id)}
+                        disabled={integration.status !== 'connected'}
+                      >
+                        Sincronizar
+                      </Button>
+                    </>
+                  ) : (
+                     <Button variant="outline" size="sm" onClick={saveIntegration}>
+                      Configurar
+                    </Button>
+                  )}
                 </div>
               </div>
 

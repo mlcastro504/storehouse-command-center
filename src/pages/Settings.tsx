@@ -3,11 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GeneralSettings } from '@/components/settings/GeneralSettings';
-import { AccountSettings } from '@/components/settings/AccountSettings';
 import { SecuritySettings } from '@/components/settings/SecuritySettings';
-import { NotificationSettings } from '@/components/settings/NotificationSettings';
-import { IntegrationSettings } from '@/components/settings/IntegrationSettings';
 import { SystemSettings } from '@/components/settings/SystemSettings';
 import { CompanySettings } from '@/components/settings/CompanySettings';
 import { WarehouseSettings } from '@/components/settings/WarehouseSettings';
@@ -28,7 +24,7 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue="company" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-9">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="company">{t('tabs.company')}</TabsTrigger>
             <TabsTrigger value="warehouses">{t('tabs.warehouses')}</TabsTrigger>
             <TabsTrigger value="database">{t('tabs.database')}</TabsTrigger>
@@ -37,7 +33,6 @@ export default function Settings() {
             <TabsTrigger value="language">Language</TabsTrigger>
             <TabsTrigger value="security">{t('tabs.security')}</TabsTrigger>
             <TabsTrigger value="system">{t('tabs.system')}</TabsTrigger>
-            <TabsTrigger value="legacy">{t('tabs.legacy')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="company">
@@ -70,33 +65,6 @@ export default function Settings() {
 
           <TabsContent value="system">
             <SystemSettings />
-          </TabsContent>
-
-          <TabsContent value="legacy" className="space-y-4">
-            <Tabs defaultValue="general" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="general">{t('tabs.general')}</TabsTrigger>
-                <TabsTrigger value="account">{t('tabs.account')}</TabsTrigger>
-                <TabsTrigger value="notifications">{t('tabs.notifications')}</TabsTrigger>
-                <TabsTrigger value="integrations">{t('tabs.integrations')}</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="general">
-                <GeneralSettings />
-              </TabsContent>
-
-              <TabsContent value="account">
-                <AccountSettings />
-              </TabsContent>
-
-              <TabsContent value="notifications">
-                <NotificationSettings />
-              </TabsContent>
-
-              <TabsContent value="integrations">
-                <IntegrationSettings />
-              </TabsContent>
-            </Tabs>
           </TabsContent>
         </Tabs>
       </div>
