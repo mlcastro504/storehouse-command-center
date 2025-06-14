@@ -35,7 +35,10 @@ export const CreateScanSessionDialog = () => {
                 <FormItem>
                   <FormLabel>Tipo de Sesión</FormLabel>
                   <FormControl>
-                    <Select onValueChange={field.onChange}>
+                    <Select
+                      value={field.value || undefined}
+                      onValueChange={field.onChange}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar tipo" />
                       </SelectTrigger>
@@ -58,7 +61,10 @@ export const CreateScanSessionDialog = () => {
                 <FormItem>
                   <FormLabel>Dispositivo</FormLabel>
                   <FormControl>
-                    <Select onValueChange={field.onChange}>
+                    <Select
+                      value={field.value || undefined}
+                      onValueChange={field.onChange}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar dispositivo" />
                       </SelectTrigger>
