@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductsList } from '@/components/inventory/ProductsList';
@@ -16,6 +17,7 @@ import { useProducts, useCategories, useWarehouses, useLocations } from '@/hooks
 import { Package, Warehouse, MapPin, TrendingDown, Tag } from 'lucide-react';
 
 export default function Inventory() {
+  const { t } = useTranslation('inventory');
   const { data: products } = useProducts();
   const { data: categories } = useCategories();
   const { data: warehouses } = useWarehouses();
@@ -32,8 +34,8 @@ export default function Inventory() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Inventario</h1>
-            <p className="text-gray-600">Gestiona productos, stock y movimientos</p>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
+            <p className="text-gray-600">{t('description')}</p>
           </div>
           <div className="flex gap-2">
             <CreateCategoryDialog />
@@ -47,7 +49,7 @@ export default function Inventory() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
-                Total Productos
+                {t('kpis.totalProducts')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -61,7 +63,7 @@ export default function Inventory() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
-                Categorías
+                {t('kpis.categories')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -75,7 +77,7 @@ export default function Inventory() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
-                Almacenes
+                {t('kpis.warehouses')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -89,7 +91,7 @@ export default function Inventory() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
-                Ubicaciones
+                {t('kpis.locations')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -103,7 +105,7 @@ export default function Inventory() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
-                Stock Bajo
+                {t('kpis.lowStock')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -119,18 +121,18 @@ export default function Inventory() {
           <div className="lg:col-span-2">
             <Tabs defaultValue="products" className="space-y-4">
               <TabsList>
-                <TabsTrigger value="products">Productos</TabsTrigger>
-                <TabsTrigger value="categories">Categorías</TabsTrigger>
-                <TabsTrigger value="warehouses">Almacenes</TabsTrigger>
-                <TabsTrigger value="locations">Ubicaciones</TabsTrigger>
-                <TabsTrigger value="stock">Niveles de Stock</TabsTrigger>
-                <TabsTrigger value="movements">Movimientos</TabsTrigger>
+                <TabsTrigger value="products">{t('tabs.products')}</TabsTrigger>
+                <TabsTrigger value="categories">{t('tabs.categories')}</TabsTrigger>
+                <TabsTrigger value="warehouses">{t('tabs.warehouses')}</TabsTrigger>
+                <TabsTrigger value="locations">{t('tabs.locations')}</TabsTrigger>
+                <TabsTrigger value="stock">{t('tabs.stockLevels')}</TabsTrigger>
+                <TabsTrigger value="movements">{t('tabs.movements')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="products">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Productos</CardTitle>
+                    <CardTitle>{t('contentTitles.products')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ProductsList />
@@ -141,7 +143,7 @@ export default function Inventory() {
               <TabsContent value="categories">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Categorías</CardTitle>
+                    <CardTitle>{t('contentTitles.categories')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <CategoriesList />
@@ -152,7 +154,7 @@ export default function Inventory() {
               <TabsContent value="warehouses">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Almacenes</CardTitle>
+                    <CardTitle>{t('contentTitles.warehouses')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <WarehousesList />
@@ -163,7 +165,7 @@ export default function Inventory() {
               <TabsContent value="locations">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Ubicaciones</CardTitle>
+                    <CardTitle>{t('contentTitles.locations')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <LocationsList />
@@ -174,7 +176,7 @@ export default function Inventory() {
               <TabsContent value="stock">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Niveles de Stock</CardTitle>
+                    <CardTitle>{t('contentTitles.stockLevels')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <StockLevelsList />
@@ -185,7 +187,7 @@ export default function Inventory() {
               <TabsContent value="movements">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Movimientos de Stock</CardTitle>
+                    <CardTitle>{t('contentTitles.stockMovements')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <StockMovementsList />

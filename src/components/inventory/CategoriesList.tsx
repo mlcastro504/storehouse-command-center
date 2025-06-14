@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useInventory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tag } from 'lucide-react';
 
 export const CategoriesList = () => {
+  const { t } = useTranslation('inventory');
   const { data: categories, isLoading, error } = useCategories();
 
   if (isLoading) {
@@ -24,7 +26,7 @@ export const CategoriesList = () => {
       <Card>
         <CardContent className="p-6">
           <div className="text-center text-red-500">
-            Error al cargar las categorías
+            {t('categories.loadingError')}
           </div>
         </CardContent>
       </Card>
@@ -36,7 +38,7 @@ export const CategoriesList = () => {
       <Card>
         <CardContent className="p-6">
           <div className="text-center text-gray-500">
-            No hay categorías registradas
+            {t('categories.noCategories')}
           </div>
         </CardContent>
       </Card>
@@ -58,9 +60,9 @@ export const CategoriesList = () => {
               <div className="flex items-center gap-2">
                 <Tag className="h-5 w-5 text-gray-500" />
                 {category.is_active ? (
-                  <Badge variant="default">Activa</Badge>
+                  <Badge variant="default">{t('categories.active')}</Badge>
                 ) : (
-                  <Badge variant="secondary">Inactiva</Badge>
+                  <Badge variant="secondary">{t('categories.inactive')}</Badge>
                 )}
               </div>
             </div>

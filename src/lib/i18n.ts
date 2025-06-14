@@ -10,6 +10,7 @@ import dashboardEN from '../locales/en/dashboard.json';
 import settingsEN from '../locales/en/settings.json';
 import systemEN from '../locales/en/system.json';
 import inventoryEN from '../locales/en/inventory.json';
+import accountingEN from '../locales/en/accounting.json';
 
 import commonES from '../locales/es/common.json';
 import authES from '../locales/es/auth.json';
@@ -17,6 +18,7 @@ import dashboardES from '../locales/es/dashboard.json';
 import settingsES from '../locales/es/settings.json';
 import systemES from '../locales/es/system.json';
 import inventoryES from '../locales/es/inventory.json';
+import accountingES from '../locales/es/accounting.json';
 
 const resources = {
   en: {
@@ -25,7 +27,8 @@ const resources = {
     dashboard: dashboardEN,
     settings: settingsEN,
     system: systemEN,
-    inventory: inventoryEN
+    inventory: inventoryEN,
+    accounting: accountingEN,
   },
   es: {
     common: commonES,
@@ -33,7 +36,8 @@ const resources = {
     dashboard: dashboardES,
     settings: settingsES,
     system: systemES,
-    inventory: inventoryES
+    inventory: inventoryES,
+    accounting: accountingES,
   }
 };
 

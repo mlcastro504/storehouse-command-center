@@ -1,16 +1,39 @@
 
 {
-  "title": "Gestión de Inventario",
-  "description": "Gestiona tus productos, niveles de stock y almacenes.",
+  "title": "Inventario",
+  "description": "Gestiona productos, stock y movimientos",
+  "kpis": {
+    "totalProducts": "Total Productos",
+    "categories": "Categorías",
+    "warehouses": "Almacenes",
+    "locations": "Ubicaciones",
+    "lowStock": "Stock Bajo"
+  },
   "tabs": {
     "products": "Productos",
     "categories": "Categorías",
     "warehouses": "Almacenes",
-    "stockLevels": "Niveles de Stock"
+    "locations": "Ubicaciones",
+    "stockLevels": "Niveles de Stock",
+    "movements": "Movimientos"
+  },
+  "contentTitles": {
+    "products": "Productos",
+    "categories": "Categorías",
+    "warehouses": "Almacenes",
+    "locations": "Ubicaciones",
+    "stockLevels": "Niveles de Stock",
+    "stockMovements": "Movimientos de Stock"
   },
   "buttons": {
     "newProduct": "Nuevo Producto",
     "newCategory": "Nueva Categoría",
     "newWarehouse": "Nuevo Almacén"
+  },
+  "categories": {
+    "loadingError": "Error al cargar las categorías",
+    "noCategories": "No hay categorías registradas",
+    "active": "Activa",
+    "inactive": "Inactiva"
   }
 }

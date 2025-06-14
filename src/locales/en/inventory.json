@@ -1,16 +1,39 @@
 
 {
   "title": "Inventory Management",
-  "description": "Manage your products, stock levels, and warehouses.",
+  "description": "Manage products, stock, and movements",
+  "kpis": {
+    "totalProducts": "Total Products",
+    "categories": "Categories",
+    "warehouses": "Warehouses",
+    "locations": "Locations",
+    "lowStock": "Low Stock"
+  },
   "tabs": {
     "products": "Products",
     "categories": "Categories",
     "warehouses": "Warehouses",
-    "stockLevels": "Stock Levels"
+    "locations": "Locations",
+    "stockLevels": "Stock Levels",
+    "movements": "Movements"
+  },
+  "contentTitles": {
+    "products": "Products",
+    "categories": "Categories",
+    "warehouses": "Warehouses",
+    "locations": "Locations",
+    "stockLevels": "Stock Levels",
+    "stockMovements": "Stock Movements"
   },
   "buttons": {
     "newProduct": "New Product",
     "newCategory": "New Category",
     "newWarehouse": "New Warehouse"
+  },
+  "categories": {
+    "loadingError": "Error loading categories",
+    "noCategories": "No categories registered",
+    "active": "Active",
+    "inactive": "Inactive"
   }
 }
