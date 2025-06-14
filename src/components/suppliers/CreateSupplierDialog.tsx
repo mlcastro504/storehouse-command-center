@@ -1,8 +1,8 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
 import { CreateSupplierData, Supplier } from '@/types/suppliers';
 import {
   Dialog,
@@ -69,8 +69,9 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
       };
 
       if (isEditing) {
+        // Use our mock MongoDB service - filter by the string ID directly
         await db.collection('suppliers').updateOne(
-          { _id: new ObjectId(supplier!.id) },
+          { _id: { toString: () => supplier!.id } },
           { $set: supplierData }
         );
         return { ...supplierData, id: supplier!.id };
