@@ -1,4 +1,3 @@
-import { ObjectId } from 'mongodb';
 
 // Tipos para el módulo de inventario
 
