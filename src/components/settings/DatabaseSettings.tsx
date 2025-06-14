@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Database, CheckCircle, XCircle, RefreshCw, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { testConnection, getDatabaseStats, connectToDatabase, getMockConnectionState } from '@/lib/mongodb';
+import { testConnection, getDatabaseStats, connectToDatabase } from '@/lib/mongodb';
 
 // Helpers to persist/recover db config in localStorage
 const DB_CONFIG_KEY = "warehouseos_dbconfig";
