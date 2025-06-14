@@ -41,7 +41,7 @@ export function ProductSelector({
       
       // Convert MongoDB documents to Product interfaces with all required fields
       const products: Product[] = productsData.map(doc => ({
-        id: doc._id?.toString() || doc.id || `prod_${Date.now()}`,
+        id: doc._id?.toString() || doc.id || `prod_${Date.now()}_${Math.random()}`,
         sku: doc.sku || '',
         name: doc.name || '',
         description: doc.description || '',
@@ -66,8 +66,14 @@ export function ProductSelector({
         updated_at: doc.updated_at || new Date()
       }));
       
-      // Apply filtering after fetching
-      const filteredData = products.filter(product => product.is_active);
+      // Apply filtering after fetching - ensure only active products with valid IDs
+      const filteredData = products.filter(product => 
+        product.is_active && 
+        product.id && 
+        product.id.trim() !== '' && 
+        typeof product.id === 'string' &&
+        product.id.length > 0
+      );
       
       return filteredData;
     }
@@ -78,10 +84,13 @@ export function ProductSelector({
     if (onChange) onChange(newValue);
   };
 
-  // Filter out products with invalid IDs (null, undefined, or empty string)
-  const validProducts = products?.filter(product => 
-    product.id && product.id.trim() !== ''
-  );
+  // Additional safety check - ensure no empty values make it to SelectItem
+  const safeProducts = products?.filter(product => 
+    product.id && 
+    product.id.trim() !== '' && 
+    typeof product.id === 'string' &&
+    product.id.length > 0
+  ) || [];
 
   return (
     <Select onValueChange={handleValueChange} defaultValue={value} disabled={disabled}>
@@ -90,14 +99,20 @@ export function ProductSelector({
       </SelectTrigger>
       <SelectContent>
         {isLoading ? (
-          <SelectItem value="loading" disabled>
+          <SelectItem value="loading-placeholder" disabled>
             Cargando...
           </SelectItem>
-        ) : validProducts?.map((product) => (
-          <SelectItem key={product.id} value={product.id}>
-            {product.name} ({product.sku})
+        ) : safeProducts.length === 0 ? (
+          <SelectItem value="no-products-placeholder" disabled>
+            No hay productos disponibles
           </SelectItem>
-        ))}
+        ) : (
+          safeProducts.map((product) => (
+            <SelectItem key={product.id} value={product.id}>
+              {product.name} ({product.sku})
+            </SelectItem>
+          ))
+        )}
       </SelectContent>
     </Select>
   );

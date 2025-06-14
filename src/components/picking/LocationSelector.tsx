@@ -47,7 +47,7 @@ export function LocationSelector({
       
       // Convert MongoDB documents to Location interfaces with all required fields
       const locations: Location[] = locationsData.map(doc => ({
-        id: doc._id?.toString() || doc.id || `loc_${Date.now()}`,
+        id: doc._id?.toString() || doc.id || `loc_${Date.now()}_${Math.random()}`,
         code: doc.code || '',
         name: doc.name || '',
         warehouse_id: doc.warehouse_id || '',
@@ -64,15 +64,19 @@ export function LocationSelector({
         updated_at: doc.updated_at || new Date()
       }));
       
-      // Apply filtering after fetching
-      let filteredData = locations;
+      // Apply filtering after fetching - ensure only active locations with valid IDs
+      let filteredData = locations.filter(location => 
+        location.is_active && 
+        location.id && 
+        location.id.trim() !== '' && 
+        typeof location.id === 'string' &&
+        location.id.length > 0
+      );
       
       if (warehouseId) {
         filteredData = filteredData.filter(location => 
-          location.warehouse_id === warehouseId && location.is_active
+          location.warehouse_id === warehouseId
         );
-      } else {
-        filteredData = filteredData.filter(location => location.is_active);
       }
       
       return filteredData;
@@ -89,10 +93,13 @@ export function LocationSelector({
     ? locations?.filter(location => filterTypes.includes(location.type || ''))
     : locations;
 
-  // Filter out locations with invalid IDs (null, undefined, or empty string)
-  const validLocations = filteredLocations?.filter(location => 
-    location.id && location.id.trim() !== ''
-  );
+  // Additional safety check - ensure no empty values make it to SelectItem
+  const safeLocations = filteredLocations?.filter(location => 
+    location.id && 
+    location.id.trim() !== '' && 
+    typeof location.id === 'string' &&
+    location.id.length > 0
+  ) || [];
 
   return (
     <div className="space-y-2">
@@ -103,9 +110,15 @@ export function LocationSelector({
         </SelectTrigger>
         <SelectContent>
           {isLoading ? (
-            <SelectItem value="loading" disabled>Cargando...</SelectItem>
+            <SelectItem value="loading-placeholder" disabled>
+              Cargando...
+            </SelectItem>
+          ) : safeLocations.length === 0 ? (
+            <SelectItem value="no-locations-placeholder" disabled>
+              No hay ubicaciones disponibles
+            </SelectItem>
           ) : (
-            validLocations?.map((location) => (
+            safeLocations.map((location) => (
               <SelectItem key={location.id} value={location.id}>
                 {location.code} - {location.name}
               </SelectItem>
