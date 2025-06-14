@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
 import {
   Dialog,
@@ -8,12 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useInvoicesPermissions } from "@/hooks/useInvoicesPermissions";
+import { InvoiceForm } from './InvoiceForm';
+import { initialFormData } from '@/hooks/useInvoiceForm';
 
 interface CreateInvoiceDialogProps {
   open: boolean;
@@ -23,57 +21,8 @@ interface CreateInvoiceDialogProps {
 
 export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInvoiceDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    invoice_number: '',
-    contact_id: '',
-    invoice_type: 'sale' as 'sale' | 'purchase',
-    invoice_date: new Date().toISOString().split('T')[0],
-    due_date: '',
-    subtotal: 0,
-    tax_amount: 0,
-    total_amount: 0,
-    notes: ''
-  });
   const [toastMsg, setToastMsg] = useState<{ title: string; description: string; variant?: string }|null>(null);
-
-  const { data: contacts = [] } = useQuery({
-    queryKey: ['contacts'],
-    queryFn: async () => {
-      const db = await connectToDatabase();
-      const results = await db.collection('contacts').find({ is_active: true }).sort({ name: 1 }).toArray();
-      return results;
-    }
-  });
-
-  const validContacts = useMemo(() => {
-    if (!contacts) {
-      return [];
-    }
-    // For debugging: log raw contacts
-    console.log('Raw contacts from useQuery:', contacts);
-
-    const processedContacts = contacts
-      .map(contact => {
-        if (!contact) {
-          console.warn('Skipping a null/undefined item in contacts array.');
-          return null;
-        }
-        
-        const id = String(contact.id ?? contact._id ?? '').trim();
-        const name = contact.name ?? 'Unnamed Contact';
-
-        if (id === '') {
-          console.warn('Skipping contact due to empty ID:', contact);
-          return null;
-        }
-
-        return { id, name };
-      })
-      .filter((contact): contact is { id: string; name: string } => contact !== null);
-
-    console.log('Processed valid contacts for Select:', processedContacts);
-    return processedContacts;
-  }, [contacts]);
+  const queryClient = useQueryClient();
 
   const { canCreateInvoice } = useInvoicesPermissions();
 
@@ -92,9 +41,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleFormSubmit = async (formData: typeof initialFormData) => {
     setLoading(true);
     setToastMsg(null);
     try {
@@ -109,47 +56,20 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
         title: "Factura creada",
         description: "La factura ha sido creada exitosamente.",
       });
-
+      
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
       onSuccess();
-      // Limpiar formulario (opcional)
-      setFormData(prev => ({
-        ...prev,
-        invoice_number: '',
-        contact_id: '',
-        subtotal: 0,
-        tax_amount: 0,
-        total_amount: 0,
-        notes: ''
-      }));
+      onOpenChange(false);
     } catch (error) {
       setToastMsg({
         title: "Error",
         description: "No se pudo crear la factura.",
         variant: "destructive",
       });
+      throw error;
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateInvoiceNumber = () => {
-    const type = formData.invoice_type === 'sale' ? 'V' : 'C';
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    setFormData({
-      ...formData,
-      invoice_number: `${type}-${year}${month}-${random}`
-    });
-  };
-
-  const calculateTotal = () => {
-    const total = Number(formData.subtotal) + Number(formData.tax_amount);
-    setFormData({
-      ...formData,
-      total_amount: total
-    });
   };
 
   return (
@@ -170,155 +90,12 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="invoice_number">Número de Factura</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="invoice_number"
-                  value={formData.invoice_number}
-                  onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
-                  placeholder="Ej: V-202401-001"
-                  required
-                />
-                <Button type="button" variant="outline" onClick={generateInvoiceNumber}>
-                  Generar
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="invoice_type">Tipo de Factura</Label>
-              <Select
-                value={formData.invoice_type}
-                onValueChange={(value: 'sale' | 'purchase') => 
-                  setFormData({ ...formData, invoice_type: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sale">Venta</SelectItem>
-                  <SelectItem value="purchase">Compra</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="contact_id">Cliente/Proveedor</Label>
-            <Select
-              value={formData.contact_id}
-              onValueChange={(value) => setFormData({ ...formData, contact_id: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar contacto" />
-              </SelectTrigger>
-              <SelectContent>
-                {validContacts.map(contact => (
-                  <SelectItem key={contact.id} value={contact.id}>
-                    {contact.name}
-                  </SelectItem>
-                ))}
-                {validContacts.length === 0 && (
-                  <div className="px-2 py-1 text-sm text-gray-500">No hay contactos disponibles</div>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="invoice_date">Fecha de Factura</Label>
-              <Input
-                id="invoice_date"
-                type="date"
-                value={formData.invoice_date}
-                onChange={(e) => setFormData({ ...formData, invoice_date: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="due_date">Fecha de Vencimiento</Label>
-              <Input
-                id="due_date"
-                type="date"
-                value={formData.due_date}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="subtotal">Subtotal</Label>
-              <Input
-                id="subtotal"
-                type="number"
-                step="0.01"
-                value={formData.subtotal}
-                onChange={(e) => {
-                  const subtotal = parseFloat(e.target.value) || 0;
-                  setFormData({ ...formData, subtotal });
-                }}
-                onBlur={calculateTotal}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="tax_amount">Impuestos</Label>
-              <Input
-                id="tax_amount"
-                type="number"
-                step="0.01"
-                value={formData.tax_amount}
-                onChange={(e) => {
-                  const tax_amount = parseFloat(e.target.value) || 0;
-                  setFormData({ ...formData, tax_amount });
-                }}
-                onBlur={calculateTotal}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="total_amount">Total</Label>
-              <Input
-                id="total_amount"
-                type="number"
-                step="0.01"
-                value={formData.total_amount}
-                readOnly
-                className="bg-muted"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notas</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Notas adicionales..."
-              rows={3}
-            />
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Creando...' : 'Crear Factura'}
-            </Button>
-          </div>
-        </form>
+        <InvoiceForm 
+            onSubmit={handleFormSubmit}
+            onCancel={() => onOpenChange(false)}
+            loading={loading}
+        />
       </DialogContent>
     </Dialog>
   );
 }
-
-// SUGERENCIA: Este archivo es largo, conviene refactorizarlo pronto dividiéndolo en componentes más pequeños.
