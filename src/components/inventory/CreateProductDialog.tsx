@@ -221,7 +221,8 @@ export const CreateProductDialog = ({ children }: CreateProductDialogProps) => {
                           </SelectItem>
                         ))}
                         {(!categories || categories.length === 0) && !categoriesLoading && (
-                          <SelectItem value="" disabled>
+                          // Set a non-empty value string for Radix compatibility
+                          <SelectItem value="no_categories_available" disabled>
                             No hay categorías disponibles
                           </SelectItem>
                         )}
