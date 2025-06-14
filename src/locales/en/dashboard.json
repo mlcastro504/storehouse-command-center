@@ -2,6 +2,14 @@
 {
   "title": "Dashboard",
   "welcome": "Welcome back",
+  "description": "Welcome to the warehouse management system",
+  "lastAccess": "Last access",
+  "never": "Never",
+  "greetings": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening"
+  },
   "overview": "System Overview",
   "kpis": {
     "totalProducts": "Total Products",
@@ -18,5 +26,9 @@
     "pending": "Pending",
     "inProgress": "In Progress",
     "completed": "Completed"
+  },
+  "mockData": {
+    "notLoadedWarning": "⚠️ No mock data loaded. Go to Settings → System → Mock Data to generate test data.",
+    "active": "✅ Mock data active"
   }
 }

@@ -2,6 +2,14 @@
 {
   "title": "Panel Principal",
   "welcome": "Bienvenido de nuevo",
+  "description": "Bienvenido al sistema de gestión de almacenes",
+  "lastAccess": "Último acceso",
+  "never": "Nunca",
+  "greetings": {
+    "morning": "Buenos días",
+    "afternoon": "Buenas tardes",
+    "evening": "Buenas noches"
+  },
   "overview": "Resumen del Sistema",
   "kpis": {
     "totalProducts": "Total de Productos",
@@ -18,5 +26,9 @@
     "pending": "Pendiente",
     "inProgress": "En Progreso",
     "completed": "Completado"
+  },
+  "mockData": {
+    "notLoadedWarning": "⚠️ No hay datos mock cargados. Ve a Configuración → Sistema → Mock Data para generar datos de prueba.",
+    "active": "✅ Datos mock activos"
   }
 }

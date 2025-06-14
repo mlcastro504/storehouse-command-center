@@ -3,28 +3,30 @@ import { useAuth } from '@/hooks/useAuth'
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { BrowserStorage } from '@/lib/browserStorage'
+import { useTranslation } from 'react-i18next'
 
 export function DashboardHeader() {
   const { user } = useAuth()
+  const { t, i18n } = useTranslation('dashboard')
 
   if (!user) return null
 
   const getGreeting = () => {
     const hour = new Date().getHours()
-    if (hour < 12) return 'Buenos días'
-    if (hour < 18) return 'Buenas tardes'
-    return 'Buenas noches'
+    if (hour < 12) return t('greetings.morning')
+    if (hour < 18) return t('greetings.afternoon')
+    return t('greetings.evening')
   }
 
   const formatLastLogin = () => {
-    if (!user.lastLoginAt) return 'Nunca'
+    if (!user.lastLoginAt) return t('never')
     
     // Ensure we have a proper Date object
     const date = user.lastLoginAt instanceof Date 
       ? user.lastLoginAt 
       : new Date(user.lastLoginAt)
     
-    return date.toLocaleDateString('es-ES')
+    return date.toLocaleDateString(i18n.language)
   }
 
   // Check if we have mock data loaded
@@ -42,11 +44,11 @@ export function DashboardHeader() {
             {getGreeting()}, {user.firstName}
           </h1>
           <p className="text-muted-foreground">
-            Bienvenido al sistema de gestión de almacenes
+            {t('description')}
           </p>
           {!hasMockData() && (
             <p className="text-sm text-orange-600 mt-2">
-              ⚠️ No hay datos mock cargados. Ve a Configuración → Sistema → Mock Data para generar datos de prueba.
+              {t('mockData.notLoadedWarning')}
             </p>
           )}
         </div>
@@ -55,11 +57,11 @@ export function DashboardHeader() {
             {user.role.displayName}
           </Badge>
           <p className="text-sm text-muted-foreground">
-            Último acceso: {formatLastLogin()}
+            {t('lastAccess')}: {formatLastLogin()}
           </p>
           {hasMockData() && (
             <p className="text-xs text-green-600 mt-1">
-              ✅ Datos mock activos
+              {t('mockData.active')}
             </p>
           )}
         </div>
