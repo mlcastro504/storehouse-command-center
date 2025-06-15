@@ -25,7 +25,7 @@ export function SuppliersList({ onEdit, onDelete }: SuppliersListProps) {
     queryKey: ['suppliers'],
     queryFn: async () => {
       console.log('SuppliersList: Connecting to MongoDB...');
-      const db = await connectToDatabase();
+      const db = await connectToDatabase('mongodb://localhost/mockdb', 'mockdb');
       
       const suppliersData = await db.collection('suppliers')
         .find()
@@ -69,9 +69,10 @@ export function SuppliersList({ onEdit, onDelete }: SuppliersListProps) {
   }
 
   if (error) {
+    console.error("Error loading suppliers:", error);
     return (
       <div className="flex justify-center items-center h-32">
-        <div className="text-destructive">Error al cargar proveedores</div>
+        <div className="text-destructive">Error al cargar proveedores. Revisa la consola para más detalles.</div>
       </div>
     );
   }
