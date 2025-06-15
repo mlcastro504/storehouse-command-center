@@ -141,8 +141,11 @@ export async function claimPallet(palletId: string, operatorId: string): Promise
 
     const suggestedLocation = await findOptimalLocation(pallet);
 
+    const taskId = `task_${Date.now()}`;
+
     const task: PutAwayTask = {
-      id: `task_${Date.now()}`,
+      id: taskId,
+      _id: taskId,
       task_number: `PA-${Date.now()}`,
       pallet_id: palletId,
       operator_id: operatorId,
