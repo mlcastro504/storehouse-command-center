@@ -17,6 +17,30 @@ export function getDbMode() {
   return mode;
 }
 
+// --- Helper for adding Auth token to API requests ---
+function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  // This assumes the token is stored in localStorage with the key 'token'.
+  // This is a common practice and should match how the useAuth() hook stores it after login.
+  return localStorage.getItem('token'); 
+}
+
+async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+    const token = getAuthToken();
+    const headers = new Headers(options.headers || {});
+    
+    if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    // Ensure content-type is set for POST/PUT if a body exists and header is not present
+    if (options.body && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+    }
+
+    return fetch(url, { ...options, headers });
+}
+
 // --- Importa ambas implementaciones al tope ---
 
 import * as mock from './mockMongoDB';
@@ -53,7 +77,7 @@ class RestApiCursor {
   async toArray(): Promise<any[]> {
     const queryString = this.queryParams.toString();
     const url = `${BACKEND_URL}/api/${this._collectionName}${queryString ? '?' + queryString : ''}`;
-    const res = await fetch(url);
+    const res = await fetchWithAuth(url);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: 'Failed to parse error response' }));
         throw new Error(errorData.error ?? `API error: ${res.statusText}`);
@@ -72,9 +96,8 @@ class RestApiDatabaseProxy {
       find: (query?: any) => new RestApiCursor(collectionName, query),
       
       insertOne: async (doc: any) => {
-        const res = await fetch(`${BACKEND_URL}/api/${collectionName}`, {
+        const res = await fetchWithAuth(`${BACKEND_URL}/api/${collectionName}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(doc),
         });
         const data = await res.json();
@@ -88,9 +111,8 @@ class RestApiDatabaseProxy {
         
         const payload = update.$set || update; // common case
 
-        const res = await fetch(`${BACKEND_URL}/api/${collectionName}/${id}`, {
+        const res = await fetchWithAuth(`${BACKEND_URL}/api/${collectionName}/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
         const data = await res.json();
@@ -102,7 +124,7 @@ class RestApiDatabaseProxy {
         const id = filter.id || filter._id;
         if (!id) throw new Error("Delete requires an 'id' or '_id' in the filter for REST API mode.");
 
-        const res = await fetch(`${BACKEND_URL}/api/${collectionName}/${id}`, {
+        const res = await fetchWithAuth(`${BACKEND_URL}/api/${collectionName}/${id}`, {
           method: 'DELETE',
         });
         if (res.status === 404) {
