@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Database, Play, CheckCircle, AlertTriangle, Trash2, RotateCcw } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { MockDataGenerator } from '@/lib/mockDataGenerator';
-import { BrowserStorage } from '@/lib/browserStorage';
+import { connectToDatabase } from '@/lib/mongodb';
 
 export function MockDataInitializer() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -24,27 +23,21 @@ export function MockDataInitializer() {
     const dataExists = await MockDataGenerator.hasExistingData();
     setHasData(dataExists);
     if (dataExists) {
-      const products = await BrowserStorage.find('products', {});
-      const pallets = await BrowserStorage.find('pallets', {});
-      const users = await BrowserStorage.find('users', {});
-      const locations = await BrowserStorage.find('locations', {});
-      const putaway_tasks = await BrowserStorage.find('putaway_tasks', {});
-      const stock_levels = await BrowserStorage.find('stock_levels', {});
-      const ecommerce_orders = await BrowserStorage.find('ecommerce_orders', {});
-      const invoices = await BrowserStorage.find('invoices', {});
-      const suppliers = await BrowserStorage.find('suppliers', {});
-
-      setTotalRecords(
-        products.length + 
-        pallets.length + 
-        users.length + 
-        locations.length + 
-        putaway_tasks.length +
-        stock_levels.length +
-        ecommerce_orders.length +
-        invoices.length +
-        suppliers.length
-      );
+      const db = await connectToDatabase('mongodb://localhost/mockdb', 'mockdb');
+      const collectionsToCount = [
+        'products', 'pallets', 'users', 'locations', 'putaway_tasks', 
+        'stock_levels', 'ecommerce_orders', 'invoices', 'suppliers'
+      ];
+      let total = 0;
+      for (const name of collectionsToCount) {
+        try {
+          const items = await db.collection(name).find({}).toArray();
+          total += items.length;
+        } catch (e) {
+            console.warn(`Could not count collection ${name}`, e);
+        }
+      }
+      setTotalRecords(total);
     } else {
       setTotalRecords(0);
     }
