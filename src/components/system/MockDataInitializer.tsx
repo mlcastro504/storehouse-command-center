@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,9 @@ export function MockDataInitializer() {
       const products = await BrowserStorage.find('products', {});
       const pallets = await BrowserStorage.find('pallets', {});
       const users = await BrowserStorage.find('users', {});
-      setTotalRecords(products.length + pallets.length + users.length);
+      const locations = await BrowserStorage.find('locations', {});
+      const tasks = await BrowserStorage.find('putaway_tasks', {});
+      setTotalRecords(products.length + pallets.length + users.length + locations.length + tasks.length);
     } else {
       setTotalRecords(0);
     }
