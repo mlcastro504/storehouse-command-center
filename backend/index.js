@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ObjectId } = require('mongodb');
@@ -57,6 +56,8 @@ app.post('/api/register', async (req, res) => {
       password: hashedPassword,
       firstName: firstName || '',
       lastName: lastName || '',
+      role: 'operator', // Default role
+      isActive: true, // Default status
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -93,6 +94,27 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Get current user profile
+app.get('/api/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.collection('users').findOne(
+      { _id: new ObjectId(req.user.userId) },
+      { projection: { password: 0 } } // Exclude password from result
+    );
+
+    if (!user) {
+      return res.status(404).json({ ok: false, error: 'User not found' });
+    }
+    
+    // Rename _id to id for frontend consistency
+    user.id = user._id;
+    delete user._id;
+
+    res.json({ ok: true, data: user });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
 
 // ========== AUTH MIDDLEWARE ==========
 const authenticateToken = (req, res, next) => {

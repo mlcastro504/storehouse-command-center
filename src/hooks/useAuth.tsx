@@ -1,6 +1,8 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Role } from '@/types/warehouse';
+import { getDbMode } from '@/lib/db/dbMode';
+import { BACKEND_URL } from '@/lib/db/config';
+import { fetchWithAuth } from '@/lib/db/apiAuth';
 
 interface AuthContextType {
   user: User | null;
@@ -131,73 +133,159 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Verificación de sesión mejorada con validación de seguridad
-    const savedUser = localStorage.getItem('warehouseOS_user');
-    const sessionExpiry = localStorage.getItem('warehouseOS_session_expiry');
-    
-    if (savedUser && sessionExpiry) {
-      const now = new Date().getTime();
-      const expiry = parseInt(sessionExpiry);
-      
-      if (now < expiry) {
-        try {
-          const parsedUser = JSON.parse(savedUser);
-          // Validar que el usuario sigue siendo válido
-          const validUser = mockUsers.find(u => u.id === parsedUser.id && u.isActive);
-          if (validUser) {
-            setUser(validUser);
-          } else {
-            // Limpiar sesión inválida
+    const restoreSession = async () => {
+      if (getDbMode() === 'api') {
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            const profileRes = await fetchWithAuth(`${BACKEND_URL}/api/profile`);
+            if (profileRes.ok) {
+              const profileData = await profileRes.json();
+              if (profileData.ok) {
+                const backendUser = profileData.data;
+                const roleObject = mockRoles.find(r => r.name === backendUser.role);
+                if (roleObject) {
+                  const frontendUser: User = {
+                    id: backendUser.id,
+                    email: backendUser.email,
+                    firstName: backendUser.firstName,
+                    lastName: backendUser.lastName,
+                    role: roleObject,
+                    isActive: backendUser.isActive,
+                    createdAt: new Date(backendUser.created_at),
+                    lastLoginAt: backendUser.updated_at ? new Date(backendUser.updated_at) : new Date(),
+                  };
+                  setUser(frontendUser);
+                } else {
+                  console.error(`Unknown role for saved user: ${backendUser.role}`);
+                  localStorage.removeItem('token');
+                }
+              } else {
+                localStorage.removeItem('token');
+              }
+            } else {
+              localStorage.removeItem('token');
+            }
+          } catch (error) {
+            console.error('Failed to restore API session:', error);
+            localStorage.removeItem('token');
+          }
+        }
+      } else {
+        // Mock session restoration
+        const savedUser = localStorage.getItem('warehouseOS_user');
+        const sessionExpiry = localStorage.getItem('warehouseOS_session_expiry');
+        if (savedUser && sessionExpiry) {
+          const now = new Date().getTime();
+          if (now < parseInt(sessionExpiry)) {
+            try {
+              const parsedUser = JSON.parse(savedUser);
+              const validUser = mockUsers.find(u => u.id === parsedUser.id && u.isActive);
+              if (validUser) setUser(validUser);
+            } catch (error) {
+              console.error('Error parsing saved user:', error);
+            }
+          }
+          if (now >= parseInt(sessionExpiry)) {
             localStorage.removeItem('warehouseOS_user');
             localStorage.removeItem('warehouseOS_session_expiry');
           }
-        } catch (error) {
-          console.error('Error parsing saved user:', error);
-          localStorage.removeItem('warehouseOS_user');
-          localStorage.removeItem('warehouseOS_session_expiry');
         }
-      } else {
-        // Sesión expirada
-        localStorage.removeItem('warehouseOS_user');
-        localStorage.removeItem('warehouseOS_session_expiry');
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    restoreSession();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     
-    try {
-      // Simulación de validación mejorada con rate limiting básico
-      const foundUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-      
-      if (foundUser && foundUser.isActive && password === 'password123') {
-        const updatedUser = { ...foundUser, lastLoginAt: new Date() };
-        setUser(updatedUser);
+    if (getDbMode() === 'api') {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
         
-        // Guardar con expiración de sesión (24 horas)
-        const sessionExpiry = new Date().getTime() + (24 * 60 * 60 * 1000);
-        localStorage.setItem('warehouseOS_user', JSON.stringify(updatedUser));
-        localStorage.setItem('warehouseOS_session_expiry', sessionExpiry.toString());
+        if (!res.ok || !data.ok) {
+          console.error('API Login failed:', data.error);
+          setIsLoading(false);
+          return false;
+        }
         
+        localStorage.setItem('token', data.token);
+        
+        const profileRes = await fetchWithAuth(`${BACKEND_URL}/api/profile`);
+        const profileData = await profileRes.json();
+        
+        if (!profileRes.ok || !profileData.ok) {
+          localStorage.removeItem('token');
+          setIsLoading(false);
+          return false;
+        }
+
+        const backendUser = profileData.data;
+        const roleObject = mockRoles.find(r => r.name === backendUser.role);
+
+        if (!roleObject) {
+          console.error(`Unknown role received from backend: ${backendUser.role}`);
+          localStorage.removeItem('token');
+          setIsLoading(false);
+          return false;
+        }
+
+        const frontendUser: User = {
+          id: backendUser.id,
+          email: backendUser.email,
+          firstName: backendUser.firstName,
+          lastName: backendUser.lastName,
+          role: roleObject,
+          isActive: backendUser.isActive,
+          createdAt: new Date(backendUser.created_at),
+          lastLoginAt: new Date(),
+        };
+        setUser(frontendUser);
         setIsLoading(false);
         return true;
+      } catch (error) {
+        console.error('Login error:', error);
+        setIsLoading(false);
+        return false;
       }
-      
-      setIsLoading(false);
-      return false;
-    } catch (error) {
-      console.error('Login error:', error);
-      setIsLoading(false);
-      return false;
+    } else {
+      // Mock login logic
+      try {
+        const foundUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (foundUser && foundUser.isActive && password === 'password123') {
+          const updatedUser = { ...foundUser, lastLoginAt: new Date() };
+          setUser(updatedUser);
+          const sessionExpiry = new Date().getTime() + (24 * 60 * 60 * 1000);
+          localStorage.setItem('warehouseOS_user', JSON.stringify(updatedUser));
+          localStorage.setItem('warehouseOS_session_expiry', sessionExpiry.toString());
+          setIsLoading(false);
+          return true;
+        }
+        setIsLoading(false);
+        return false;
+      } catch (error) {
+        console.error('Login error:', error);
+        setIsLoading(false);
+        return false;
+      }
     }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('warehouseOS_user');
-    localStorage.removeItem('warehouseOS_session_expiry');
+    if (getDbMode() === 'api') {
+      localStorage.removeItem('token');
+    } else {
+      localStorage.removeItem('warehouseOS_user');
+      localStorage.removeItem('warehouseOS_session_expiry');
+    }
   };
 
   const hasPermission = (action: string, resource?: string): boolean => {
