@@ -1,4 +1,3 @@
-
 // Tipos para el módulo de almacenaje (Put Away)
 
 import { Product, Location } from './inventory';
@@ -32,6 +31,7 @@ export interface Pallet {
 
 export interface PutAwayTask {
   id: string;
+  _id?: string;
   task_number: string;
   pallet_id: string;
   operator_id: string;
