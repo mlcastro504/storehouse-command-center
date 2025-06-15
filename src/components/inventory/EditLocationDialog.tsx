@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { useUpdateLocation, useWarehouses, useLocations } from "@/hooks/useInventory";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
+import { generateLocationConfirmationCode } from "@/lib/inventoryUtils";
 
 const locationSchema = z.object({
   code: z.string().min(1, "Código es requerido"),
@@ -38,9 +39,8 @@ const locationSchema = z.object({
   current_occupancy: z.string().min(1, "Ocupación actual es requerida"),
   is_active: z.boolean(),
   confirmation_code: z.string()
-    .min(4, "Debe tener entre 4 y 6 dígitos")
-    .max(6, "Debe tener entre 4 y 6 dígitos")
-    .regex(/^\d+$/, "Solo puede contener números"),
+    .length(6, "El código de confirmación debe tener 6 caracteres.")
+    .regex(/^[A-Z0-9]{6}$/, "Solo puede contener letras mayúsculas y números."),
 });
 
 type LocationFormData = z.infer<typeof locationSchema>;
@@ -93,10 +93,7 @@ export const EditLocationDialog = ({
 
   const generateNewConfirmationCode = () => {
     const existingCodes = allLocations?.map(l => l.confirmation_code).filter(Boolean) || [];
-    let newCode;
-    do {
-      newCode = String(Math.floor(100000 + Math.random() * 900000));
-    } while (existingCodes.includes(newCode));
+    const newCode = generateLocationConfirmationCode(existingCodes);
     form.setValue("confirmation_code", newCode, { shouldValidate: true });
   };
 

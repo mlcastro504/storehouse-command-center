@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,6 +28,7 @@ import {
 } from '@/components/ui/select';
 import { useCreateLocation, useWarehouses } from '@/hooks/useInventory';
 import { Plus } from 'lucide-react';
+import { generateLocationConfirmationCode } from '@/lib/inventoryUtils';
 
 const locationSchema = z.object({
   name: z.string().min(1, 'Nombre es requerido'),
@@ -52,14 +52,6 @@ export const CreateLocationDialog = () => {
   const [allLocations, setAllLocations] = React.useState<any[]>([]);
   const [nameError, setNameError] = React.useState<string | null>(null);
 
-  const generateConfirmationCode = (existingCodes: string[]): string => {
-    let code;
-    do {
-      code = String(Math.floor(100000 + Math.random() * 900000));
-    } while (existingCodes.includes(code));
-    return code;
-  };
-
   React.useEffect(() => {
     if (open) {
       (async () => {
@@ -74,7 +66,7 @@ export const CreateLocationDialog = () => {
         setAutoCode(`LOC-${String(maxNumber + 1).padStart(6, '0')}`);
 
         const existingConfirmationCodes = locations.map((l: any) => l.confirmation_code).filter(Boolean);
-        setConfirmationCode(generateConfirmationCode(existingConfirmationCodes));
+        setConfirmationCode(generateLocationConfirmationCode(existingConfirmationCodes));
       })();
       setNameError(null);
     } else {
