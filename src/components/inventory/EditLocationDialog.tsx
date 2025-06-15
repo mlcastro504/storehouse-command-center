@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,8 +40,8 @@ const locationSchema = z.object({
   current_occupancy: z.string().min(1, "Ocupación actual es requerida"),
   is_active: z.boolean(),
   confirmation_code: z.string()
-    .length(6, "El código de confirmación debe tener 6 caracteres.")
-    .regex(/^[A-Z0-9]{6}$/, "Solo puede contener letras mayúsculas y números."),
+    .length(3, "El código de confirmación debe tener 3 caracteres.")
+    .regex(/^[0-9][A-Z][0-9]$/, "El formato debe ser Número-Letra-Número (ej. 3R8)."),
 });
 
 type LocationFormData = z.infer<typeof locationSchema>;
