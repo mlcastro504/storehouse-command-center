@@ -44,13 +44,30 @@ export async function populateTaskDetails(task: any): Promise<PutAwayTask> {
 
 export async function getPendingPallets(): Promise<Pallet[]> {
   try {
+    console.log("PUTAWAY_DEBUG: Fetching all pallets from BrowserStorage in getPendingPallets...");
     const allPallets = await BrowserStorage.find('pallets', {});
+    console.log(`PUTAWAY_DEBUG: Found ${allPallets.length} total pallets.`);
+    if (allPallets.length > 0) {
+      console.log('PUTAWAY_DEBUG: All pallets data (id and status):', JSON.stringify(allPallets.map(p => ({id: p.id, status: p.status})), null, 2));
+    }
+
     const pallets = allPallets.filter((p: any) => p.status === 'waiting_putaway');
+    console.log(`PUTAWAY_DEBUG: Found ${pallets.length} pallets after filtering for status 'waiting_putaway'.`);
+
+    if (pallets.length === 0 && allPallets.length > 0) {
+        console.log("PUTAWAY_DEBUG: No pending pallets found. Listing statuses of all pallets:");
+        allPallets.forEach((p: any) => console.log(` - Pallet ${p.pallet_number || p.id}: status=${p.status}`));
+    }
     
     return Promise.all(pallets.map(async (pallet) => {
       const populatedPallet = { ...pallet, id: pallet._id || pallet.id };
       if (pallet.product_id) {
-          populatedPallet.product = await BrowserStorage.findOne('products', { id: pallet.product_id });
+          const product = await BrowserStorage.findOne('products', { id: pallet.product_id });
+          if (product) {
+            populatedPallet.product = product;
+          } else {
+            console.warn(`PUTAWAY_DEBUG: Product with id ${pallet.product_id} not found for pallet ${pallet.id}`);
+          }
       }
       return populatedPallet;
     }));
@@ -92,8 +109,12 @@ export async function getMetrics(): Promise<PutAwayMetrics> {
     const today = new Date().toISOString().split('T')[0];
     
     const todayTasks = await BrowserStorage.find('putaway_tasks', {});
+    
+    console.log("PUTAWAY_DEBUG: Fetching pallets for metrics...");
     const allPallets = await BrowserStorage.find('pallets', {});
     const pendingPallets = allPallets.filter((p: any) => p.status === 'waiting_putaway');
+    console.log(`PUTAWAY_DEBUG: Found ${pendingPallets.length} pending pallets for metrics.`);
+
     const activeTasks = await BrowserStorage.find('putaway_tasks', { status: 'in_progress' });
 
     const completedToday = todayTasks.filter(task => 
