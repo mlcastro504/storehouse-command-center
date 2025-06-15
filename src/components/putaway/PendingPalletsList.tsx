@@ -15,6 +15,12 @@ export const PendingPalletsList = () => {
   const { data: pallets, isLoading, error } = usePendingPallets();
   const claimPallet = useClaimPallet();
 
+  console.log('PUTAWAY_DEBUG_UI: Rendering PendingPalletsList. Data received:', {
+    isLoading,
+    error: error ? error.message : null,
+    pallets,
+  });
+
   const handleClaimPallet = (palletId: string) => {
     claimPallet.mutate(palletId);
   };

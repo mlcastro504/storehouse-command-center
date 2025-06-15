@@ -40,6 +40,7 @@ export class MockDataGenerator {
 
   static async generateAllMockData(): Promise<boolean> {
     try {
+      console.log("PUTAWAY_DEBUG_PLAN: >>> Starting generateAllMockData...");
       const db = await getDb();
       const now = new Date();
       const yesterday = new Date(Date.now() - 864e5);
@@ -287,7 +288,7 @@ export class MockDataGenerator {
         }
       }
 
-      console.log('Comprehensive and interconnected mock data generated successfully.');
+      console.log('PUTAWAY_DEBUG_PLAN: <<< Finished generateAllMockData successfully.');
       return true;
     } catch (error) {
       console.error('Error generating mock data:', error);

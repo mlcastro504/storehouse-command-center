@@ -1,4 +1,3 @@
-
 import { BrowserStorage } from '@/lib/browserStorage';
 import { Pallet, PutAwayTask, PutAwayRule, OperatorPerformance, PutAwayMetrics } from '@/types/putaway';
 
@@ -44,35 +43,43 @@ export async function populateTaskDetails(task: any): Promise<PutAwayTask> {
 
 export async function getPendingPallets(): Promise<Pallet[]> {
   try {
-    console.log("PUTAWAY_DEBUG: Fetching all pallets from BrowserStorage in getPendingPallets...");
+    console.log("PUTAWAY_DEBUG_PLAN: 1. Starting getPendingPallets...");
     const allPallets = await BrowserStorage.find('pallets', {});
-    console.log(`PUTAWAY_DEBUG: Found ${allPallets.length} total pallets.`);
-    if (allPallets.length > 0) {
-      console.log('PUTAWAY_DEBUG: All pallets data (id and status):', JSON.stringify(allPallets.map(p => ({id: p.id, status: p.status})), null, 2));
+    console.log(`PUTAWAY_DEBUG_PLAN: 2. Found ${allPallets.length} total pallets in BrowserStorage.`);
+
+    if (allPallets.length === 0) {
+      console.warn("PUTAWAY_DEBUG_PLAN: No pallets found in storage. Mock data might be missing. Please regenerate it.");
+      return [];
     }
 
+    const allPalletStatuses = allPallets.map((p: any) => ({ id: p.id, status: p.status }));
+    console.log("PUTAWAY_DEBUG_PLAN: 3. Status of all pallets:", JSON.stringify(allPalletStatuses, null, 2));
+    
     const pallets = allPallets.filter((p: any) => p.status === 'waiting_putaway');
-    console.log(`PUTAWAY_DEBUG: Found ${pallets.length} pallets after filtering for status 'waiting_putaway'.`);
+    console.log(`PUTAWAY_DEBUG_PLAN: 4. Filtered down to ${pallets.length} pallets with status 'waiting_putaway'.`);
 
     if (pallets.length === 0 && allPallets.length > 0) {
-        console.log("PUTAWAY_DEBUG: No pending pallets found. Listing statuses of all pallets:");
-        allPallets.forEach((p: any) => console.log(` - Pallet ${p.pallet_number || p.id}: status=${p.status}`));
+        console.warn("PUTAWAY_DEBUG_PLAN: No pallets with 'waiting_putaway' status found. Check mock data generation.");
+        return [];
     }
     
-    return Promise.all(pallets.map(async (pallet) => {
+    const populatedPallets = await Promise.all(pallets.map(async (pallet) => {
       const populatedPallet = { ...pallet, id: pallet._id || pallet.id };
       if (pallet.product_id) {
           const product = await BrowserStorage.findOne('products', { id: pallet.product_id });
           if (product) {
             populatedPallet.product = product;
           } else {
-            console.warn(`PUTAWAY_DEBUG: Product with id ${pallet.product_id} not found for pallet ${pallet.id}`);
+            console.warn(`PUTAWAY_DEBUG_PLAN: Product with id ${pallet.product_id} not found for pallet ${pallet.id}`);
           }
       }
       return populatedPallet;
     }));
+    
+    console.log(`PUTAWAY_DEBUG_PLAN: 5. Successfully populated and returning ${populatedPallets.length} pending pallets.`);
+    return populatedPallets;
   } catch (error) {
-    console.error('Error getting pending pallets:', error);
+    console.error('PUTAWAY_DEBUG_PLAN: Critical error in getPendingPallets:', error);
     return [];
   }
 }
