@@ -255,8 +255,6 @@ export class InventoryService {
         ...locationData,
         id,
         _id: id,
-        confirmation_code: `CODE${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-        occupancy_status: 'available',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         user_id: 'current_user_id' // TODO: Get from auth context
