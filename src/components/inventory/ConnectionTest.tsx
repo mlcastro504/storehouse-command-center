@@ -1,10 +1,8 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { InventoryService } from '@/services/inventoryService';
-import { getDatabaseStats } from '@/lib/mongodb';
+import { getDatabaseStats, testConnection as testDbConnection } from '@/lib/mongodb';
 import { toast } from 'sonner';
 import { Database, CheckCircle, XCircle, Activity, HardDrive } from 'lucide-react';
 
@@ -22,7 +20,7 @@ export const ConnectionTest = () => {
       console.log('Starting comprehensive connection test...');
       
       // Test básico de conexión
-      const result = await InventoryService.testConnection();
+      const result = await testDbConnection();
       
       if (result.success) {
         // Obtener estadísticas de la base de datos
@@ -30,7 +28,7 @@ export const ConnectionTest = () => {
         setDbStats(stats);
         
         setConnectionStatus('success');
-        toast.success('Conexión a MongoDB exitosa con API Keys');
+        toast.success('Conexión a MongoDB exitosa');
         console.log('Connection test result:', result);
         console.log('Database stats:', stats);
       } else {

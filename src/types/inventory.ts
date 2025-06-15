@@ -1,9 +1,8 @@
-
 // Tipos para el módulo de inventario
 
 export interface Product {
   _id?: string;
-  id?: string;
+  id: string;
   sku: string;
   name: string;
   description?: string;
@@ -38,7 +37,7 @@ export interface Product {
 
 export interface Category {
   _id?: string;
-  id?: string;
+  id: string;
   name: string;
   description?: string;
   parent_id?: string;
@@ -51,7 +50,7 @@ export interface Category {
 
 export interface StockLevel {
   _id?: string;
-  id?: string;
+  id: string;
   product_id: string;
   location_id: string;
   quantity_available: number;
@@ -65,7 +64,7 @@ export interface StockLevel {
 
 export interface Location {
   _id?: string;
-  id?: string;
+  id: string;
   code: string;
   name: string;
   type: 'warehouse' | 'zone' | 'aisle' | 'rack' | 'shelf' | 'bin' | 'receiving' | 'packing' | 'ground_level' | 'cold_zone' | 'dry_zone';
@@ -99,7 +98,7 @@ export interface Location {
 
 export interface Warehouse {
   _id?: string;
-  id?: string;
+  id: string;
   code: string;
   name: string;
   address: string;
@@ -119,7 +118,7 @@ export interface Warehouse {
 
 export interface StockMovement {
   _id?: string;
-  id?: string;
+  id: string;
   product_id: string;
   from_location_id?: string;
   to_location_id: string;
@@ -145,7 +144,7 @@ export interface StockMovement {
 
 export interface CycleCount {
   _id?: string;
-  id?: string;
+  id: string;
   location_id: string;
   product_id?: string;
   scheduled_date: string;
@@ -162,7 +161,7 @@ export interface CycleCount {
 
 export interface CycleCountLine {
   _id?: string;
-  id?: string;
+  id: string;
   cycle_count_id: string;
   product_id: string;
   location_id: string;
@@ -179,7 +178,7 @@ export interface CycleCountLine {
 
 export interface Supplier {
   _id?: string;
-  id?: string;
+  id: string;
   code: string;
   name: string;
   contact_person?: string;
@@ -201,7 +200,7 @@ export interface Supplier {
 
 export interface ProductSupplier {
   _id?: string;
-  id?: string;
+  id: string;
   product_id: string;
   supplier_id: string;
   supplier_sku: string;
