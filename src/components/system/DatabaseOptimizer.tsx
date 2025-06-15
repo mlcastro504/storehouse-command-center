@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -151,7 +152,10 @@ export function DatabaseOptimizer() {
           const docCount = sampleDocs.length;
           
           // Get existing indexes - use our mock MongoDB service pattern
-          const existingIndexes = await collection.listIndexes();
+          const existingIndexesResult = await collection.listIndexes();
+          const existingIndexes: any[] = Array.isArray(existingIndexesResult)
+            ? existingIndexesResult
+            : await (existingIndexesResult as { toArray: () => Promise<any[]> }).toArray();
           
           // Calculate missing indexes
           const expected = expectedIndexes[collectionName as keyof typeof expectedIndexes] || [];
