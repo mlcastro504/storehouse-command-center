@@ -188,7 +188,7 @@ export default function Chat() {
                       <Settings className="h-4 w-4" />
                       Configuración
                     </CardTitle>
-                  </Header>
+                  </CardHeader>
                   <CardContent className="p-4 space-y-3">
                     <Button variant="outline" className="w-full justify-start">
                       Notificaciones
@@ -239,3 +239,4 @@ export default function Chat() {
     </MainLayout>
   );
 }
+
