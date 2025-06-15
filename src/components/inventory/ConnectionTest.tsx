@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,12 +34,12 @@ export const ConnectionTest = () => {
         console.log('Database stats:', stats);
       } else {
         setConnectionStatus('error');
-        toast.error(`Error de conexión: ${result.error}`);
-        console.error('Connection test failed:', result.error);
+        toast.error(`Error de conexión: ${result.message}`);
+        console.error('Connection test failed:', result.message);
       }
-    } catch (error) {
+    } catch (error: any) {
       setConnectionStatus('error');
-      toast.error('Error al probar la conexión');
+      toast.error(`Error al probar la conexión: ${error.message}`);
       console.error('Connection test error:', error);
     } finally {
       setTesting(false);
