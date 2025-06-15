@@ -10,6 +10,7 @@ import {
   InventoryStats,
   Supplier
 } from '@/types/inventory';
+import { generateLocationConfirmationCode } from '@/lib/inventoryUtils';
 
 // Helper to connect to the database consistently
 const getDb = () => connectToDatabase('mongodb://localhost/mockdb', 'mockdb');
@@ -250,11 +251,19 @@ export class InventoryService {
   static async createLocation(locationData: Partial<Location>): Promise<Location | null> {
     try {
       const db = await getDb();
+
+      const allLocations = await db.collection('locations').find({}).project({ confirmation_code: 1 }).toArray();
+      const existingCodes = allLocations.map((l: any) => l.confirmation_code).filter(Boolean);
+      
       const id = `loc_${Date.now()}`;
       const newLocationDoc = {
         ...locationData,
         id,
         _id: id,
+        confirmation_code: generateLocationConfirmationCode(existingCodes),
+        occupancy_status: 'available',
+        current_occupancy: 0,
+        is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         user_id: 'current_user_id' // TODO: Get from auth context
