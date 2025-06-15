@@ -28,8 +28,23 @@ export function MockDataInitializer() {
       const pallets = await BrowserStorage.find('pallets', {});
       const users = await BrowserStorage.find('users', {});
       const locations = await BrowserStorage.find('locations', {});
-      const tasks = await BrowserStorage.find('putaway_tasks', {});
-      setTotalRecords(products.length + pallets.length + users.length + locations.length + tasks.length);
+      const putaway_tasks = await BrowserStorage.find('putaway_tasks', {});
+      const stock_levels = await BrowserStorage.find('stock_levels', {});
+      const ecommerce_orders = await BrowserStorage.find('ecommerce_orders', {});
+      const invoices = await BrowserStorage.find('invoices', {});
+      const suppliers = await BrowserStorage.find('suppliers', {});
+
+      setTotalRecords(
+        products.length + 
+        pallets.length + 
+        users.length + 
+        locations.length + 
+        putaway_tasks.length +
+        stock_levels.length +
+        ecommerce_orders.length +
+        invoices.length +
+        suppliers.length
+      );
     } else {
       setTotalRecords(0);
     }
@@ -145,7 +160,7 @@ export function MockDataInitializer() {
             <Alert>
               <CheckCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Mock data active:</strong> {totalRecords} total records found across key collections.
+                <strong>Mock data active:</strong> {totalRecords} total records found across the system.
               </AlertDescription>
             </Alert>
           ) : (
