@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { InventoryService } from '@/services/inventoryService';
 import { toast } from 'sonner';
+import { Supplier } from '@/types/inventory';
 
 export const useProducts = () => {
   return useQuery({
@@ -214,6 +215,39 @@ export const useCreateSupplier = () => {
     onError: (error) => {
       console.error('Error creating supplier:', error);
       toast.error('Error al crear el proveedor');
+    },
+  });
+};
+
+export const useUpdateSupplier = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Supplier> }) =>
+      InventoryService.updateSupplier(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      toast.success('Proveedor actualizado exitosamente');
+    },
+    onError: (error) => {
+      console.error('Error updating supplier:', error);
+      toast.error('Error al actualizar el proveedor');
+    },
+  });
+};
+
+export const useDeleteSupplier = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => InventoryService.deleteSupplier(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      toast.success('Proveedor eliminado exitosamente');
+    },
+    onError: (error) => {
+      console.error('Error deleting supplier:', error);
+      toast.error('Error al eliminar el proveedor');
     },
   });
 };

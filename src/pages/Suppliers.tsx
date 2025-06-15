@@ -7,7 +7,7 @@ import { Plus, Truck } from 'lucide-react';
 import { SuppliersList } from '@/components/suppliers/SuppliersList';
 import { CreateSupplierDialog } from '@/components/suppliers/CreateSupplierDialog';
 import { DeleteSupplierDialog } from '@/components/suppliers/DeleteSupplierDialog';
-import { Supplier } from '@/types/suppliers';
+import { Supplier } from '@/types/inventory';
 
 export default function Suppliers() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);

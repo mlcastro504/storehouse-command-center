@@ -1,8 +1,7 @@
 
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { connectToDatabase } from '@/lib/mongodb';
-import { Supplier } from '@/types/suppliers';
+import { useSuppliers } from '@/hooks/useInventory';
+import { Supplier } from '@/types/inventory';
 import {
   Table,
   TableBody,
@@ -21,44 +20,7 @@ interface SuppliersListProps {
 }
 
 export function SuppliersList({ onEdit, onDelete }: SuppliersListProps) {
-  const { data: suppliers, isLoading, error } = useQuery({
-    queryKey: ['suppliers'],
-    queryFn: async () => {
-      console.log('SuppliersList: Connecting to MongoDB...');
-      const db = await connectToDatabase('mongodb://localhost/mockdb', 'mockdb');
-      
-      const suppliersData = await db.collection('suppliers')
-        .find()
-        .sort({ name: 1 })
-        .toArray();
-
-      console.log('SuppliersList: Fetched suppliers from MongoDB:', suppliersData.length);
-      
-      // Convert MongoDB documents to Supplier interfaces
-      const suppliers = suppliersData.map(doc => ({
-        id: doc._id.toString(),
-        code: doc.code,
-        name: doc.name,
-        contact_person: doc.contact_person,
-        email: doc.email,
-        phone: doc.phone,
-        address: doc.address,
-        city: doc.city,
-        state: doc.state,
-        postal_code: doc.postal_code,
-        country: doc.country,
-        tax_id: doc.tax_id,
-        payment_terms: doc.payment_terms,
-        lead_time_days: doc.lead_time_days,
-        notes: doc.notes,
-        is_active: doc.is_active,
-        created_at: doc.created_at,
-        updated_at: doc.updated_at
-      })) as Supplier[];
-      
-      return suppliers;
-    }
-  });
+  const { data: suppliers, isLoading, error } = useSuppliers();
 
   if (isLoading) {
     return (

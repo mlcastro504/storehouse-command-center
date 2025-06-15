@@ -1,4 +1,3 @@
-
 import { connectToDatabase } from '@/lib/mongodb';
 import {
   Product, 
@@ -8,9 +7,9 @@ import {
   StockLevel, 
   StockMovement, 
   CycleCount,
-  InventoryStats
+  InventoryStats,
+  Supplier
 } from '@/types/inventory';
-import { Supplier } from '@/types/suppliers';
 
 // Helper to connect to the database consistently
 const getDb = () => connectToDatabase('mongodb://localhost/mockdb', 'mockdb');
@@ -457,6 +456,29 @@ export class InventoryService {
     } catch (error) {
       console.error('Error creating supplier:', error);
       return null;
+    }
+  }
+
+  static async updateSupplier(id: string, updates: Partial<Supplier>): Promise<Supplier | null> {
+    try {
+      const db = await getDb();
+      await db.collection('suppliers').updateOne({ id: id }, { $set: { ...updates, updated_at: new Date().toISOString() } });
+      const supplier = await db.collection('suppliers').findOne({ id: id });
+      return mapDoc<Supplier>(supplier);
+    } catch (error) {
+      console.error('Error updating supplier:', error);
+      return null;
+    }
+  }
+
+  static async deleteSupplier(id: string): Promise<boolean> {
+    try {
+      const db = await getDb();
+      const result = await db.collection('suppliers').deleteOne({ id: id });
+      return result.deletedCount > 0;
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
+      return false;
     }
   }
 
