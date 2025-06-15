@@ -4,9 +4,28 @@ import { Pallet, PutAwayTask, PutAwayRule } from '@/types/putaway';
 import { Location } from '@/types/inventory';
 import { getPutAwayRules } from './putAwayQueryService';
 
+async function cleanUpExpiredReservations() {
+  const now = new Date().toISOString();
+  const reservedLocations = await BrowserStorage.find('locations', { occupancy_status: 'reserved' });
+  
+  for (const location of reservedLocations) {
+    if (location.reserved_until && location.reserved_until < now) {
+      await BrowserStorage.updateOne('locations', { id: location.id }, {
+        $set: {
+          occupancy_status: 'available',
+          reserved_for_task_id: null,
+          reserved_until: null,
+        }
+      });
+      console.log(`Reservation for location ${location.code} expired and has been released.`);
+    }
+  }
+}
+
 async function findOptimalLocation(pallet: Pallet): Promise<Location> {
   try {
-    // Buscar ubicaciones disponibles
+    await cleanUpExpiredReservations();
+
     const availableLocations = await BrowserStorage.find('locations', {
       occupancy_status: 'available',
       is_active: true
@@ -16,53 +35,112 @@ async function findOptimalLocation(pallet: Pallet): Promise<Location> {
       throw new Error('No hay ubicaciones disponibles');
     }
 
-    // Aplicar reglas de Put Away
     const rules = await getPutAwayRules();
-    let preferredLocations = availableLocations;
 
-    // Aplicar filtros básicos (peso, temperatura, etc.)
-    if (pallet.weight && pallet.weight > 500) {
-      preferredLocations = preferredLocations.filter(loc => 
-        loc.type === 'bin' && (!loc.restrictions?.max_weight || loc.restrictions.max_weight >= pallet.weight!)
-      );
+    const scoredLocations = availableLocations.map(location => {
+      let score = 0;
+
+      // Rule-based scoring
+      for (const rule of rules) {
+        if (!rule.is_active) continue;
+
+        const conditionsMet = rule.conditions.every(condition => {
+          switch (condition.field) {
+            case 'weight':
+              if (pallet.weight) {
+                if (condition.operator === 'greater_than') return pallet.weight > condition.value;
+                if (condition.operator === 'less_than') return pallet.weight < condition.value;
+              }
+              return false;
+            case 'special_requirement':
+              if (pallet.special_requirements) {
+                if (condition.operator === 'equals') return pallet.special_requirements.includes(condition.value);
+                if (condition.operator === 'contains') return pallet.special_requirements.includes(condition.value);
+              }
+              return false;
+            case 'product_category':
+              if (pallet.product_category) {
+                if (condition.operator === 'equals') return pallet.product_category === condition.value;
+              }
+              return false;
+            default:
+              return false;
+          }
+        });
+
+        if (conditionsMet) {
+          if (location.type === rule.location_preference) {
+            score += rule.priority * 10;
+          }
+        }
+      }
+
+      // Constraint-based scoring (penalties for violations)
+      if (location.restrictions) {
+        if (location.restrictions.max_weight && pallet.weight && pallet.weight > location.restrictions.max_weight) {
+          return { location, score: -Infinity }; // Invalid location
+        }
+        if (location.restrictions.temperature_controlled && !pallet.special_requirements?.includes('cold_storage')) {
+          score -= 20;
+        }
+      }
+      
+      // Heuristic-based scoring
+      if (pallet.weight && pallet.weight > 500 && location.type === 'ground_level') {
+          score += 50;
+      }
+      if (pallet.special_requirements?.includes('cold_storage') && location.type === 'cold_zone') {
+          score += 100;
+      }
+
+      // Prefer non-specialized locations for general products
+      if (!pallet.special_requirements?.length && (location.type === 'cold_zone' || location.type === 'dry_zone' || location.type === 'ground_level')) {
+          score -= 10;
+      } else if (location.type === 'shelf') {
+          score += 5;
+      }
+
+      return { location, score };
+    });
+
+    const sortedLocations = scoredLocations
+      .filter(item => item.score > -Infinity)
+      .sort((a, b) => b.score - a.score);
+    
+    if (sortedLocations.length === 0) {
+      const fallbackLocation = availableLocations[0];
+       if (!fallbackLocation) {
+        throw new Error('No hay ubicaciones disponibles.');
+      }
+      return { ...fallbackLocation, id: fallbackLocation._id || fallbackLocation.id };
     }
+    
+    const selectedLocation = sortedLocations[0].location;
 
-    // Si no hay ubicaciones después de filtros, usar cualquier disponible
-    if (preferredLocations.length === 0) {
-      preferredLocations = availableLocations;
-    }
-
-    // Seleccionar la primera ubicación disponible (lógica simple)
-    const selectedLocation = preferredLocations[0];
     return {
       ...selectedLocation,
       id: selectedLocation._id || selectedLocation.id,
     };
   } catch (error) {
     console.error('Error finding optimal location:', error);
-    throw error;
+    const availableLocations = await BrowserStorage.find('locations', { occupancy_status: 'available', is_active: true });
+    if (availableLocations && availableLocations.length > 0) {
+        const fallbackLocation = availableLocations[0];
+        return { ...fallbackLocation, id: fallbackLocation._id || fallbackLocation.id };
+    }
+    throw new Error('No available locations found.');
   }
 }
 
 export async function claimPallet(palletId: string, operatorId: string): Promise<PutAwayTask> {
   try {
-    // Verificar que el palet esté disponible
     const pallet = await BrowserStorage.findOne('pallets', { id: palletId, status: 'waiting_putaway' });
     if (!pallet) {
       throw new Error('Palet no disponible o ya asignado');
     }
 
-    // Actualizar estado del palet
-    await BrowserStorage.updateOne('pallets', { id: palletId }, {
-      status: 'in_process',
-      assigned_to: operatorId,
-      assigned_at: new Date().toISOString()
-    });
-
-    // Buscar ubicación sugerida
     const suggestedLocation = await findOptimalLocation(pallet);
 
-    // Crear tarea de Put Away
     const task: PutAwayTask = {
       id: `task_${Date.now()}`,
       task_number: `PA-${Date.now()}`,
@@ -75,6 +153,25 @@ export async function claimPallet(palletId: string, operatorId: string): Promise
       quantity_to_putaway: pallet.quantity || 1,
       created_date: new Date().toISOString(),
     };
+    
+    const reservationTime = 10 * 60 * 1000; // 10 minutes
+    const reservedUntil = new Date(Date.now() + reservationTime).toISOString();
+    
+    await BrowserStorage.updateOne('locations', { id: suggestedLocation.id }, {
+      $set: {
+        occupancy_status: 'reserved',
+        reserved_for_task_id: task.id,
+        reserved_until: reservedUntil,
+      }
+    });
+
+    await BrowserStorage.updateOne('pallets', { id: palletId }, {
+      $set: {
+        status: 'in_process',
+        assigned_to: operatorId,
+        assigned_at: new Date().toISOString()
+      }
+    });
 
     await BrowserStorage.insertOne('putaway_tasks', task);
     return task;
@@ -86,48 +183,59 @@ export async function claimPallet(palletId: string, operatorId: string): Promise
 
 export async function completeTask(taskId: string, locationId: string, confirmationCode: string): Promise<boolean> {
   try {
-    // Verificar código de confirmación
     const location = await BrowserStorage.findOne('locations', { id: locationId });
     if (!location || location.confirmation_code !== confirmationCode) {
       throw new Error('Código de confirmación incorrecto');
     }
 
-    // Obtener tarea
     const task = await BrowserStorage.findOne('putaway_tasks', { id: taskId });
-    if (!task) {
-      throw new Error('Tarea no encontrada');
-    }
+    if (!task) throw new Error('Tarea no encontrada');
 
-    // Completar tarea
     const completedAt = new Date().toISOString();
     const startedAt = new Date(task.started_at);
     const duration = Math.round((new Date(completedAt).getTime() - startedAt.getTime()) / 60000);
 
     await BrowserStorage.updateOne('putaway_tasks', { id: taskId }, {
-      status: 'completed',
-      actual_location_id: locationId,
-      completed_at: completedAt,
-      confirmation_code_entered: confirmationCode,
-      duration_minutes: duration
+      $set: {
+        status: 'completed',
+        actual_location_id: locationId,
+        completed_at: completedAt,
+        confirmation_code_entered: confirmationCode,
+        duration_minutes: duration
+      }
     });
 
-    // Actualizar palet
     if (task.pallet_id) {
       await BrowserStorage.updateOne('pallets', { id: task.pallet_id }, {
-        status: 'stored',
-        location_id: locationId,
-        completed_at: completedAt
+        $set: {
+          status: 'stored',
+          location_id: locationId,
+          completed_at: completedAt
+        }
       });
     }
 
-    // Actualizar ubicación
     await BrowserStorage.updateOne('locations', { id: locationId }, {
-      occupancy_status: 'occupied',
-      current_occupancy: (location.current_occupancy || 0) + 1,
-      last_verified_at: new Date()
+      $set: {
+        occupancy_status: 'occupied',
+        current_occupancy: (location.current_occupancy || 0) + 1,
+        last_verified_at: new Date().toISOString(),
+        reserved_for_task_id: null,
+        reserved_until: null,
+      }
     });
 
-    // Crear movimiento de stock
+    // If the suggested location was different, release its reservation
+    if (task.suggested_location_id && task.suggested_location_id !== locationId) {
+        await BrowserStorage.updateOne('locations', { id: task.suggested_location_id, reserved_for_task_id: taskId }, {
+            $set: {
+                occupancy_status: 'available',
+                reserved_for_task_id: null,
+                reserved_until: null,
+            }
+        });
+    }
+
     const pallet = await BrowserStorage.findOne('pallets', { id: task.pallet_id });
     if (pallet) {
       const stockMovement = {
@@ -140,7 +248,7 @@ export async function completeTask(taskId: string, locationId: string, confirmat
         reference_id: taskId,
         reason: 'Put Away completado',
         performed_by: task.operator_id,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         status: 'completed',
         user_id: 'system',
         pallet_id: task.pallet_id
@@ -158,23 +266,36 @@ export async function completeTask(taskId: string, locationId: string, confirmat
 export async function cancelTask(taskId: string, reason: string): Promise<void> {
   try {
     const task = await BrowserStorage.findOne('putaway_tasks', { id: taskId });
-    if (!task) {
-      throw new Error('Tarea no encontrada');
-    }
+    if (!task) throw new Error('Tarea no encontrada');
 
-    // Cancelar tarea
     await BrowserStorage.updateOne('putaway_tasks', { id: taskId }, {
-      status: 'cancelled',
-      notes: reason,
-      completed_at: new Date().toISOString()
+      $set: {
+        status: 'cancelled',
+        notes: reason,
+        completed_at: new Date().toISOString()
+      }
     });
 
-    // Liberar palet
     await BrowserStorage.updateOne('pallets', { id: task.pallet_id }, {
-      status: 'waiting_putaway',
-      assigned_to: null,
-      assigned_at: null
+      $set: {
+        status: 'waiting_putaway',
+        assigned_to: null,
+        assigned_at: null
+      }
     });
+
+    if (task.suggested_location_id) {
+        const location = await BrowserStorage.findOne('locations', { id: task.suggested_location_id });
+        if (location && location.reserved_for_task_id === taskId) {
+            await BrowserStorage.updateOne('locations', { id: task.suggested_location_id }, {
+                $set: {
+                    occupancy_status: 'available',
+                    reserved_for_task_id: null,
+                    reserved_until: null,
+                }
+            });
+        }
+    }
   } catch (error) {
     console.error('Error canceling task:', error);
     throw error;

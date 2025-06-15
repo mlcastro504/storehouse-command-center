@@ -24,6 +24,7 @@ export interface Pallet {
     height: number;
   };
   special_requirements?: string[];
+  product_category?: string;
   created_by: string;
   product?: Product;
   location?: Location;
