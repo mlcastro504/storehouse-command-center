@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useLocations } from '@/hooks/useInventory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,6 +59,7 @@ export const LocationsList = () => {
                 <CardTitle className="text-lg">{location.name}</CardTitle>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="outline">{location.code}</Badge>
+                  <Badge variant="secondary" className="font-mono" title="Código de Confirmación">{location.confirmation_code}</Badge>
                   <Badge variant="secondary">{location.type}</Badge>
                 </div>
               </div>

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,8 +18,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useUpdateLocation, useWarehouses } from "@/hooks/useInventory";
+import { useUpdateLocation, useWarehouses, useLocations } from "@/hooks/useInventory";
 import { toast } from "sonner";
+import { RefreshCw } from "lucide-react";
 
 const locationSchema = z.object({
   code: z.string().min(1, "Código es requerido"),
@@ -37,6 +37,10 @@ const locationSchema = z.object({
   capacity: z.string().optional(),
   current_occupancy: z.string().min(1, "Ocupación actual es requerida"),
   is_active: z.boolean(),
+  confirmation_code: z.string()
+    .min(4, "Debe tener entre 4 y 6 dígitos")
+    .max(6, "Debe tener entre 4 y 6 dígitos")
+    .regex(/^\d+$/, "Solo puede contener números"),
 });
 
 type LocationFormData = z.infer<typeof locationSchema>;
@@ -54,6 +58,7 @@ export const EditLocationDialog = ({
 }: EditLocationDialogProps) => {
   const updateLocation = useUpdateLocation();
   const { data: warehouses } = useWarehouses();
+  const { data: allLocations } = useLocations();
 
   const form = useForm<LocationFormData>({
     resolver: zodResolver(locationSchema),
@@ -67,10 +72,41 @@ export const EditLocationDialog = ({
         ? String(location.current_occupancy)
         : "0",
       is_active: location?.is_active ?? true,
+      confirmation_code: location?.confirmation_code || "",
     },
   });
 
+  React.useEffect(() => {
+    if (location) {
+        form.reset({
+            code: location?.code || "",
+            name: location?.name || "",
+            type: location?.type || "bin",
+            warehouse_id: location?.warehouse_id || "",
+            capacity: location?.capacity ? String(location.capacity) : "",
+            current_occupancy: location?.current_occupancy ? String(location.current_occupancy) : "0",
+            is_active: location?.is_active ?? true,
+            confirmation_code: location?.confirmation_code || "",
+        });
+    }
+  }, [location, form]);
+
+  const generateNewConfirmationCode = () => {
+    const existingCodes = allLocations?.map(l => l.confirmation_code).filter(Boolean) || [];
+    let newCode;
+    do {
+      newCode = String(Math.floor(100000 + Math.random() * 900000));
+    } while (existingCodes.includes(newCode));
+    form.setValue("confirmation_code", newCode, { shouldValidate: true });
+  };
+
   const onSubmit = async (data: LocationFormData) => {
+    const otherLocations = allLocations?.filter(l => l.id !== location.id);
+    if (otherLocations?.some(l => l.confirmation_code === data.confirmation_code)) {
+        form.setError("confirmation_code", { type: "manual", message: "Este código de confirmación ya está en uso." });
+        return;
+    }
+
     try {
       await updateLocation.mutateAsync({
         id: location.id,
@@ -82,6 +118,7 @@ export const EditLocationDialog = ({
           capacity: data.capacity ? parseInt(data.capacity) : undefined,
           current_occupancy: parseInt(data.current_occupancy),
           is_active: data.is_active,
+          confirmation_code: data.confirmation_code,
         },
       });
       setOpen(false);
@@ -129,6 +166,24 @@ export const EditLocationDialog = ({
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="confirmation_code"
+              render={({ field }) => (
+                  <FormItem>
+                  <FormLabel>Código de Confirmación</FormLabel>
+                  <div className="flex items-center gap-2">
+                      <FormControl>
+                      <Input {...field} className="font-mono" />
+                      </FormControl>
+                      <Button type="button" variant="outline" size="icon" onClick={generateNewConfirmationCode} title="Generar nuevo código">
+                          <RefreshCw className="h-4 w-4" />
+                      </Button>
+                  </div>
+                  <FormMessage />
+                  </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="type"

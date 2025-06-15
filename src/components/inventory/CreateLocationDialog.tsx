@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,7 +31,6 @@ import { useCreateLocation, useWarehouses } from '@/hooks/useInventory';
 import { Plus } from 'lucide-react';
 
 const locationSchema = z.object({
-  code: z.string().min(1, 'Código es requerido'),
   name: z.string().min(1, 'Nombre es requerido'),
   type: z.string().min(1, 'Tipo es requerido'),
   warehouse_id: z.string().min(1, 'Almacén es requerido'),
@@ -48,8 +48,17 @@ export const CreateLocationDialog = () => {
   const createLocation = useCreateLocation();
 
   const [autoCode, setAutoCode] = React.useState<string>('');
+  const [confirmationCode, setConfirmationCode] = React.useState<string>('');
   const [allLocations, setAllLocations] = React.useState<any[]>([]);
   const [nameError, setNameError] = React.useState<string | null>(null);
+
+  const generateConfirmationCode = (existingCodes: string[]): string => {
+    let code;
+    do {
+      code = String(Math.floor(100000 + Math.random() * 900000));
+    } while (existingCodes.includes(code));
+    return code;
+  };
 
   React.useEffect(() => {
     if (open) {
@@ -63,10 +72,14 @@ export const CreateLocationDialog = () => {
           if (number > maxNumber) maxNumber = number;
         });
         setAutoCode(`LOC-${String(maxNumber + 1).padStart(6, '0')}`);
+
+        const existingConfirmationCodes = locations.map((l: any) => l.confirmation_code).filter(Boolean);
+        setConfirmationCode(generateConfirmationCode(existingConfirmationCodes));
       })();
       setNameError(null);
     } else {
       setAutoCode('');
+      setConfirmationCode('');
       setNameError(null);
       setAllLocations([]);
     }
@@ -75,7 +88,6 @@ export const CreateLocationDialog = () => {
   const form = useForm<LocationFormData>({
     resolver: zodResolver(locationSchema),
     defaultValues: {
-      code: '',
       name: '',
       type: '',
       warehouse_id: '',
@@ -110,6 +122,8 @@ export const CreateLocationDialog = () => {
           x: parseFloat(data.x),
           y: parseFloat(data.y)
         } : undefined,
+        confirmation_code: confirmationCode,
+        occupancy_status: 'available',
       });
       setOpen(false);
       form.reset();
@@ -130,15 +144,19 @@ export const CreateLocationDialog = () => {
         <DialogHeader>
           <DialogTitle>Crear Nueva Ubicación</DialogTitle>
         </DialogHeader>
-        {/* Código autogenerado solo lectura */}
-        <div className="mb-2">
-          <FormLabel>Código</FormLabel>
-          <Input value={autoCode} readOnly disabled className="font-mono" placeholder="Código automático" />
+        <div className="grid grid-cols-2 gap-4 mb-2">
+          <div>
+            <FormLabel>Código</FormLabel>
+            <Input value={autoCode} readOnly disabled className="font-mono" placeholder="Código automático" />
+          </div>
+          <div>
+            <FormLabel>Código de Confirmación</FormLabel>
+            <Input value={confirmationCode} readOnly disabled className="font-mono" placeholder="Código automático" />
+          </div>
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              {/* Eliminamos el input edit para 'code' */}
               <FormField
                 control={form.control}
                 name="name"
