@@ -441,6 +441,13 @@ export class InventoryService {
   static async createSupplier(supplierData: Partial<Supplier>): Promise<Supplier | null> {
     try {
       const db = await getDb();
+      if (supplierData.name) {
+        const existingSupplier = await db.collection('suppliers').findOne({ name: supplierData.name });
+        if (existingSupplier) {
+          throw new Error('Un proveedor con este nombre ya existe.');
+        }
+      }
+      
       const id = `sup_${Date.now()}`;
       const newSupplierDoc = {
         ...supplierData,
@@ -453,32 +460,46 @@ export class InventoryService {
       
       await db.collection('suppliers').insertOne(newSupplierDoc);
       return mapDoc<Supplier>(newSupplierDoc);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating supplier:', error);
-      return null;
+      throw error; // Re-throw to be caught by the mutation hook
     }
   }
 
   static async updateSupplier(id: string, updates: Partial<Supplier>): Promise<Supplier | null> {
     try {
       const db = await getDb();
+      if (updates.name) {
+        const allSuppliersWithSameName = await db.collection('suppliers').find({ name: updates.name }).toArray();
+        const otherSupplier = allSuppliersWithSameName.find(s => s.id !== id);
+        if (otherSupplier) {
+          throw new Error('Un proveedor con este nombre ya existe.');
+        }
+      }
+
       await db.collection('suppliers').updateOne({ id: id }, { $set: { ...updates, updated_at: new Date().toISOString() } });
       const supplier = await db.collection('suppliers').findOne({ id: id });
       return mapDoc<Supplier>(supplier);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating supplier:', error);
-      return null;
+      throw error; // Re-throw to be caught by the mutation hook
     }
   }
 
   static async deleteSupplier(id: string): Promise<boolean> {
     try {
       const db = await getDb();
+
+      const associatedProducts = await db.collection('products').find({ supplier_id: id }).toArray();
+      if (associatedProducts.length > 0) {
+        throw new Error(`No se puede eliminar el proveedor porque tiene ${associatedProducts.length} productos asociados.`);
+      }
+
       const result = await db.collection('suppliers').deleteOne({ id: id });
       return result.deletedCount > 0;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting supplier:', error);
-      return false;
+      throw error; // Re-throw to be caught by the mutation hook
     }
   }
 

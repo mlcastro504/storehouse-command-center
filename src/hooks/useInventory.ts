@@ -212,9 +212,9 @@ export const useCreateSupplier = () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       toast.success('Proveedor creado exitosamente');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error creating supplier:', error);
-      toast.error('Error al crear el proveedor');
+      toast.error(error.message || 'Error al crear el proveedor');
     },
   });
 };
@@ -229,9 +229,9 @@ export const useUpdateSupplier = () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       toast.success('Proveedor actualizado exitosamente');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error updating supplier:', error);
-      toast.error('Error al actualizar el proveedor');
+      toast.error(error.message || 'Error al actualizar el proveedor');
     },
   });
 };
@@ -245,9 +245,9 @@ export const useDeleteSupplier = () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       toast.success('Proveedor eliminado exitosamente');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error deleting supplier:', error);
-      toast.error('Error al eliminar el proveedor');
+      toast.error(error.message || 'Error al eliminar el proveedor');
     },
   });
 };

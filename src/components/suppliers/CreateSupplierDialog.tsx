@@ -1,8 +1,9 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { connectToDatabase } from '@/lib/mongodb';
-import { CreateSupplierData, Supplier } from '@/types/suppliers';
+import { CreateSupplierData, Supplier, UpdateSupplierData } from '@/types/inventory';
+import { useCreateSupplier, useUpdateSupplier } from '@/hooks/useInventory';
 import {
   Dialog,
   DialogContent,
@@ -61,121 +62,85 @@ interface CreateSupplierDialogProps {
 }
 
 export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSupplierDialogProps) {
-  const queryClient = useQueryClient();
   const isEditing = !!supplier;
+  const createMutation = useCreateSupplier();
+  const updateMutation = useUpdateSupplier();
 
-  // Form
-  const form = useForm<CreateSupplierData & { is_active: boolean }>(
-    {
-      defaultValues: {
-        // eliminamos 'code' del editable (lo mostramos aparte abajo si se edita)
-        name: supplier?.name || '',
-        contact_person: supplier?.contact_person || '',
-        email: supplier?.email || '',
-        phone: supplier?.phone || '',
-        address: supplier?.address || '',
-        city: supplier?.city || '',
-        state: supplier?.state || '',
-        postal_code: supplier?.postal_code || '',
-        country: supplier?.country || '',
-        tax_id: supplier?.tax_id || '',
-        payment_terms: supplier?.payment_terms || '',
-        lead_time_days: supplier?.lead_time_days || 0,
-        notes: supplier?.notes || '',
-        is_active: supplier?.is_active ?? true,
-      },
-    }
-  );
+  const form = useForm<CreateSupplierData & { is_active: boolean }>({
+    defaultValues: {
+      name: '',
+      contact_person: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      state: '',
+      postal_code: '',
+      country: '',
+      tax_id: '',
+      payment_terms: '',
+      lead_time_days: 0,
+      notes: '',
+      is_active: true,
+    },
+  });
 
-  // Cuando no hay editing, generamos el código nuevo una sola vez en el montaje
-  // y lo guardamos en state local para mostrarlo en el resumen al final
   const [autoCode, setAutoCode] = React.useState<string | null>(null);
-  const [nameError, setNameError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    if (!isEditing && open) {
-      getNextSupplierCode().then(setAutoCode);
-    }
-    if (!open) {
+    if (open) {
+      if (isEditing && supplier) {
+        form.reset({
+          name: supplier.name || '',
+          contact_person: supplier.contact_person || '',
+          email: supplier.email || '',
+          phone: supplier.phone || '',
+          address: supplier.address || '',
+          city: supplier.city || '',
+          state: supplier.state || '',
+          postal_code: supplier.postal_code || '',
+          country: supplier.country || '',
+          tax_id: supplier.tax_id || '',
+          payment_terms: supplier.payment_terms || '',
+          lead_time_days: supplier.lead_time_days || 0,
+          notes: supplier.notes || '',
+          is_active: supplier.is_active ?? true,
+        });
+      } else {
+        form.reset();
+        getNextSupplierCode().then(setAutoCode);
+      }
+    } else {
       setAutoCode(null);
-      setNameError(null);
     }
-    // eslint-disable-next-line
-  }, [isEditing, open]);
-
-  // Obtener todos los proveedores para validar name duplicado
-  const { data: allSuppliers } = useQuery({
-    queryKey: ['suppliers'],
-    queryFn: async () => {
-      const db = await connectToDatabase();
-      return db.collection('suppliers').find().toArray() as Promise<Supplier[]>;
-    }
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: CreateSupplierData & { is_active: boolean }) => {
-      console.log('Creating/updating supplier:', data);
-      const db = await connectToDatabase();
-
-      let supplierData = {
-        ...data,
-        lead_time_days: Number(data.lead_time_days) || 0,
-        created_at: isEditing ? supplier!.created_at : new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      if (!isEditing) {
-        supplierData = { ...supplierData, code: autoCode || (await getNextSupplierCode()) };
-      } else {
-        supplierData = { ...supplierData, code: supplier!.code };
-      }
-
-      // Validación name único
-      const suppliersWithName = allSuppliers?.filter(
-        (s) =>
-          s.name.trim().toLowerCase() === data.name.trim().toLowerCase() &&
-          (!isEditing || s.id !== supplier?.id)
-      );
-      if (suppliersWithName && suppliersWithName.length > 0) {
-        throw new Error("El nombre ya existe, elija uno diferente.");
-      }
-
-      if (isEditing) {
-        await db.collection('suppliers').updateOne(
-          { _id: { toString: () => supplier!.id } },
-          { $set: supplierData }
-        );
-        return { ...supplierData, id: supplier!.id };
-      } else {
-        const result = await db.collection('suppliers').insertOne(supplierData);
-        return { ...supplierData, id: result.insertedId.toString() };
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-      toast.success(isEditing ? 'Proveedor actualizado correctamente' : 'Proveedor creado correctamente');
-      onOpenChange(false);
-      form.reset();
-      setNameError(null);
-    },
-    onError: (error: any) => {
-      if (
-        typeof error.message === "string" &&
-        error.message.includes('nombre ya existe')
-      ) {
-        setNameError(error.message);
-      } else {
-        setNameError(null);
-        console.error('Error creating/updating supplier:', error);
-        toast.error('Error al guardar el proveedor');
-      }
-    },
-  });
-
+  }, [open, isEditing, supplier, form]);
+  
   const onSubmit = (data: CreateSupplierData & { is_active: boolean }) => {
-    setNameError(null);
-    createMutation.mutate(data);
+    form.clearErrors('name');
+    const mutationData = {
+      ...data,
+      lead_time_days: Number(data.lead_time_days) || 0,
+    };
+
+    const mutationOptions = {
+      onSuccess: () => {
+        onOpenChange(false);
+      },
+      onError: (error: any) => {
+        if (error.message && error.message.toLowerCase().includes('nombre')) {
+          form.setError('name', { type: 'custom', message: error.message });
+        }
+      },
+    };
+
+    if (isEditing) {
+      updateMutation.mutate({ id: supplier!.id, updates: mutationData as Partial<Supplier> }, mutationOptions);
+    } else {
+      createMutation.mutate({ ...mutationData, code: autoCode || '' } as Partial<Supplier>, mutationOptions);
+    }
   };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -189,7 +154,6 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
           </DialogDescription>
         </DialogHeader>
 
-        {/* Código SOLO LECTURA generado automáticamente */}
         <div className="mb-2">
           <FormLabel>Código</FormLabel>
           <Input
@@ -214,11 +178,7 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
                     <FormControl>
                       <Input placeholder="Nombre del proveedor" {...field} />
                     </FormControl>
-                    {(nameError || form.formState.errors.name?.message) && (
-                      <FormMessage>
-                        {nameError || form.formState.errors.name?.message}
-                      </FormMessage>
-                    )}
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -432,8 +392,8 @@ export function CreateSupplierDialog({ open, onOpenChange, supplier }: CreateSup
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
+              <Button type="submit" disabled={isPending}>
+                {isPending ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
               </Button>
             </DialogFooter>
           </form>
