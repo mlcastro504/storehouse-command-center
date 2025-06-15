@@ -40,8 +40,8 @@ export class InventoryService {
       const product: Product = {
         ...productData,
         id: `prod_${Date.now()}`,
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         user_id: 'current_user_id' // TODO: Get from auth context
       } as Product;
       
@@ -57,7 +57,7 @@ export class InventoryService {
   static async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
     try {
       const db = await connectToDatabase();
-      await db.collection('products').updateOne({ id }, { $set: { ...updates, updated_at: new Date() } });
+      await db.collection('products').updateOne({ id }, { $set: { ...updates, updated_at: new Date().toISOString() } });
       const updatedProduct = await db.collection('products').findOne({ id }) as Product | null;
       return updatedProduct;
     } catch (error) {
@@ -104,8 +104,8 @@ export class InventoryService {
       const category: Category = {
         ...categoryData,
         id: `cat_${Date.now()}`,
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         user_id: 'current_user_id' // TODO: Get from auth context
       } as Category;
       
@@ -121,7 +121,7 @@ export class InventoryService {
   static async updateCategory(id: string, updates: Partial<Category>): Promise<Category | null> {
     try {
       const db = await connectToDatabase();
-      await db.collection('categories').updateOne({ id }, { $set: { ...updates, updated_at: new Date() } });
+      await db.collection('categories').updateOne({ id }, { $set: { ...updates, updated_at: new Date().toISOString() } });
       const updatedCategory = await db.collection('categories').findOne({ id }) as Category | null;
       return updatedCategory;
     } catch (error) {
@@ -168,8 +168,8 @@ export class InventoryService {
       const warehouse: Warehouse = {
         ...warehouseData,
         id: `wh_${Date.now()}`,
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         user_id: 'current_user_id' // TODO: Get from auth context
       } as Warehouse;
       
@@ -185,7 +185,7 @@ export class InventoryService {
   static async updateWarehouse(id: string, updates: Partial<Warehouse>): Promise<Warehouse | null> {
     try {
       const db = await connectToDatabase();
-      await db.collection('warehouses').updateOne({ id }, { $set: { ...updates, updated_at: new Date() } });
+      await db.collection('warehouses').updateOne({ id }, { $set: { ...updates, updated_at: new Date().toISOString() } });
       const updatedWarehouse = await db.collection('warehouses').findOne({ id }) as Warehouse | null;
       return updatedWarehouse;
     } catch (error) {
@@ -235,8 +235,8 @@ export class InventoryService {
         id: `loc_${Date.now()}`,
         confirmation_code: `CODE${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
         occupancy_status: 'available',
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         user_id: 'current_user_id' // TODO: Get from auth context
       } as Location;
       
@@ -252,7 +252,7 @@ export class InventoryService {
   static async updateLocation(id: string, updates: Partial<Location>): Promise<Location | null> {
     try {
       const db = await connectToDatabase();
-      await db.collection('locations').updateOne({ id }, { $set: { ...updates, updated_at: new Date() } });
+      await db.collection('locations').updateOne({ id }, { $set: { ...updates, updated_at: new Date().toISOString() } });
       const updatedLocation = await db.collection('locations').findOne({ id }) as Location | null;
       return updatedLocation;
     } catch (error) {
@@ -313,7 +313,7 @@ export class InventoryService {
       const db = await connectToDatabase();
       await db.collection('stock_levels').updateOne(
         { product_id: productId, location_id: locationId }, 
-        { $set: { ...updates, last_updated: new Date() } }
+        { $set: { ...updates, last_updated: new Date().toISOString() } }
       );
       const updatedStockLevel = await db.collection('stock_levels').findOne({ 
         product_id: productId, 
@@ -410,8 +410,8 @@ export class InventoryService {
       const supplier: Supplier = {
         ...supplierData,
         id: `sup_${Date.now()}`,
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         user_id: 'current_user_id' // TODO: Get from auth context
       } as Supplier;
       
