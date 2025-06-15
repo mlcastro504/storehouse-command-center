@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChatChannelsList } from '@/components/chat/ChatChannelsList';
 import { CreateChannelDialog } from '@/components/chat/CreateChannelDialog';
-import { EnhancedChatInterface } from '@/components/chat/EnhancedChatInterface';
+import { ChatInterface } from '@/components/chat/ChatInterface';
 import { 
   MessageCircle, 
   Users, 
@@ -18,38 +18,31 @@ import {
   Filter,
   Plus
 } from 'lucide-react';
+import { useMessageSimulator } from '@/hooks/useMessageSimulator';
+import { mockChannels, contextualChats as mockContextualChats } from '@/data/mock-chat';
 
 export default function Chat() {
-  const [selectedChannel, setSelectedChannel] = useState<string | null>('general');
+  const [selectedChannel, setSelectedChannel] = useState<string>('general');
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(5);
 
-  const contextualChats = [
-    {
-      id: 'order-2024-001',
-      name: 'Pedido #2024-001',
-      type: 'contextual',
-      context: {
-        type: 'Orden de Venta',
-        orderNumber: '2024-001',
-        description: 'Pedido urgente - 150 productos'
-      },
-      unreadCount: 2,
-      lastActivity: '2 min'
-    },
-    {
-      id: 'task-pick-456',
-      name: 'Tarea Picking #456',
-      type: 'contextual',
-      context: {
-        type: 'Tarea de Picking',
-        taskNumber: 'PICK-456',
-        description: 'Problema con ubicación A-12-3'
-      },
-      unreadCount: 1,
-      lastActivity: '5 min'
-    }
+  useMessageSimulator(['general', 'almacen', 'gerencia']);
+
+  const contextualChats = mockContextualChats;
+
+  const allChannels = [
+    ...mockChannels,
+    ...contextualChats.map(c => ({
+      id: c.id,
+      name: c.name,
+      type: c.type,
+      members: c.members,
+      unreadCount: c.unreadCount,
+      lastMessage: c.context.description,
+    }))
   ];
+
+  const currentChannelDetails = allChannels.find(c => c.id === selectedChannel);
 
   return (
     <MainLayout>
@@ -120,13 +113,14 @@ export default function Chat() {
                         <Hash className="h-4 w-4" />
                         Canales
                       </span>
-                      <Button variant="ghost" size="sm">
-                        <Plus className="h-4 w-4" />
-                      </Button>
+                      <CreateChannelDialog />
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <ChatChannelsList />
+                    <ChatChannelsList 
+                      selectedChannel={selectedChannel}
+                      setSelectedChannel={setSelectedChannel}
+                    />
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -143,7 +137,7 @@ export default function Chat() {
                     {contextualChats.map((chat) => (
                       <Button
                         key={chat.id}
-                        variant="ghost"
+                        variant={selectedChannel === chat.id ? "secondary" : "ghost"}
                         className="w-full justify-start h-auto p-3"
                         onClick={() => setSelectedChannel(chat.id)}
                       >
@@ -194,7 +188,7 @@ export default function Chat() {
                       <Settings className="h-4 w-4" />
                       Configuración
                     </CardTitle>
-                  </CardHeader>
+                  </Header>
                   <CardContent className="p-4 space-y-3">
                     <Button variant="outline" className="w-full justify-start">
                       Notificaciones
@@ -218,16 +212,10 @@ export default function Chat() {
               <Card className="h-full">
                 <CardContent className="p-0 h-full">
                   {selectedChannel ? (
-                    <EnhancedChatInterface
+                    <ChatInterface
                       channelId={selectedChannel}
-                      channelType={
-                        contextualChats.find(c => c.id === selectedChannel) 
-                          ? 'contextual' 
-                          : 'public'
-                      }
-                      contextData={
-                        contextualChats.find(c => c.id === selectedChannel)?.context
-                      }
+                      channelName={currentChannelDetails?.name}
+                      channelMembers={currentChannelDetails?.members}
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
