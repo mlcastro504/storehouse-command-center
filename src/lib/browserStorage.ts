@@ -32,6 +32,14 @@ class MockCollection {
     return { insertedId: newDoc._id };
   }
 
+  async insertMany(docs: any[]) {
+    const data = BrowserStorage.get(this.collectionName) || [];
+    const newDocs = docs.map(doc => ({ ...doc, _id: doc._id || `${this.collectionName}_${Math.random().toString(36).substr(2, 9)}_${Date.now()}` }));
+    data.push(...newDocs);
+    BrowserStorage.set(this.collectionName, data);
+    return { insertedCount: newDocs.length, acknowledged: true };
+  }
+
   async updateOne(filter: any, update: any) {
     const data = BrowserStorage.get(this.collectionName) || [];
     const index = data.findIndex((item: any) => this.matchesFilter(item, filter));
@@ -85,6 +93,20 @@ class MockCollection {
       return { deletedCount: 1 };
     }
     return { deletedCount: 0 };
+  }
+
+  async deleteMany(filter: any) {
+    const data = BrowserStorage.get(this.collectionName) || [];
+    if (!filter || Object.keys(filter).length === 0) {
+      const deletedCount = data.length;
+      BrowserStorage.set(this.collectionName, []);
+      return { deletedCount };
+    }
+    
+    const originalCount = data.length;
+    const dataToKeep = data.filter((item: any) => !this.matchesFilter(item, filter));
+    BrowserStorage.set(this.collectionName, dataToKeep);
+    return { deletedCount: originalCount - dataToKeep.length };
   }
 
   async replaceOne(filter: any, replacement: any, options: any = {}) {
@@ -230,6 +252,11 @@ export class BrowserStorage {
     return await collection.insertOne(doc);
   }
 
+  static async insertMany(collectionName: string, docs: any[]) {
+    const collection = new MockCollection(collectionName);
+    return await collection.insertMany(docs);
+  }
+
   static async updateOne(collectionName: string, filter: any, update: any) {
     const collection = new MockCollection(collectionName);
     return await collection.updateOne(filter, update);
@@ -238,6 +265,21 @@ export class BrowserStorage {
   static async deleteOne(collectionName: string, filter: any) {
     const collection = new MockCollection(collectionName);
     return await collection.deleteOne(filter);
+  }
+
+  static async deleteMany(collectionName: string, filter: any) {
+    const collection = new MockCollection(collectionName);
+    return await collection.deleteMany(filter);
+  }
+
+  static async replaceOne(collectionName: string, filter: any, replacement: any, options: any = {}) {
+    const collection = new MockCollection(collectionName);
+    return await collection.replaceOne(filter, replacement, options);
+  }
+
+  static async listIndexes(collectionName: string) {
+    const collection = new MockCollection(collectionName);
+    return await collection.listIndexes();
   }
 
   static async initializeSampleData() {

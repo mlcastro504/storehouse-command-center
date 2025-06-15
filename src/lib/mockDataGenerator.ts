@@ -1,5 +1,8 @@
+import { BrowserStorage } from './browserStorage';
 
-import { connectToDatabase } from './mongodb';
+const db = {
+  collection: (name: string) => BrowserStorage.collection(name),
+};
 
 function isMockCollection(obj: any): obj is { deleteMany: Function, insertMany: Function, find: Function, findOne: Function, deleteOne: Function, insertOne: Function } {
   return typeof obj?.deleteMany === 'function';
@@ -8,8 +11,7 @@ function isMockCollection(obj: any): obj is { deleteMany: Function, insertMany: 
 export class MockDataGenerator {
   static async hasExistingData(): Promise<boolean> {
     try {
-      const db = await connectToDatabase();
-      const products = await db.collection('products').find({}).limit(1).toArray();
+      const products = await db.collection('products').find({}).toArray();
       return products.length > 0;
     } catch (error) {
       console.error('Error checking existing data:', error);
@@ -19,7 +21,6 @@ export class MockDataGenerator {
 
   static async clearAllData(): Promise<boolean> {
     try {
-      const db = await connectToDatabase();
       const collections = [
         'users', 'products', 'categories', 'warehouses', 'locations', 'stock_levels', 'suppliers',
         'pallets', 'putaway_tasks', 'putaway_rules', 'operator_performance', 'stock_movements',
@@ -29,9 +30,7 @@ export class MockDataGenerator {
       
       for (const collectionName of collections) {
         const collection = db.collection(collectionName);
-        if (isMockCollection(collection)) {
-          await collection.deleteMany({});
-        }
+        await collection.deleteMany({});
       }
       
       console.log('All mock data cleared successfully');
@@ -44,7 +43,6 @@ export class MockDataGenerator {
 
   static async generateAllMockData(): Promise<boolean> {
     try {
-      const db = await connectToDatabase();
       const now = new Date();
       const yesterday = new Date(Date.now() - 864e5);
       const twoDaysAgo = new Date(Date.now() - 1728e5);

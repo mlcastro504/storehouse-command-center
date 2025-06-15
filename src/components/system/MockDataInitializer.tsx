@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Database, Play, CheckCircle, AlertTriangle, Trash2, RotateCcw } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { MockDataGenerator } from '@/lib/mockDataGenerator';
+import { BrowserStorage } from '@/lib/browserStorage';
 
 export function MockDataInitializer() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -15,29 +15,26 @@ export function MockDataInitializer() {
   const [isComplete, setIsComplete] = useState(false);
   const [dataStats, setDataStats] = useState<any>(null);
   const [isClearing, setIsClearing] = useState(false);
+  const [hasData, setHasData] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
   const { toast } = useToast();
 
-  // Clear all existing mock data when component loads
-  useEffect(() => {
-    const clearExistingData = async () => {
-      try {
-        const cleared = await MockDataGenerator.clearAllData();
-        if (cleared) {
-          console.log('Cleared existing data from previous sessions');
-        }
-      } catch (error) {
-        console.error('Error clearing existing data on load:', error);
-      }
-    };
-    
-    clearExistingData();
-  }, []);
-
-  const checkExistingData = () => {
-    // Since we're using MongoDB now, we'll need to actually query the database
-    // For now, return empty stats
-    return { stats: {}, totalRecords: 0, hasData: false };
+  const checkExistingData = async () => {
+    const dataExists = await MockDataGenerator.hasExistingData();
+    setHasData(dataExists);
+    if (dataExists) {
+      const products = await BrowserStorage.find('products', {});
+      const pallets = await BrowserStorage.find('pallets', {});
+      const users = await BrowserStorage.find('users', {});
+      setTotalRecords(products.length + pallets.length + users.length);
+    } else {
+      setTotalRecords(0);
+    }
   };
+
+  useEffect(() => {
+    checkExistingData();
+  }, [isComplete, isClearing]);
 
   const generateMockData = async () => {
     setIsGenerating(true);
@@ -98,10 +95,12 @@ export function MockDataInitializer() {
       if (cleared) {
         setDataStats(null);
         setIsComplete(false);
+        setHasData(false);
+        setTotalRecords(0);
         
         toast({
           title: "All Mock Data Cleared",
-          description: "Removed all collections and data from MongoDB",
+          description: "Removed all collections and data from BrowserStorage",
         });
         
         // Force refresh the page to ensure all components reload with empty data
@@ -122,8 +121,6 @@ export function MockDataInitializer() {
     }
   };
 
-  const existingDataCheck = checkExistingData();
-
   return (
     <Card>
       <CardHeader>
@@ -141,11 +138,11 @@ export function MockDataInitializer() {
         <div className="space-y-3">
           <h3 className="text-lg font-semibold">Current Data Status</h3>
           
-          {existingDataCheck.hasData ? (
+          {hasData ? (
             <Alert>
               <CheckCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Mock data active:</strong> {existingDataCheck.totalRecords} total records found across all collections
+                <strong>Mock data active:</strong> {totalRecords} total records found across key collections.
               </AlertDescription>
             </Alert>
           ) : (
