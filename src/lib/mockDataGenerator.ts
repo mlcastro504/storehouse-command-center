@@ -1,14 +1,10 @@
-import { connectToDatabase } from '@/lib/mongodb';
-
-// Helper to get DB connection, avoiding repetition of the dummy URI
-const getDb = () => connectToDatabase('mongodb://localhost/mockdb', 'mockdb');
+import { BrowserStorage } from '@/lib/browserStorage';
 
 export class MockDataGenerator {
   static async hasExistingData(): Promise<boolean> {
     try {
-      const db = await getDb();
-      const products = await db.collection('products').find({}).toArray();
-      return products.length > 0;
+      const products = await BrowserStorage.find('products', {});
+      return products && products.length > 0;
     } catch (error) {
       console.error('Error checking existing data:', error);
       return false;
@@ -17,7 +13,6 @@ export class MockDataGenerator {
 
   static async clearAllData(): Promise<boolean> {
     try {
-      const db = await getDb();
       const collections = [
         'users', 'products', 'categories', 'warehouses', 'locations', 'stock_levels', 'suppliers',
         'pallets', 'putaway_tasks', 'putaway_rules', 'operator_performance', 'stock_movements',
@@ -26,11 +21,10 @@ export class MockDataGenerator {
       ];
       
       for (const collectionName of collections) {
-        const collection = db.collection(collectionName);
-        await collection.deleteMany({});
+        await BrowserStorage.deleteMany(collectionName, {});
       }
       
-      console.log('All mock data cleared successfully');
+      console.log('All mock data cleared from BrowserStorage successfully');
       return true;
     } catch (error) {
       console.error('Error clearing all mock data:', error);
@@ -40,8 +34,7 @@ export class MockDataGenerator {
 
   static async generateAllMockData(): Promise<boolean> {
     try {
-      console.log("PUTAWAY_DEBUG_PLAN: >>> Starting generateAllMockData...");
-      const db = await getDb();
+      console.log("PUTAWAY_DEBUG_PLAN: >>> Starting generateAllMockData into BrowserStorage...");
       const now = new Date();
       const yesterday = new Date(Date.now() - 864e5);
       const twoDaysAgo = new Date(Date.now() - 1728e5);
@@ -49,7 +42,6 @@ export class MockDataGenerator {
       // --- 1. CORE DATA SETUP ---
 
       // --- USERS ---
-      const usersCol = db.collection('users');
       const users = [
         { _id: 'user_admin', id: 'user_admin', email: 'admin@warehouseos.com', firstName: 'Admin', lastName: 'WOS', role: { name: 'admin', displayName: 'Administrator' }, isActive: true, createdAt: now.toISOString() },
         { _id: 'user_leader', id: 'user_leader', email: 'teamleader@warehouseos.com', firstName: 'Team', lastName: 'Leader', role: { name: 'leader', displayName: 'Team Leader' }, isActive: true, createdAt: now.toISOString() },
@@ -57,32 +49,29 @@ export class MockDataGenerator {
         { _id: 'user_picker', id: 'user_picker', email: 'picker@warehouseos.com', firstName: 'Picker', lastName: 'Joe', role: { name: 'operator', displayName: 'Picker' }, isActive: true, createdAt: now.toISOString() },
         { _id: 'user_accountant', id: 'user_accountant', email: 'accountant@warehouseos.com', firstName: 'Accountant', lastName: 'Jane', role: { name: 'accountant', displayName: 'Accountant' }, isActive: true, createdAt: now.toISOString() },
       ];
-      await usersCol.insertMany(users);
+      await BrowserStorage.insertMany('users', users);
       const mainUserId = 'user_admin';
       const putawayUserId = 'user_putaway';
       const pickerUserId = 'user_picker';
 
       // --- WAREHOUSE ---
-      const warehousesCol = db.collection('warehouses');
-      await warehousesCol.insertOne({ 
+      await BrowserStorage.insertOne('warehouses',{ 
         _id: 'wh_main', id: 'wh_main', name: 'Main Distribution Center', code: 'WDC-01',
         address: '123 Warehouse Way', city: 'Logistics City', state: 'CA', postal_code: '90210', country: 'USA',
         is_active: true, created_at: now.toISOString(), updated_at: now.toISOString(), user_id: mainUserId
       });
 
       // --- SUPPLIERS ---
-      const suppliersCol = db.collection('suppliers');
       const suppliers = [
         { _id: 'supplier_1', id: 'supplier_1', name: 'Global Tech Supplies', code: 'GTS', contact_person: 'John Doe', email: 'sales@gts.com', is_active: true, created_at: now.toISOString(), updated_at: now.toISOString(), user_id: mainUserId },
         { _id: 'supplier_2', id: 'supplier_2', name: 'Premium Food Distributors', code: 'PFD', contact_person: 'Jane Smith', email: 'orders@pfd.com', is_active: true, created_at: now.toISOString(), updated_at: now.toISOString(), user_id: mainUserId },
         { _id: 'supplier_3', id: 'supplier_3', name: 'BuildRight Materials', code: 'BRM', contact_person: 'Bob Builder', email: 'contact@buildright.com', is_active: true, created_at: now.toISOString(), updated_at: now.toISOString(), user_id: mainUserId },
         { _id: 'supplier_4', id: 'supplier_4', name: 'Fashion Forward Inc.', code: 'FFI', contact_person: 'Anna Wintour', email: 'orders@ffi.com', is_active: true, created_at: now.toISOString(), updated_at: now.toISOString(), user_id: mainUserId },
       ];
-      await suppliersCol.insertMany(suppliers);
+      await BrowserStorage.insertMany('suppliers', suppliers);
 
       // --- CATEGORIES ---
-      const categoriesCol = db.collection('categories');
-      await categoriesCol.insertMany([
+      await BrowserStorage.insertMany('categories', [
         { _id: 'cat_electronics', id: 'cat_electronics', name: 'Electronics', code: 'ELEC', description: 'Consumer electronics', is_active: true, created_at: now.toISOString(), updated_at: now.toISOString(), user_id: mainUserId },
         { _id: 'cat_food', id: 'cat_food', name: 'Food & Groceries', code: 'FOOD', description: 'Perishable and non-perishable food items', is_active: true, created_at: now.toISOString(), updated_at: now.toISOString(), user_id: mainUserId },
         { _id: 'cat_building', id: 'cat_building', name: 'Building Materials', code: 'BLD', description: 'Construction and hardware supplies', is_active: true, created_at: now.toISOString(), updated_at: now.toISOString(), user_id: mainUserId },
@@ -90,7 +79,6 @@ export class MockDataGenerator {
       ]);
 
       // --- PRODUCTS (with prices for accounting) ---
-      const productsCol = db.collection('products');
       const products = [
         { _id: 'prod_laptop', id: 'prod_laptop', sku: 'ELEC-LP-001', name: '15" Pro Laptop', description: 'High-end laptop for professionals', category_id: 'cat_electronics', unit_of_measure: 'unit', weight: 2.5, cost_price: 900, sale_price: 1500, min_stock_level: 10, max_stock_level: 100, reorder_point: 20, is_active: true, created_at: now.toISOString(), updated_at: now.toISOString(), user_id: mainUserId, special_requirements: [] },
         { _id: 'prod_tshirt', id: 'prod_tshirt', sku: 'APP-TS-001', name: 'Cotton T-Shirt (Black)', description: '100% cotton t-shirt', category_id: 'cat_apparel', unit_of_measure: 'unit', weight: 0.2, cost_price: 5, sale_price: 19.99, min_stock_level: 200, max_stock_level: 1000, reorder_point: 300, is_active: true, created_at: now.toISOString(), updated_at: now.toISOString(), user_id: mainUserId, special_requirements: [] },
@@ -98,10 +86,9 @@ export class MockDataGenerator {
         { _id: 'prod_beams', id: 'prod_beams', sku: 'BLD-BM-001', name: 'Steel I-Beams (Pack of 10)', description: 'For heavy construction', category_id: 'cat_building', unit_of_measure: 'pack', weight: 800, cost_price: 600, sale_price: 1000, min_stock_level: 5, max_stock_level: 20, reorder_point: 8, is_active: true, created_at: now.toISOString(), updated_at: now.toISOString(), user_id: mainUserId, special_requirements: ['heavy_lift_needed'], storage_restrictions: { requires_ground_level: true, max_weight_per_location: 1000 } },
         { _id: 'prod_apples', id: 'prod_apples', sku: 'FOOD-AP-001', name: 'Fresh Apples (Case)', description: 'Case of 40 fresh apples', category_id: 'cat_food', unit_of_measure: 'case', weight: 10, cost_price: 15, sale_price: 25, min_stock_level: 20, max_stock_level: 100, reorder_point: 30, is_active: true, created_at: now.toISOString(), updated_at: now.toISOString(), user_id: mainUserId, expiry_date: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(), special_requirements: ['perishable'] },
       ];
-      await productsCol.insertMany(products);
+      await BrowserStorage.insertMany('products', products);
 
       // --- LOCATIONS (starting empty) ---
-      const locationsCol = db.collection('locations');
       const locations = [
         { _id: 'loc_rec_01', id: 'loc_rec_01', code: 'REC-01', name: 'Receiving Dock 1', warehouse_id: 'wh_main', type: 'receiving', occupancy_status: 'available', is_active: true, confirmation_code: '1R1', current_occupancy: 0, user_id: mainUserId, created_at: now.toISOString(), updated_at: now.toISOString() },
         { _id: 'loc_pack_01', id: 'loc_pack_01', code: 'PACK-01', name: 'Packing Station 1', warehouse_id: 'wh_main', type: 'packing', occupancy_status: 'available', is_active: true, confirmation_code: '2P2', current_occupancy: 0, user_id: mainUserId, created_at: now.toISOString(), updated_at: now.toISOString() },
@@ -110,34 +97,30 @@ export class MockDataGenerator {
         { _id: 'loc_ground_01', id: 'loc_ground_01', code: 'GROUND-01', name: 'Ground Floor Area 1', warehouse_id: 'wh_main', type: 'ground_level', confirmation_code: '5G1', occupancy_status: 'available', is_active: true, capacity: 2, current_occupancy: 0, user_id: mainUserId, created_at: now.toISOString(), updated_at: now.toISOString() },
         { _id: 'loc_cold_a1', id: 'loc_cold_a1', code: 'COLD-A1', name: 'Cold Zone A1', warehouse_id: 'wh_main', type: 'cold_zone', confirmation_code: '6C1', occupancy_status: 'available', is_active: true, capacity: 50, current_occupancy: 0, user_id: mainUserId, created_at: now.toISOString(), updated_at: now.toISOString() },
       ];
-      await locationsCol.insertMany(locations);
+      await BrowserStorage.insertMany('locations', locations);
       
       // --- PUTAWAY RULES ---
-      const putAwayRulesCol = db.collection('putaway_rules');
-      await putAwayRulesCol.insertMany([
+      await BrowserStorage.insertMany('putaway_rules',[
         { _id: 'rule_heavy', id: 'rule_heavy', rule_name: 'Heavy Items to Ground', priority: 1, is_active: true, conditions: [{ field: 'weight', operator: 'greater_than', value: 500 }], location_preference: 'ground_level', created_by: mainUserId, created_at: now.toISOString(), updated_at: now.toISOString() },
         { _id: 'rule_cold', id: 'rule_cold', rule_name: 'Cold Items to Cold Zone', priority: 5, is_active: true, conditions: [{ field: 'special_requirement', operator: 'equals', value: 'cold_storage' }], location_preference: 'cold_zone', created_by: mainUserId, created_at: now.toISOString(), updated_at: now.toISOString() },
       ]);
       
       // --- ACCOUNTING SETUP ---
-      const accountsCol = db.collection('accounts');
-      await accountsCol.insertMany([
+      await BrowserStorage.insertMany('accounts', [
         { _id: 'acct_ap', id: 'acct_ap', name: 'Accounts Payable', type: 'Liability', is_active: true },
         { _id: 'acct_inventory', id: 'acct_inventory', name: 'Inventory', type: 'Asset', is_active: true },
         { _id: 'acct_sales', id: 'acct_sales', name: 'Sales Revenue', type: 'Revenue', is_active: true },
         { _id: 'acct_cogs', id: 'acct_cogs', name: 'Cost of Goods Sold', type: 'Expense', is_active: true },
         { _id: 'acct_cash', id: 'acct_cash', name: 'Cash', type: 'Asset', is_active: true },
       ]);
-      const contactsCol = db.collection('contacts');
-      await contactsCol.insertMany([
+      await BrowserStorage.insertMany('contacts', [
         { _id: 'contact_gts', id: 'contact_gts', name: 'Global Tech Supplies', type: 'supplier', external_id: 'supplier_1' },
         { _id: 'contact_ffi', id: 'contact_ffi', name: 'Fashion Forward Inc.', type: 'supplier', external_id: 'supplier_4' },
         { _id: 'contact_customer1', id: 'contact_customer1', name: 'John Smith', type: 'customer', email: 'john.smith@example.com' },
       ]);
       
       // --- ECOMMERCE SETUP ---
-      const ecommerceConnectionsCol = db.collection('ecommerce_connections');
-      await ecommerceConnectionsCol.insertOne({
+      await BrowserStorage.insertOne('ecommerce_connections', {
         _id: 'conn_shopify', id: 'conn_shopify', store_name: 'WOS Main Store', platform: { name: 'shopify', display_name: 'Shopify' }, is_active: true, sync_enabled: true, last_sync_at: yesterday.toISOString()
       });
       
@@ -272,23 +255,23 @@ export class MockDataGenerator {
       );
 
       // --- 4. INSERT ALL DATA ---
-      await db.collection('pallets').insertMany(pallets);
-      await db.collection('putaway_tasks').insertMany(putawayTasks);
-      await db.collection('stock_levels').insertMany(stockLevels);
-      await db.collection('stock_movements').insertMany(stockMovements);
-      await db.collection('invoices').insertMany(invoices);
-      await db.collection('journal_entries').insertMany(journalEntries);
-      await db.collection('picking_tasks').insertMany(pickingTasks);
-      await db.collection('ecommerce_orders').insertMany(ecommerceOrders);
+      await BrowserStorage.insertMany('pallets', pallets);
+      await BrowserStorage.insertMany('putaway_tasks', putawayTasks);
+      await BrowserStorage.insertMany('stock_levels', stockLevels);
+      await BrowserStorage.insertMany('stock_movements', stockMovements);
+      await BrowserStorage.insertMany('invoices', invoices);
+      await BrowserStorage.insertMany('journal_entries', journalEntries);
+      await BrowserStorage.insertMany('picking_tasks', pickingTasks);
+      await BrowserStorage.insertMany('ecommerce_orders', ecommerceOrders);
 
       // Update locations that have been modified
       for (const loc of locations) {
         if(loc.current_occupancy > 0) {
-            await locationsCol.updateOne({ _id: loc._id }, { $set: loc });
+            await BrowserStorage.updateOne('locations', { _id: loc._id }, { $set: loc });
         }
       }
 
-      console.log('PUTAWAY_DEBUG_PLAN: <<< Finished generateAllMockData successfully.');
+      console.log('PUTAWAY_DEBUG_PLAN: <<< Finished generateAllMockData successfully into BrowserStorage.');
       return true;
     } catch (error) {
       console.error('Error generating mock data:', error);

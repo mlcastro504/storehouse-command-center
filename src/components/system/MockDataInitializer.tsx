@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Database, Play, CheckCircle, AlertTriangle, Trash2, RotateCcw } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { MockDataGenerator } from '@/lib/mockDataGenerator';
-import { connectToDatabase } from '@/lib/mongodb';
+import { BrowserStorage } from '@/lib/browserStorage';
 
 export function MockDataInitializer() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -23,7 +23,6 @@ export function MockDataInitializer() {
     const dataExists = await MockDataGenerator.hasExistingData();
     setHasData(dataExists);
     if (dataExists) {
-      const db = await connectToDatabase('mongodb://localhost/mockdb', 'mockdb');
       const collectionsToCount = [
         'products', 'pallets', 'users', 'locations', 'putaway_tasks', 
         'stock_levels', 'ecommerce_orders', 'invoices', 'suppliers'
@@ -31,7 +30,7 @@ export function MockDataInitializer() {
       let total = 0;
       for (const name of collectionsToCount) {
         try {
-          const items = await db.collection(name).find({}).toArray();
+          const items = await BrowserStorage.find(name, {});
           total += items.length;
         } catch (e) {
             console.warn(`Could not count collection ${name}`, e);
