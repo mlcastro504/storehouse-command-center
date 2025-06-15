@@ -70,9 +70,15 @@ class MockMongoCollection implements MockCollection {
         const orConditions = value as any[];
         return orConditions.some(condition => this.matchesFilter(item, condition));
       }
-      if (key === '_id' && typeof value === 'object' && value.toString) {
-        if (item._id && item._id.toString() !== value.toString()) return false;
-      } else if (item[key] !== value) {
+
+      const itemValue = item[key];
+
+      if (key === '_id') {
+        // Handle both string and object with toString() for _id queries
+        const filterId = value?.toString();
+        const itemId = itemValue?.toString();
+        if (itemId !== filterId) return false;
+      } else if (itemValue !== value) {
         return false;
       }
     }
@@ -92,14 +98,15 @@ class MockMongoCollection implements MockCollection {
 
   async insertOne(document: any): Promise<{ insertedId: string }> {
     const data = this.getData();
-    const id = new Date().getTime().toString();
-    const newDoc = {
-      ...document,
-      _id: { toString: () => id }
-    };
+    // Respect existing _id or generate a new one
+    const id = document._id || new Date().getTime().toString();
+    const newDoc = { ...document };
+    const finalId = id.toString();
+    // Store _id as an object with toString for consistency
+    newDoc._id = { toString: () => finalId };
     data.push(newDoc);
     this.setData(data);
-    return { insertedId: id };
+    return { insertedId: finalId };
   }
 
   async insertMany(documents: any[]): Promise<{ insertedIds: string[] }> {
@@ -107,13 +114,14 @@ class MockMongoCollection implements MockCollection {
     const insertedIds: string[] = [];
     
     for (const document of documents) {
-      const id = new Date().getTime().toString() + Math.random().toString(36).substr(2, 9);
-      const newDoc = {
-        ...document,
-        _id: { toString: () => id }
-      };
+      // Respect existing _id or generate a new one
+      const id = document._id || (new Date().getTime().toString() + Math.random().toString(36).substr(2, 9));
+      const newDoc = { ...document };
+      const finalId = id.toString();
+      // Store _id as an object with toString for consistency
+      newDoc._id = { toString: () => finalId };
       data.push(newDoc);
-      insertedIds.push(id);
+      insertedIds.push(finalId);
     }
     
     this.setData(data);

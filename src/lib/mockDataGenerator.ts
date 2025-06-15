@@ -1,17 +1,12 @@
+import { connectToDatabase } from '@/lib/mongodb';
 
-import { BrowserStorage } from './browserStorage';
-
-const db = {
-  collection: (name: string) => BrowserStorage.collection(name),
-};
-
-function isMockCollection(obj: any): obj is { deleteMany: Function, insertMany: Function, find: Function, findOne: Function, deleteOne: Function, insertOne: Function } {
-  return typeof obj?.deleteMany === 'function';
-}
+// Helper to get DB connection, avoiding repetition of the dummy URI
+const getDb = () => connectToDatabase('mongodb://localhost/mockdb', 'mockdb');
 
 export class MockDataGenerator {
   static async hasExistingData(): Promise<boolean> {
     try {
+      const db = await getDb();
       const products = await db.collection('products').find({}).toArray();
       return products.length > 0;
     } catch (error) {
@@ -22,6 +17,7 @@ export class MockDataGenerator {
 
   static async clearAllData(): Promise<boolean> {
     try {
+      const db = await getDb();
       const collections = [
         'users', 'products', 'categories', 'warehouses', 'locations', 'stock_levels', 'suppliers',
         'pallets', 'putaway_tasks', 'putaway_rules', 'operator_performance', 'stock_movements',
@@ -44,6 +40,7 @@ export class MockDataGenerator {
 
   static async generateAllMockData(): Promise<boolean> {
     try {
+      const db = await getDb();
       const now = new Date();
       const yesterday = new Date(Date.now() - 864e5);
       const twoDaysAgo = new Date(Date.now() - 1728e5);
