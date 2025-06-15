@@ -1,4 +1,3 @@
-
 {
   "title": "Configuración del Sistema",
   "description": "Centro de control y administración global de WarehouseOS",
@@ -29,9 +28,16 @@
     "publicUrl": "URL Pública",
     "address": "Dirección",
     "logo": "Logo de la Empresa",
+    "altLogo": "Logo de la Empresa",
     "uploadLogo": "Subir Logo",
+    "changeLogo": "Cambiar Logo",
     "logoFormats": "Formatos aceptados: PNG, JPG, SVG (max 2MB)",
-    "saveInformation": "Guardar Información"
+    "saveInformation": "Guardar Información",
+    "informationSaved": "Información de la empresa guardada con éxito.",
+    "logoUploaded": "Logo de la empresa subido con éxito.",
+    "logoRemoved": "Logo de la empresa eliminado.",
+    "errorLogoUploadSize": "El archivo debe ser menor de 2MB.",
+    "errorLogoUploadType": "Por favor, selecciona un archivo de imagen válido (PNG, JPG, SVG)."
   },
   "language": {
     "title": "Configuración de Idioma",

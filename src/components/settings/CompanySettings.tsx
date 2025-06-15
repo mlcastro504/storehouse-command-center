@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,87 +7,128 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Building, Upload } from 'lucide-react';
+import { Building, Upload, X } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
-export function CompanySettings() {
-  const { t } = useTranslation(['settings', 'common']);
-  const [companyData, setCompanyData] = useState({
-    name: 'WarehouseOS Company',
-    fiscalNumber: 'ES-12345678Z',
-    address: 'Main Street 123, Industrial Zone',
-    country: 'Spain',
-    timezone: 'Europe/Madrid',
-    phone: '+34 900 123 456',
-    baseCurrency: 'EUR',
-    publicUrl: 'https://warehouseos.company.com',
-    commercialName: 'WarehouseOS Solutions'
-  });
+const defaultCompanyData = {
+  name: 'WarehouseOS Company',
+  commercialName: 'WarehouseOS Solutions',
+  fiscalNumber: 'ES-12345678Z',
+  phone: '+34 900 123 456',
+  country: 'Spain',
+  timezone: 'Europe/Madrid',
+  baseCurrency: 'EUR',
+  publicUrl: 'https://warehouseos.company.com',
+  address: 'Main Street 123, Industrial Zone',
+  logo: '',
+};
 
+export function CompanySettings() {
+  const { t } = useTranslation('settings');
+  const [companyData, setCompanyData] = useState(defaultCompanyData);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const savedData = localStorage.getItem('warehouseos_company_settings');
+    if (savedData) {
+      setCompanyData(JSON.parse(savedData));
+    }
+  }, []);
+
+  const handleInputChange = (field: keyof typeof companyData, value: string) => {
+    setCompanyData(prev => ({ ...prev, [field]: value }));
+  };
+  
   const handleSave = () => {
+    localStorage.setItem('warehouseos_company_settings', JSON.stringify(companyData));
     toast({
-      title: t('common:success'),
-      description: t('settings:company.informationSaved'),
+      title: t('company.informationSaved'),
     });
+     // We might reload to update other parts of the UI, like the sidebar logo
+    setTimeout(() => window.location.reload(), 1000);
   };
 
-  const handleLogoUpload = () => {
-    toast({
-      title: t('common:success'),
-      description: t('settings:company.logoUploaded'),
-    });
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!['image/png', 'image/jpeg', 'image/svg+xml'].includes(file.type)) {
+      toast({ title: t('common:error'), description: t('company.errorLogoUploadType'), variant: "destructive" });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) { // 2MB
+      toast({ title: t('common:error'), description: t('company.errorLogoUploadSize'), variant: "destructive" });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      handleInputChange('logo', result);
+      toast({ title: t('company.logoUploaded') });
+    };
+    reader.readAsDataURL(file);
   };
+
+  const handleRemoveLogo = () => {
+    handleInputChange('logo', '');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    toast({ title: t('company.logoRemoved') });
+  };
+
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building className="w-5 h-5" />
-          {t('settings:company.title')}
+          {t('company.title')}
         </CardTitle>
         <CardDescription>
-          {t('settings:company.description')}
+          {t('company.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>{t('settings:company.name')}</Label>
+            <Label>{t('company.name')}</Label>
             <Input
               value={companyData.name}
-              onChange={(e) => setCompanyData({ ...companyData, name: e.target.value })}
+              onChange={(e) => handleInputChange('name', e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>{t('settings:company.commercialName')}</Label>
+            <Label>{t('company.commercialName')}</Label>
             <Input
               value={companyData.commercialName}
-              onChange={(e) => setCompanyData({ ...companyData, commercialName: e.target.value })}
+              onChange={(e) => handleInputChange('commercialName', e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>{t('settings:company.fiscalNumber')}</Label>
+            <Label>{t('company.fiscalNumber')}</Label>
             <Input
               value={companyData.fiscalNumber}
-              onChange={(e) => setCompanyData({ ...companyData, fiscalNumber: e.target.value })}
+              onChange={(e) => handleInputChange('fiscalNumber', e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>{t('settings:company.phone')}</Label>
+            <Label>{t('company.phone')}</Label>
             <Input
               value={companyData.phone}
-              onChange={(e) => setCompanyData({ ...companyData, phone: e.target.value })}
+              onChange={(e) => handleInputChange('phone', e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>{t('settings:company.country')}</Label>
-            <Select value={companyData.country} onValueChange={(value) => setCompanyData({ ...companyData, country: value })}>
+            <Label>{t('company.country')}</Label>
+            <Select value={companyData.country} onValueChange={(value) => handleInputChange('country', value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -102,8 +143,8 @@ export function CompanySettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>{t('settings:company.timezone')}</Label>
-            <Select value={companyData.timezone} onValueChange={(value) => setCompanyData({ ...companyData, timezone: value })}>
+            <Label>{t('company.timezone')}</Label>
+            <Select value={companyData.timezone} onValueChange={(value) => handleInputChange('timezone', value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -118,8 +159,8 @@ export function CompanySettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>{t('settings:company.baseCurrency')}</Label>
-            <Select value={companyData.baseCurrency} onValueChange={(value) => setCompanyData({ ...companyData, baseCurrency: value })}>
+            <Label>{t('company.baseCurrency')}</Label>
+            <Select value={companyData.baseCurrency} onValueChange={(value) => handleInputChange('baseCurrency', value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -132,37 +173,70 @@ export function CompanySettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>{t('settings:company.publicUrl')}</Label>
+            <Label>{t('company.publicUrl')}</Label>
             <Input
               value={companyData.publicUrl}
-              onChange={(e) => setCompanyData({ ...companyData, publicUrl: e.target.value })}
+              onChange={(e) => handleInputChange('publicUrl', e.target.value)}
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label>{t('settings:company.address')}</Label>
+          <Label>{t('company.address')}</Label>
           <Textarea
             value={companyData.address}
-            onChange={(e) => setCompanyData({ ...companyData, address: e.target.value })}
+            onChange={(e) => handleInputChange('address', e.target.value)}
             rows={3}
           />
         </div>
 
         <div className="space-y-2">
-          <Label>{t('settings:company.logo')}</Label>
+          <Label>{t('company.logo')}</Label>
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={handleLogoUpload} className="flex items-center gap-2">
-              <Upload className="w-4 h-4" />
-              {t('settings:company.uploadLogo')}
-            </Button>
-            <span className="text-sm text-muted-foreground">{t('settings:company.logoFormats')}</span>
+            {companyData.logo ? (
+              <div className="relative">
+                <img 
+                  src={companyData.logo} 
+                  alt={t('company.altLogo')} 
+                  className="w-20 h-20 object-contain border rounded-lg bg-slate-50"
+                />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full"
+                  onClick={handleRemoveLogo}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="w-20 h-20 border-2 border-dashed rounded-lg flex items-center justify-center">
+                <Building className="w-8 h-8 text-muted-foreground/50" />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {companyData.logo ? t('company.changeLogo') : t('company.uploadLogo')}
+              </Button>
+              <p className="text-sm text-muted-foreground">{t('company.logoFormats')}</p>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png, image/jpeg, image/svg+xml"
+              onChange={handleLogoUpload}
+              className="hidden"
+            />
           </div>
         </div>
 
         <div className="flex justify-end">
           <Button onClick={handleSave}>
-            {t('settings:company.saveInformation')}
+            {t('company.saveInformation')}
           </Button>
         </div>
       </CardContent>
