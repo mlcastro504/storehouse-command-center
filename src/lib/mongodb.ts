@@ -83,6 +83,9 @@ class RestApiDatabaseProxy {
       insertMany: async () => {
         throw new Error(`collection('${name}').insertMany(...) not implemented in REST API mode.`);
       },
+      deleteMany: async () => {
+        throw new Error(`collection('${name}').deleteMany(...) not implemented in REST API mode.`);
+      },
       aggregate: async () => {
         throw new Error(`collection('${name}').aggregate(...) not implemented in REST API mode.`);
       },
