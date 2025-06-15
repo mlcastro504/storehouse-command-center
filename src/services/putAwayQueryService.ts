@@ -1,3 +1,4 @@
+
 import { BrowserStorage } from '@/lib/browserStorage';
 import { Pallet, PutAwayTask, PutAwayRule, OperatorPerformance, PutAwayMetrics } from '@/types/putaway';
 
@@ -43,7 +44,9 @@ export async function populateTaskDetails(task: any): Promise<PutAwayTask> {
 
 export async function getPendingPallets(): Promise<Pallet[]> {
   try {
-    const pallets = await BrowserStorage.find('pallets', { status: 'waiting_putaway' });
+    const allPallets = await BrowserStorage.find('pallets', {});
+    const pallets = allPallets.filter((p: any) => p.status === 'waiting_putaway');
+    
     return Promise.all(pallets.map(async (pallet) => {
       const populatedPallet = { ...pallet, id: pallet._id || pallet.id };
       if (pallet.product_id) {
@@ -89,7 +92,8 @@ export async function getMetrics(): Promise<PutAwayMetrics> {
     const today = new Date().toISOString().split('T')[0];
     
     const todayTasks = await BrowserStorage.find('putaway_tasks', {});
-    const pendingPallets = await BrowserStorage.find('pallets', { status: 'waiting_putaway' });
+    const allPallets = await BrowserStorage.find('pallets', {});
+    const pendingPallets = allPallets.filter((p: any) => p.status === 'waiting_putaway');
     const activeTasks = await BrowserStorage.find('putaway_tasks', { status: 'in_progress' });
 
     const completedToday = todayTasks.filter(task => 
