@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -15,8 +14,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { UserAvatarWithStatus } from './UserAvatarWithStatus';
 
-export const ChatInterface = ({ channelId, channelName, channelMembers }: { channelId: string, channelName?: string, channelMembers?: number }) => {
+export const ChatInterface = ({ channelId, channelName, channelMembers, onlineMembers }: { channelId: string, channelName?: string, channelMembers?: number, onlineMembers?: number }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -40,10 +40,8 @@ export const ChatInterface = ({ channelId, channelName, channelMembers }: { chan
   }, [channelId]);
 
   useEffect(() => {
-    // A short delay to allow the DOM to update before scrolling
     setTimeout(() => scrollToBottom(), 100);
   }, [messages]);
-
 
   useEffect(() => {
     if (!channelId || isLoading) return;
@@ -112,7 +110,20 @@ export const ChatInterface = ({ channelId, channelName, channelMembers }: { chan
       <div className="border-b p-4 flex justify-between items-center">
         <div>
           <h3 className="font-semibold"># {channelName || channelId}</h3>
-          {channelMembers !== undefined && <p className="text-sm text-muted-foreground">{channelMembers} miembros</p>}
+          {channelMembers !== undefined && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>{channelMembers} miembros</span>
+                {onlineMembers !== undefined && onlineMembers > 0 && (
+                <>
+                    <span className="text-muted-foreground/50 mx-1">·</span>
+                    <div className="flex items-center gap-1.5">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <span>{onlineMembers} en línea</span>
+                    </div>
+                </>
+                )}
+            </div>
+          )}
         </div>
         <TooltipProvider>
           <Tooltip>
@@ -133,12 +144,10 @@ export const ChatInterface = ({ channelId, channelName, channelMembers }: { chan
         <div className="space-y-4">
           {messages.map((msg, index) => (
             <div key={msg.id || index} className="flex gap-3">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-xs">
-                  {msg.sender?.firstName?.[0] || 'S'}
-                  {msg.sender?.lastName?.[0] || 'Y'}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatarWithStatus
+                userId={msg.sender?.id}
+                fallback={`${msg.sender?.firstName?.[0] || 'S'}${msg.sender?.lastName?.[0] || 'Y'}`}
+              />
               <div className="flex-1 space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm">{msg.sender?.firstName} {msg.sender?.lastName}</span>

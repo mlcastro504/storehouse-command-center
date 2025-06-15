@@ -19,7 +19,7 @@ import {
   Plus
 } from 'lucide-react';
 import { useMessageSimulator } from '@/hooks/useMessageSimulator';
-import { mockChannels, contextualChats as mockContextualChats } from '@/data/mock-chat';
+import { mockChannels, contextualChats as mockContextualChats, mockUserStatuses } from '@/data/mock-chat';
 
 export default function Chat() {
   const [selectedChannel, setSelectedChannel] = useState<string>('general');
@@ -37,12 +37,20 @@ export default function Chat() {
       name: c.name,
       type: c.type,
       members: c.members,
+      member_ids: c.member_ids,
       unreadCount: c.unreadCount,
       lastMessage: c.context.description,
     }))
   ];
 
   const currentChannelDetails = allChannels.find(c => c.id === selectedChannel);
+  
+  const getOnlineCount = (memberIds?: string[]) => {
+    if (!memberIds) return 0;
+    return memberIds.filter(id => mockUserStatuses[id] === 'online').length;
+  }
+
+  const onlineCount = getOnlineCount(currentChannelDetails?.member_ids);
 
   return (
     <MainLayout>
@@ -216,6 +224,7 @@ export default function Chat() {
                       channelId={selectedChannel}
                       channelName={currentChannelDetails?.name}
                       channelMembers={currentChannelDetails?.members}
+                      onlineMembers={onlineCount}
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -239,4 +248,3 @@ export default function Chat() {
     </MainLayout>
   );
 }
-

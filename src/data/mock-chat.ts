@@ -4,6 +4,7 @@ import { ChatChannel } from '@/types/chat';
 type MockChatChannel = Pick<ChatChannel, 'id' | 'name' | 'type' | 'is_archived'> & {
     unreadCount: number;
     members: number;
+    member_ids: string[];
     lastMessage: string;
 };
 
@@ -13,7 +14,8 @@ export const mockChannels: MockChatChannel[] = [
     name: 'general',
     type: 'public',
     unreadCount: 0,
-    members: 25,
+    members: 4,
+    member_ids: ['1', '2', '3', '4'],
     lastMessage: 'Bienvenidos al canal general.',
     is_archived: false,
   },
@@ -22,7 +24,8 @@ export const mockChannels: MockChatChannel[] = [
     name: 'almacen',
     type: 'public',
     unreadCount: 0,
-    members: 12,
+    members: 3,
+    member_ids: ['1', '3', '4'],
     lastMessage: 'Todo listo para hoy.',
     is_archived: false,
   },
@@ -31,7 +34,8 @@ export const mockChannels: MockChatChannel[] = [
     name: 'gerencia',
     type: 'private',
     unreadCount: 0,
-    members: 5,
+    members: 2,
+    member_ids: ['1', '2'],
     lastMessage: 'Reunión mañana a las 10.',
     is_archived: false,
   }
@@ -49,7 +53,8 @@ export const contextualChats = [
       },
       unreadCount: 0,
       lastActivity: '2 min',
-      members: 3
+      members: 3,
+      member_ids: ['1', '2', '3'],
     },
     {
       id: 'task-pick-456',
@@ -62,6 +67,14 @@ export const contextualChats = [
       },
       unreadCount: 0,
       lastActivity: '5 min',
-      members: 2
+      members: 2,
+      member_ids: ['1', '3'],
     }
   ];
+
+export const mockUserStatuses: Record<string, 'online' | 'away' | 'offline'> = {
+    '1': 'online', // supervisor (current user)
+    '2': 'online', // manager
+    '3': 'away',   // operator
+    '4': 'offline',// driver
+};
