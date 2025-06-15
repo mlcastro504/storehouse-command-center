@@ -252,7 +252,7 @@ export class InventoryService {
     try {
       const db = await getDb();
 
-      const allLocations = await db.collection('locations').find({}).project({ confirmation_code: 1 }).toArray();
+      const allLocations = await db.collection('locations').find({}).toArray();
       const existingCodes = allLocations.map((l: any) => l.confirmation_code).filter(Boolean);
       
       const id = `loc_${Date.now()}`;
